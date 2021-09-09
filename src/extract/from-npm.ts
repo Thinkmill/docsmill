@@ -56,7 +56,7 @@ function streamToString(stream: NodeJS.ReadableStream) {
 
 async function fetchPackageContent(pkgName: string, pkgVersion: string) {
   const tarballStream = await fetch(getNpmTarballUrl(pkgName, pkgVersion)).then(
-    (res) => res.body
+    (res) => res.body!
   );
   return handleTarballStream(tarballStream);
 }
