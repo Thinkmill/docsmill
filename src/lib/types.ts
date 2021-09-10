@@ -22,8 +22,8 @@ export type SerializedDeclaration =
   | {
       kind: "module";
       name: string;
-      exports: Record<string, string>;
       docs: string;
+      exports: Record<string, string | 0>;
     }
   | {
       kind: "variable";
@@ -85,7 +85,7 @@ export type SerializedDeclaration =
       kind: "namespace";
       name: string;
       docs: string;
-      exports: Record<string, string>;
+      exports: Record<string, string | 0>;
     };
 
 export type ClassMember =

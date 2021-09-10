@@ -221,8 +221,12 @@ export async function getPackage(
     }
   }
 
-  // console.log("getting diagnostics");
-  // console.log(project.getPreEmitDiagnostics().map((x) => x.getMessageText()));
+  console.log("getting diagnostics");
+  console.log(
+    project
+      .getPreEmitDiagnostics()
+      .map((x) => [x.getMessageText(), x.getSourceFile()?.getFilePath()])
+  );
 
   return {
     ...getDocsInfo(rootSymbols, pkgPath, pkgName, version, (symbolId) =>

@@ -1,4 +1,4 @@
-import { composeStyles, style } from "@vanilla-extract/css";
+import { style } from "@vanilla-extract/css";
 import { tokens } from "../lib/theme.css";
 
 export const docs = style({
@@ -17,17 +17,17 @@ export const blockSummary = style({
   },
 });
 
-export const details = composeStyles(
+export const details = style([
   docs,
-  style({
+  {
     selectors: {
       "&[open]": {
         position: "relative",
         paddingBottom: 32,
       },
     },
-  })
-);
+  },
+]);
 
 const expandLink = style({
   display: "flex",
@@ -39,21 +39,21 @@ const expandLink = style({
   },
 });
 
-export const expandLinkOpen = composeStyles(
+export const expandLinkOpen = style([
   expandLink,
-  style({
+  {
     color: tokens.color.emerald500,
     selectors: {
       "details[open] > summary > &": {
         display: "none",
       },
     },
-  })
-);
+  },
+]);
 
-export const expandLinkClose = composeStyles(
+export const expandLinkClose = style([
   expandLink,
-  style({
+  {
     color: tokens.color.emerald700,
     position: "absolute",
     bottom: -12,
@@ -62,8 +62,8 @@ export const expandLinkClose = composeStyles(
         display: "none",
       },
     },
-  })
-);
+  },
+]);
 
 export const expandIcon = style({
   marginTop: 5,

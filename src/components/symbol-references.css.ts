@@ -1,4 +1,4 @@
-import { composeStyles, globalStyle, style } from "@vanilla-extract/css";
+import { globalStyle, style } from "@vanilla-extract/css";
 import { codeFont, syntaxColors, codeFontStyleObj } from "../lib/theme.css";
 import { targetBackground } from "./symbol.css";
 
@@ -6,21 +6,21 @@ const baseSymbol = {
   ":hover": { textDecoration: "underline" },
 };
 
-export const symbolName = composeStyles(
+export const symbolName = style([
   codeFont,
   targetBackground,
-  style({
+  {
     color: syntaxColors.symbol,
     ...baseSymbol,
-  })
-);
+  },
+]);
 
-export const unknownExternalReference = composeStyles(
+export const unknownExternalReference = style([
   codeFont,
   style({
     color: "#f92672",
-  })
-);
+  }),
+]);
 
 export const rootSymbolReference = style({
   color: syntaxColors.string,

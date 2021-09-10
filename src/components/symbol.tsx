@@ -1,4 +1,4 @@
-import { Fragment } from "react";
+import { Fragment, ReactNode } from "react";
 
 import { useDocsContext } from "../lib/DocsContext";
 import { codeFont } from "../lib/theme.css";
@@ -22,11 +22,16 @@ import {
 } from "../lib/types";
 import { Syntax } from "./syntax";
 import { Indent } from "./indent";
-import { blockSummary } from "./docs.css";
 import * as symbolReferenceStyles from "./symbol-references.css";
 import { a } from "./markdown.css";
 
-function SymbolAnchor({ fullName }: { fullName: string }) {
+function SymbolAnchor({
+  fullName,
+  children,
+}: {
+  fullName: string;
+  children: ReactNode;
+}) {
   const { goodIdentifiers, canonicalExportLocations } = useDocsContext();
   let currentFullName = fullName;
   let depth = 0;
@@ -37,11 +42,16 @@ function SymbolAnchor({ fullName }: { fullName: string }) {
 
   return (
     <span className={styles.symbolAnchorParent}>
-      <a
-        style={{ top: -depth * 54 }}
+      <span
+        style={{
+          // 54px is the height of the module/namespace sticky heading bits
+          // we want a bit of extra space as well though
+          top: -depth * 54 - 8,
+        }}
         className={styles.symbolAnchor}
         id={goodIdentifiers[fullName]}
-      ></a>
+      ></span>
+      {children}
     </span>
   );
 }
@@ -486,14 +496,14 @@ function Exports({ fullName }: { fullName: string }) {
           const innerBits = symbolsForInnerBit.get(symbol);
           return (
             <div key={i}>
-              <SymbolAnchor fullName={symbol} />
-              <h3 className={styles.symbolHeading}>{exportName}</h3>
+              <SymbolAnchor fullName={symbol}>
+                <h3 className={styles.symbolHeading}>{exportName}</h3>
+              </SymbolAnchor>
+
               <RenderRootSymbol fullName={symbol} />
               {!!relatedSymbols?.length && (
                 <details className={styles.referencesContainer}>
-                  <summary className={styles.referencesHeading}>
-                    References
-                  </summary>
+                  <summary>References</summary>
                   <ul>
                     {relatedSymbols.map((thing, i) => {
                       return (

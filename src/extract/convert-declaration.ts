@@ -267,14 +267,24 @@ export function convertDeclaration(decl: Node): SerializedDeclaration {
   };
 }
 
-function collectExportsFromModule(decl: ModuledNode) {
-  let exports: Record<string, string> = {};
+function collectExportsFromModule(moduledDecl: ModuledNode) {
+  let exports: Record<string, string | 0> = {};
   for (const [
     exportName,
     exportedDeclarations,
-  ] of decl.getExportedDeclarations()) {
+  ] of moduledDecl.getExportedDeclarations()) {
     const decl = exportedDeclarations[0];
     if (!decl) {
+      console.log(
+        `could not declaration for export ${exportName} in ${
+          moduledDecl instanceof SourceFile
+            ? moduledDecl.getFilePath()
+            : moduledDecl instanceof ModuleDeclaration
+            ? moduledDecl.getName()
+            : "unknown"
+        }`
+      );
+      exports[exportName] = 0;
       continue;
     }
     let innerSymbol = decl.getSymbolOrThrow();

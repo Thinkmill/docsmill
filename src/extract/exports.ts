@@ -24,6 +24,15 @@ function collectImportableSymbolsFromModuledNode(
     // }
     const decl = decls[0];
     if (!decl) {
+      console.log(
+        `could not declaration for export ${exportName} in ${
+          moduledNode instanceof SourceFile
+            ? moduledNode.getFilePath()
+            : moduledNode instanceof ModuleDeclaration
+            ? moduledNode.getName()
+            : "unknown"
+        }`
+      );
       continue;
     }
     const symbol = decl.getSymbolOrThrow();

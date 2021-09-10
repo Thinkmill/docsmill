@@ -1,4 +1,4 @@
-import { composeStyles, style } from "@vanilla-extract/css";
+import { style } from "@vanilla-extract/css";
 import { codeFont, tokens } from "../lib/theme.css";
 
 export const a = style({
@@ -9,9 +9,9 @@ export const a = style({
   },
 });
 
-export const codeblock = composeStyles(
+export const codeblock = style([
   codeFont,
-  style({
+  {
     fontWeight: 400,
     padding: "12px",
     fontSize: "0.9rem",
@@ -19,7 +19,7 @@ export const codeblock = composeStyles(
     backgroundColor: tokens.color.gray50,
     border: `1px solid ${tokens.color.gray200}`,
     borderRadius: 6,
-  })
-);
+  },
+]);
 
 export const codeblockInner = style({ backgroundColor: "transparent" });

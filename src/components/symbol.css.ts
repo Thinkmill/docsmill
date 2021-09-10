@@ -1,4 +1,4 @@
-import { composeStyles, style } from "@vanilla-extract/css";
+import { style } from "@vanilla-extract/css";
 import {
   codeFont,
   codeFontStyleObj,
@@ -12,21 +12,15 @@ export const moduleHeading = style({
   ...codeFontStyleObj,
 });
 
-export const symbolHeading = style({
-  fontSize: "1.6rem",
-  marginBottom: 16,
-  ...codeFontStyleObj,
-});
-
 export const rootSymbolContainer = style({
   borderBottom: `1px solid ${tokens.color.gray200}`,
   paddingBottom: 24,
   marginBottom: 16,
 });
 
-export const innerExportsHeading = composeStyles(
+export const innerExportsHeading = style([
   codeFont,
-  style({
+  {
     fontSize: "1.2rem",
     fontWeight: 500,
     position: "sticky",
@@ -37,8 +31,8 @@ export const innerExportsHeading = composeStyles(
     transitionProperty: "padding",
     transitionDuration: "0.3s",
     transitionTimingFunction: "cubic-bezier(0, 0, 0.2, 1)",
-  })
-);
+  },
+]);
 
 export const innerExportsHeadingSticky = style({
   background: "rgba(255,255,255,0.8)",
@@ -52,11 +46,6 @@ export const innerExportsContainer = style({
   marginTop: 16,
   marginBottom: 16,
   paddingLeft: 16,
-});
-
-export const referencesHeading = style({
-  fontSize: "1.2rem",
-  marginBottom: 16,
 });
 
 export const referencesContainer = style({
@@ -90,4 +79,15 @@ export const moduleSpecifierLink = style({
   ":target": { backgroundColor: "#ffff54ba" },
 });
 
-export const reexportTarget = composeStyles(targetBackground, codeFont);
+export const reexportTarget = style([targetBackground, codeFont]);
+
+export const symbolHeading = style({
+  fontSize: "1.6rem",
+  marginBottom: 16,
+  ...codeFontStyleObj,
+  selectors: {
+    [`${symbolAnchor}:target ~ &`]: {
+      backgroundColor: "#ffff54ba",
+    },
+  },
+});
