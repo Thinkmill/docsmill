@@ -70,8 +70,13 @@ export const referenceItem = style({
   listStyleType: "disc",
 });
 
+export const symbolAnchorParent = style({
+  position: "relative",
+});
+
 export const symbolAnchor = style({
   display: "block",
+  position: "absolute",
   height: 1,
 });
 

@@ -27,8 +27,23 @@ import * as symbolReferenceStyles from "./symbol-references.css";
 import { a } from "./markdown.css";
 
 function SymbolAnchor({ fullName }: { fullName: string }) {
-  const { goodIdentifiers } = useDocsContext();
-  return <a className={styles.symbolAnchor} id={goodIdentifiers[fullName]}></a>;
+  const { goodIdentifiers, canonicalExportLocations } = useDocsContext();
+  let currentFullName = fullName;
+  let depth = 0;
+  while (canonicalExportLocations[currentFullName] !== undefined) {
+    depth += 1;
+    currentFullName = canonicalExportLocations[currentFullName].parent;
+  }
+
+  return (
+    <span className={styles.symbolAnchorParent}>
+      <a
+        style={{ top: -depth * 54 }}
+        className={styles.symbolAnchor}
+        id={goodIdentifiers[fullName]}
+      ></a>
+    </span>
+  );
 }
 
 function ExportedFrom({ fullName }: { fullName: string }) {
@@ -63,7 +78,7 @@ export function RenderRootSymbol({ fullName }: { fullName: string }) {
     }));
   }
   return (
-    <Fragment>
+    <div className={styles.rootSymbolContainer}>
       {decls.map((decl, i) => {
         return (
           <Declaration
@@ -74,7 +89,7 @@ export function RenderRootSymbol({ fullName }: { fullName: string }) {
           />
         );
       })}
-    </Fragment>
+    </div>
   );
 }
 
@@ -91,7 +106,7 @@ function Declaration({
 
   if (decl.kind === "function") {
     return (
-      <div className={styles.rootSymbolContainer}>
+      <div>
         <Docs content={decl.docs} />
         <Fragment>
           <Syntax kind="keyword">{isExported ? "export " : ""}function </Syntax>
@@ -106,7 +121,7 @@ function Declaration({
   }
   if (decl.kind === "module") {
     return (
-      <div className={styles.rootSymbolContainer}>
+      <div>
         {isExported ? (
           <Docs content={decl.docs} />
         ) : (
@@ -117,26 +132,27 @@ function Declaration({
         )}
         <SymbolExports id={goodIdentifiers[fullName]}>
           <SymbolExportsHeader>
-            {isExported ? (
-              <div className={styles.innerExportsHeading}>
-                <Syntax kind="keyword">export * as </Syntax>
-                <SymbolName name={decl.name} fullName={fullName} />
-                <Syntax kind="keyword"> from</Syntax>
-                <Syntax kind="bracket">{" {"}</Syntax>
-              </div>
-            ) : (
-              <div className={styles.innerExportsHeading}>
-                <Syntax kind="keyword">module </Syntax>
-                <a
-                  id={goodIdentifiers[fullName]}
-                  className={styles.moduleSpecifierLink}
-                  href={`#${goodIdentifiers[fullName]}`}
-                >
-                  {JSON.stringify(decl.name)}
-                </a>
-                <Syntax kind="bracket">{" {"}</Syntax>
-              </div>
-            )}
+            <div className={styles.innerExportsHeading}>
+              {isExported ? (
+                <Fragment>
+                  <Syntax kind="keyword">export * as </Syntax>
+                  <SymbolName name={decl.name} fullName={fullName} />
+                  <Syntax kind="keyword"> from</Syntax>
+                </Fragment>
+              ) : (
+                <Fragment>
+                  <Syntax kind="keyword">module </Syntax>
+                  <a
+                    id={goodIdentifiers[fullName]}
+                    className={styles.moduleSpecifierLink}
+                    href={`#${goodIdentifiers[fullName]}`}
+                  >
+                    {JSON.stringify(decl.name)}
+                  </a>
+                </Fragment>
+              )}
+              <Syntax kind="bracket">{" {"}</Syntax>
+            </div>
           </SymbolExportsHeader>
           <Exports fullName={fullName} />
         </SymbolExports>
@@ -149,7 +165,7 @@ function Declaration({
   }
   if (decl.kind === "variable") {
     return (
-      <div className={styles.rootSymbolContainer}>
+      <div>
         <Docs content={decl.docs} />
         <Fragment>
           <Syntax kind="keyword">
@@ -168,7 +184,7 @@ function Declaration({
 
   if (decl.kind === "unknown") {
     return (
-      <div className={styles.rootSymbolContainer}>
+      <div>
         <Docs content={decl.docs} />
         <SymbolName name={decl.name} fullName={fullName} />
         <pre className={codeFont}>
@@ -181,7 +197,7 @@ function Declaration({
   if (decl.kind === "interface") {
     const interfaceSymbol = decl;
     return (
-      <div className={styles.rootSymbolContainer}>
+      <div>
         <Docs content={decl.docs} />
         <Fragment>
           <Syntax kind="keyword">
@@ -217,7 +233,7 @@ function Declaration({
   if (decl.kind === "class") {
     const classSymbol = decl;
     return (
-      <div className={styles.rootSymbolContainer}>
+      <div>
         <Docs content={decl.docs} />
         {decl.willBeComparedNominally && (
           <p>
@@ -274,7 +290,7 @@ function Declaration({
   if (decl.kind === "enum") {
     const enumSymbol = decl;
     return (
-      <div className={styles.rootSymbolContainer}>
+      <div>
         <Docs content={decl.docs} />
         <Fragment>
           <Syntax kind="keyword">
@@ -323,10 +339,10 @@ function Declaration({
 
   if (decl.kind === "namespace") {
     return (
-      <div className={styles.rootSymbolContainer}>
+      <div>
         <Docs content={decl.docs} />
-        <details open>
-          <summary className={blockSummary}>
+        <SymbolExports id={goodIdentifiers[fullName]}>
+          <SymbolExportsHeader>
             <div className={styles.innerExportsHeading}>
               <Syntax kind="keyword">
                 {isExported ? "export " : ""}namespace{" "}
@@ -334,9 +350,9 @@ function Declaration({
               <SymbolName name={decl.name} fullName={fullName} />
               <Syntax kind="bracket">{" {"}</Syntax>
             </div>
-          </summary>
+          </SymbolExportsHeader>
           <Exports fullName={fullName} />
-        </details>
+        </SymbolExports>
 
         <div className={styles.innerExportsHeading}>
           <Syntax kind="bracket">{"}"}</Syntax>
@@ -351,7 +367,7 @@ function Declaration({
   );
 
   return (
-    <div className={styles.rootSymbolContainer}>
+    <div>
       <Docs content={decl.docs} />
       <Fragment>
         <Syntax kind="keyword">
@@ -469,13 +485,15 @@ function Exports({ fullName }: { fullName: string }) {
           );
           const innerBits = symbolsForInnerBit.get(symbol);
           return (
-            <div key={exportName}>
+            <div key={i}>
               <SymbolAnchor fullName={symbol} />
               <h3 className={styles.symbolHeading}>{exportName}</h3>
               <RenderRootSymbol fullName={symbol} />
               {!!relatedSymbols?.length && (
-                <div className={styles.referencesContainer}>
-                  <h4 className={styles.referencesHeading}>References:</h4>
+                <details className={styles.referencesContainer}>
+                  <summary className={styles.referencesHeading}>
+                    References
+                  </summary>
                   <ul>
                     {relatedSymbols.map((thing, i) => {
                       return (
@@ -489,7 +507,7 @@ function Exports({ fullName }: { fullName: string }) {
                       );
                     })}
                   </ul>
-                </div>
+                </details>
               )}
               {innerBits && (
                 <details className={styles.referencesContainer}>
@@ -574,10 +592,10 @@ function Exports({ fullName }: { fullName: string }) {
             <Syntax kind="keyword">export</Syntax>
             <Syntax kind="bracket">{" { "}</Syntax>
             <Indent>
-              {exported.exports.map((x) => {
+              {exported.exports.map((x, i) => {
                 if (x.localName === x.sourceName) {
                   return (
-                    <div key={x.localName}>
+                    <div key={i}>
                       <SymbolReference
                         fullName={x.fullName}
                         name={x.localName}
@@ -588,7 +606,7 @@ function Exports({ fullName }: { fullName: string }) {
                 }
 
                 return (
-                  <div key={x.localName}>
+                  <div key={i}>
                     <SymbolReference
                       fullName={x.fullName}
                       name={x.sourceName}
@@ -601,7 +619,7 @@ function Exports({ fullName }: { fullName: string }) {
               })}
             </Indent>
             <Syntax kind="bracket">{" } "}</Syntax>
-            <Syntax kind="keyword">from </Syntax>{" "}
+            <Syntax kind="keyword">from </Syntax>
             <ExportedFrom fullName={exported.from} />
           </div>
         );

@@ -155,16 +155,26 @@ export async function getPackage(
         dep.startsWith("@") ? dep.slice(1).replace("/", "__") : dep
       }`;
       let specifier =
-        pkgJson.dependencies?.[definitelyTypedDep] ||
-        pkgJson.optionalDependencies?.[definitelyTypedDep] ||
-        pkgJson.peerDependencies?.[definitelyTypedDep];
-      if (specifier) {
+        pkgJson.dependencies?.[definitelyTypedDep] ??
+        pkgJson.optionalDependencies?.[definitelyTypedDep] ??
+        pkgJson.peerDependencies?.[definitelyTypedDep] ??
+        (() => {
+          if (pkgJson.peerDependenciesMeta?.[definitelyTypedDep]) {
+            return "*";
+          }
+        })();
+      if (typeof specifier === "string") {
         dep = definitelyTypedDep;
       } else {
         specifier =
-          pkgJson.dependencies?.[dep] ||
-          pkgJson.optionalDependencies?.[dep] ||
-          pkgJson.peerDependencies?.[dep];
+          pkgJson.dependencies?.[dep] ??
+          pkgJson.optionalDependencies?.[dep] ??
+          pkgJson.peerDependencies?.[dep] ??
+          (() => {
+            if (pkgJson.peerDependenciesMeta?.[dep]) {
+              return "*";
+            }
+          })();
       }
       if (typeof specifier !== "string") return;
       const { version, pkgPath } = await addPackageToNodeModules(
