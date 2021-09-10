@@ -21,7 +21,7 @@ import {
   VariableDeclaration,
 } from "ts-morph";
 import { addExportedSymbol, collectSymbol, getRootSymbolName } from ".";
-import { ClassMember, SerializedSymbol } from "../lib/types";
+import { ClassMember, SerializedDeclaration } from "../lib/types";
 import { convertTypeNode } from "./convert-node";
 import { _convertType } from "./convert-type";
 import {
@@ -33,7 +33,7 @@ import {
   getObjectMembers,
 } from "./utils";
 
-export function convertDeclaration(decl: Node): SerializedSymbol {
+export function convertDeclaration(decl: Node): SerializedDeclaration {
   if (decl instanceof TypeAliasDeclaration) {
     const typeNode = decl.getTypeNode();
     return {
@@ -184,7 +184,10 @@ export function convertDeclaration(decl: Node): SerializedSymbol {
           // TODO: show protected
           // (and have a tooltip explaining what protected does)
 
-          return [...member.getOverloads(), member].map((member) => {
+          return [
+            ...member.getOverloads(),
+            ...(member.isOverload() ? [] : [member]),
+          ].map((member) => {
             const returnTypeNode = member.getReturnTypeNode();
             return {
               kind: "method",

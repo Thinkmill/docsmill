@@ -10,6 +10,7 @@ import { Minus } from "./icons/minus";
 
 import * as styles from "./navigation.css";
 import { nonRootSymbolReference } from "./symbol-references.css";
+import { assert } from "../lib/assert";
 
 function Expandable({
   summary,
@@ -41,22 +42,22 @@ function Item({ children }: { children: ReactNode }) {
 
 export function Navigation({ rootSymbolName }: { rootSymbolName: string }) {
   const docContext = useDocsContext();
-  let rootSymbol = docContext.symbols[rootSymbolName];
-  if (rootSymbol.kind !== "module" && rootSymbol.kind !== "namespace") {
-    throw new Error("symbols in Navigation must be modules or namespaces");
-  }
+  const decls = docContext.symbols[rootSymbolName].filter(
+    (x): x is Extract<typeof x, { kind: "module" | "namespace" }> =>
+      x.kind === "module" || x.kind === "namespace"
+  );
+  assert(
+    decls.length >= 1,
+    "symbols in Navigation must be modules or namespaces"
+  );
   const groupedExports = useGroupedExports(rootSymbolName);
-  if (docContext.canonicalExportLocations[rootSymbolName]) {
-    rootSymbol = {
-      ...rootSymbol,
-      name: docContext.canonicalExportLocations[rootSymbolName].exportName,
-    };
-  }
+  let name =
+    docContext.canonicalExportLocations[rootSymbolName]?.exportName ??
+    decls[0].name;
+
   return (
     <Expandable
-      summary={
-        <SymbolReference fullName={rootSymbolName} name={rootSymbol.name} />
-      }
+      summary={<SymbolReference fullName={rootSymbolName} name={name} />}
     >
       <div>
         <ul>
@@ -73,14 +74,14 @@ export function Navigation({ rootSymbolName }: { rootSymbolName: string }) {
                 </Item>
               );
             }
-            const symbol = docContext.symbols[group.fullName];
-            if (symbol.kind === "module" || symbol.kind === "namespace") {
-              return (
-                <Navigation key={symbol.name} rootSymbolName={group.fullName} />
-              );
+            const decls = docContext.symbols[group.fullName];
+            if (
+              decls.some((x) => x.kind === "module" || x.kind === "namespace")
+            ) {
+              return <Navigation key={i} rootSymbolName={group.fullName} />;
             }
             return (
-              <Item key={group.exportName}>
+              <Item key={i}>
                 <SymbolReference
                   fullName={group.fullName}
                   name={group.exportName}

@@ -113,10 +113,10 @@ const components: ReactMarkdownOptions["components"] = {
       symbols[fullName] &&
       props.node.children.length === 1 &&
       props.node.children[0].type === "text" &&
-      props.node.children[0].value === symbols[fullName].name
+      props.node.children[0].value === symbols[fullName][0].name
     ) {
       return (
-        <SymbolReference name={symbols[fullName].name} fullName={fullName} />
+        <SymbolReference name={symbols[fullName][0].name} fullName={fullName} />
       );
     }
     if (symbols[fullName]) {

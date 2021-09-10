@@ -14,7 +14,12 @@ import {
 import { Params, Type, TypeParams } from "./type";
 
 import * as styles from "./symbol.css";
-import { ClassMember, Parameter, TypeParam } from "../lib/types";
+import {
+  ClassMember,
+  Parameter,
+  SerializedDeclaration,
+  TypeParam,
+} from "../lib/types";
 import { Syntax } from "./syntax";
 import { Indent } from "./indent";
 import { blockSummary } from "./docs.css";
@@ -32,7 +37,7 @@ function ExportedFrom({ fullName }: { fullName: string }) {
     return (
       <SymbolReference
         fullName={fullName}
-        name={docContext.symbols[fullName].name}
+        name={docContext.symbols[fullName][0].name}
       />
     );
   }
@@ -48,39 +53,66 @@ function ExportedFrom({ fullName }: { fullName: string }) {
 export function RenderRootSymbol({ fullName }: { fullName: string }) {
   const { symbols, canonicalExportLocations, goodIdentifiers } =
     useDocsContext();
-  let rootSymbol = symbols[fullName];
+  let decls = symbols[fullName];
   let isExported = false;
   if (canonicalExportLocations[fullName]) {
     isExported = true;
-    rootSymbol = {
-      ...rootSymbol,
+    decls = decls.map((decl) => ({
+      ...decl,
       name: canonicalExportLocations[fullName].exportName,
-    };
+    }));
   }
-  if (rootSymbol.kind === "function") {
+  return (
+    <Fragment>
+      {decls.map((decl, i) => {
+        return (
+          <Declaration
+            key={i}
+            fullName={fullName}
+            isExported={isExported}
+            decl={decl}
+          />
+        );
+      })}
+    </Fragment>
+  );
+}
+
+function Declaration({
+  decl,
+  isExported,
+  fullName,
+}: {
+  decl: SerializedDeclaration;
+  isExported: boolean;
+  fullName: string;
+}) {
+  const { goodIdentifiers, symbols } = useDocsContext();
+
+  if (decl.kind === "function") {
     return (
       <div className={styles.rootSymbolContainer}>
-        <Docs content={rootSymbol.docs} />
+        <Docs content={decl.docs} />
         <Fragment>
           <Syntax kind="keyword">{isExported ? "export " : ""}function </Syntax>
-          <SymbolName name={rootSymbol.name} fullName={fullName} />
-          <TypeParams params={rootSymbol.typeParams} />
-          <Params params={rootSymbol.parameters} />
+          <SymbolName name={decl.name} fullName={fullName} />
+          <TypeParams params={decl.typeParams} />
+          <Params params={decl.parameters} />
           <Syntax kind="colon">: </Syntax>
-          <Type type={rootSymbol.returnType} />
+          <Type type={decl.returnType} />
         </Fragment>
       </div>
     );
   }
-  if (rootSymbol.kind === "module") {
+  if (decl.kind === "module") {
     return (
       <div className={styles.rootSymbolContainer}>
         {isExported ? (
-          <Docs content={rootSymbol.docs} />
+          <Docs content={decl.docs} />
         ) : (
           <Fragment>
-            <h2 className={styles.moduleHeading}>{rootSymbol.name}</h2>
-            <Docs content={rootSymbol.docs} />
+            <h2 className={styles.moduleHeading}>{decl.name}</h2>
+            <Docs content={decl.docs} />
           </Fragment>
         )}
         <SymbolExports id={goodIdentifiers[fullName]}>
@@ -88,7 +120,7 @@ export function RenderRootSymbol({ fullName }: { fullName: string }) {
             {isExported ? (
               <div className={styles.innerExportsHeading}>
                 <Syntax kind="keyword">export * as </Syntax>
-                <SymbolName name={rootSymbol.name} fullName={fullName} />
+                <SymbolName name={decl.name} fullName={fullName} />
                 <Syntax kind="keyword"> from</Syntax>
                 <Syntax kind="bracket">{" {"}</Syntax>
               </div>
@@ -100,7 +132,7 @@ export function RenderRootSymbol({ fullName }: { fullName: string }) {
                   className={styles.moduleSpecifierLink}
                   href={`#${goodIdentifiers[fullName]}`}
                 >
-                  {JSON.stringify(rootSymbol.name)}
+                  {JSON.stringify(decl.name)}
                 </a>
                 <Syntax kind="bracket">{" {"}</Syntax>
               </div>
@@ -115,18 +147,18 @@ export function RenderRootSymbol({ fullName }: { fullName: string }) {
       </div>
     );
   }
-  if (rootSymbol.kind === "variable") {
+  if (decl.kind === "variable") {
     return (
       <div className={styles.rootSymbolContainer}>
-        <Docs content={rootSymbol.docs} />
+        <Docs content={decl.docs} />
         <Fragment>
           <Syntax kind="keyword">
             {isExported ? "export " : ""}
-            {rootSymbol.variableKind}{" "}
+            {decl.variableKind}{" "}
           </Syntax>
-          <SymbolName name={rootSymbol.name} fullName={fullName} />
+          <SymbolName name={decl.name} fullName={fullName} />
           <Syntax kind="colon">: </Syntax>
-          <Type type={rootSymbol.type} />
+          <Type type={decl.type} />
           <Syntax kind="bracket">{" = "}</Syntax>
           <span className={codeFont}>...</span>
         </Fragment>
@@ -134,35 +166,35 @@ export function RenderRootSymbol({ fullName }: { fullName: string }) {
     );
   }
 
-  if (rootSymbol.kind === "unknown") {
+  if (decl.kind === "unknown") {
     return (
       <div className={styles.rootSymbolContainer}>
-        <Docs content={rootSymbol.docs} />
-        <SymbolName name={rootSymbol.name} fullName={fullName} />
+        <Docs content={decl.docs} />
+        <SymbolName name={decl.name} fullName={fullName} />
         <pre className={codeFont}>
-          <code>{rootSymbol.content}</code>
+          <code>{decl.content}</code>
         </pre>
       </div>
     );
   }
 
-  if (rootSymbol.kind === "interface") {
-    const interfaceSymbol = rootSymbol;
+  if (decl.kind === "interface") {
+    const interfaceSymbol = decl;
     return (
       <div className={styles.rootSymbolContainer}>
-        <Docs content={rootSymbol.docs} />
+        <Docs content={decl.docs} />
         <Fragment>
           <Syntax kind="keyword">
             {isExported ? "export " : ""}
             interface{" "}
           </Syntax>
-          <AddNameToScope name={rootSymbol.name} fullName={fullName}>
-            <SymbolName name={rootSymbol.name} fullName={fullName} />
-            <TypeParams params={rootSymbol.typeParams} />
-            {!!rootSymbol.extends.length && (
+          <AddNameToScope name={decl.name} fullName={fullName}>
+            <SymbolName name={decl.name} fullName={fullName} />
+            <TypeParams params={decl.typeParams} />
+            {!!decl.extends.length && (
               <Fragment>
                 <Syntax kind="keyword"> extends </Syntax>
-                {rootSymbol.extends.map((param, i) => {
+                {decl.extends.map((param, i) => {
                   return (
                     <Fragment key={i}>
                       <Type type={param} />
@@ -175,19 +207,19 @@ export function RenderRootSymbol({ fullName }: { fullName: string }) {
               </Fragment>
             )}
             <span className={codeFont}> </span>
-            <Type type={{ kind: "object", members: rootSymbol.members }} />
+            <Type type={{ kind: "object", members: decl.members }} />
           </AddNameToScope>
         </Fragment>
       </div>
     );
   }
 
-  if (rootSymbol.kind === "class") {
-    const classSymbol = rootSymbol;
+  if (decl.kind === "class") {
+    const classSymbol = decl;
     return (
       <div className={styles.rootSymbolContainer}>
-        <Docs content={rootSymbol.docs} />
-        {rootSymbol.willBeComparedNominally && (
+        <Docs content={decl.docs} />
+        {decl.willBeComparedNominally && (
           <p>
             This class has private members, so it it will be compared nominally
             instead of structurally.{" "}
@@ -204,19 +236,19 @@ export function RenderRootSymbol({ fullName }: { fullName: string }) {
             {isExported ? "export " : ""}
             class{" "}
           </Syntax>
-          <AddNameToScope name={rootSymbol.name} fullName={fullName}>
-            <SymbolName name={rootSymbol.name} fullName={fullName} />
-            <TypeParams params={rootSymbol.typeParams} />
+          <AddNameToScope name={decl.name} fullName={fullName}>
+            <SymbolName name={decl.name} fullName={fullName} />
+            <TypeParams params={decl.typeParams} />
             {!!classSymbol.extends && (
               <Fragment>
                 <Syntax kind="keyword"> extends </Syntax>
                 <Type type={classSymbol.extends} />
               </Fragment>
             )}
-            {!!rootSymbol.implements.length && (
+            {!!decl.implements.length && (
               <Fragment>
                 <Syntax kind="keyword"> implements </Syntax>
-                {rootSymbol.implements.map((param, i) => {
+                {decl.implements.map((param, i) => {
                   return (
                     <Fragment key={i}>
                       <Type type={param} />
@@ -230,8 +262,8 @@ export function RenderRootSymbol({ fullName }: { fullName: string }) {
             )}
             <span className={codeFont}> </span>
             <ClassMembers
-              constructors={rootSymbol.constructors}
-              members={rootSymbol.members}
+              constructors={decl.constructors}
+              members={decl.members}
             />
           </AddNameToScope>
         </Fragment>
@@ -239,21 +271,26 @@ export function RenderRootSymbol({ fullName }: { fullName: string }) {
     );
   }
 
-  if (rootSymbol.kind === "enum") {
-    const enumSymbol = rootSymbol;
+  if (decl.kind === "enum") {
+    const enumSymbol = decl;
     return (
       <div className={styles.rootSymbolContainer}>
-        <Docs content={rootSymbol.docs} />
+        <Docs content={decl.docs} />
         <Fragment>
           <Syntax kind="keyword">
             {isExported ? "export " : ""}
-            {rootSymbol.const ? "const " : ""}
+            {decl.const ? "const " : ""}
             enum{" "}
           </Syntax>
-          <SymbolName name={rootSymbol.name} fullName={fullName} />
+          <SymbolName name={decl.name} fullName={fullName} />
           <Syntax kind="bracket">{" { "}</Syntax>
-          {rootSymbol.members.map((memberId, i) => {
-            const member = symbols[memberId];
+          {decl.members.map((memberId, i) => {
+            const members = symbols[memberId];
+            const member = members[0];
+            assert(
+              members.length === 1,
+              "expected enum members to only contain a single enum member"
+            );
             assert(
               member.kind === "enum-member",
               "expected enum to only contain enum members"
@@ -284,17 +321,17 @@ export function RenderRootSymbol({ fullName }: { fullName: string }) {
     );
   }
 
-  if (rootSymbol.kind === "namespace") {
+  if (decl.kind === "namespace") {
     return (
       <div className={styles.rootSymbolContainer}>
-        <Docs content={rootSymbol.docs} />
+        <Docs content={decl.docs} />
         <details open>
           <summary className={blockSummary}>
             <div className={styles.innerExportsHeading}>
               <Syntax kind="keyword">
                 {isExported ? "export " : ""}namespace{" "}
               </Syntax>
-              <SymbolName name={rootSymbol.name} fullName={fullName} />
+              <SymbolName name={decl.name} fullName={fullName} />
               <Syntax kind="bracket">{" {"}</Syntax>
             </div>
           </summary>
@@ -309,23 +346,23 @@ export function RenderRootSymbol({ fullName }: { fullName: string }) {
   }
 
   assert(
-    rootSymbol.kind !== "enum-member",
+    decl.kind !== "enum-member",
     "unexpected enum member outside of enum declaration"
   );
 
   return (
     <div className={styles.rootSymbolContainer}>
-      <Docs content={rootSymbol.docs} />
+      <Docs content={decl.docs} />
       <Fragment>
         <Syntax kind="keyword">
           {isExported ? "export " : ""}
           type{" "}
         </Syntax>
-        <AddNameToScope name={rootSymbol.name} fullName={fullName}>
-          <SymbolName name={rootSymbol.name} fullName={fullName} />
-          <TypeParams params={rootSymbol.typeParams} />
+        <AddNameToScope name={decl.name} fullName={fullName}>
+          <SymbolName name={decl.name} fullName={fullName} />
+          <TypeParams params={decl.typeParams} />
           <span className={codeFont}> = </span>
-          <Type type={rootSymbol.type} />
+          <Type type={decl.type} />
         </AddNameToScope>
       </Fragment>
     </div>
@@ -425,8 +462,10 @@ function Exports({ fullName }: { fullName: string }) {
       {transformedExports.map((exported, i) => {
         if (exported.kind === "canonical") {
           const { exportName, fullName: symbol } = exported;
-          const relatedSymbols = (references[symbol] || []).filter(
-            (thing) => symbols[thing].kind !== "module"
+          const relatedSymbols = (references[symbol] || []).filter((thing) =>
+            symbols[thing].some(
+              (x) => x.kind !== "module" && x.kind !== "namespace"
+            )
           );
           const innerBits = symbolsForInnerBit.get(symbol);
           return (
@@ -444,7 +483,7 @@ function Exports({ fullName }: { fullName: string }) {
                           <SymbolReference
                             key={i}
                             fullName={thing}
-                            name={symbols[thing].name}
+                            name={symbols[thing][0].name}
                           />
                         </li>
                       );

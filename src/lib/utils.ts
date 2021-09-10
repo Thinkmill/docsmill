@@ -1,44 +1,51 @@
-import { SerializedSymbol } from "./types";
+import { SerializedDeclaration } from "./types";
 import { useDocsContext } from "./DocsContext";
+import { assert } from "./assert";
+
+type TransformedExport =
+  | {
+      kind: "external-exports";
+      from: string;
+      version: string;
+      exports: {
+        name: string;
+        id: string;
+      }[];
+    }
+  | {
+      kind: "unknown-exports";
+      exports: string[];
+    }
+  | {
+      kind: "exports";
+      from: string;
+      exports: {
+        sourceName: string;
+        localName: string;
+        fullName: string;
+      }[];
+    }
+  | { kind: "canonical"; exportName: string; fullName: string };
 
 export function useGroupedExports(fullName: string) {
   const { symbols, canonicalExportLocations, externalSymbols } =
     useDocsContext();
-  const rootThing = symbols[fullName];
-  if (rootThing.kind !== "module" && rootThing.kind !== "namespace") {
-    throw new Error("expected module or namespace");
-  }
-  const transformedExports: (
-    | {
-        kind: "external-exports";
-        from: string;
-        version: string;
-        exports: {
-          name: string;
-          id: string;
-        }[];
-      }
-    | {
-        kind: "unknown-exports";
-        exports: string[];
-      }
-    | {
-        kind: "exports";
-        from: string;
-        exports: {
-          sourceName: string;
-          localName: string;
-          fullName: string;
-        }[];
-      }
-    | { kind: "canonical"; exportName: string; fullName: string }
-  )[] = [];
+  const decls = symbols[fullName].filter(
+    (x): x is Extract<typeof x, { kind: "module" | "namespace" }> =>
+      x.kind === "module" || x.kind === "namespace"
+  );
+  assert(
+    decls.length === 1,
+    "expected only 1 module or namespace declaration for a given symbol"
+  );
+  const rootThing = decls[0];
+  const transformedExports: TransformedExport[] = [];
   for (const [exportName, exportedSymbol] of Object.entries(
     rootThing.exports
   )) {
     const _prev = transformedExports[transformedExports.length - 1];
     const prev: typeof _prev | undefined = _prev;
-    if (!symbols[exportedSymbol]) {
+    if (!symbols[exportedSymbol] || !canonicalExportLocations[exportedSymbol]) {
       const external = externalSymbols[exportedSymbol];
       if (!external) {
         if (prev?.kind === "unknown-exports") {
@@ -70,10 +77,11 @@ export function useGroupedExports(fullName: string) {
       });
       continue;
     }
+    const canonicalLocation = canonicalExportLocations[exportedSymbol];
     if (
-      canonicalExportLocations[exportedSymbol] &&
-      canonicalExportLocations[exportedSymbol].exportName === exportName &&
-      canonicalExportLocations[exportedSymbol].parent === fullName
+      canonicalLocation &&
+      canonicalLocation.exportName === exportName &&
+      canonicalLocation.parent === fullName
     ) {
       transformedExports.push({
         kind: "canonical",
@@ -82,7 +90,6 @@ export function useGroupedExports(fullName: string) {
       });
       continue;
     }
-    const canonicalLocation = canonicalExportLocations[exportedSymbol];
     if (prev?.kind === "exports") {
       if (prev.from === canonicalLocation.parent) {
         prev.exports.push({
@@ -92,8 +99,8 @@ export function useGroupedExports(fullName: string) {
         });
         continue;
       }
-      const prevSymbol = symbols[prev.from] as Extract<
-        SerializedSymbol,
+      const prevSymbol = symbols[prev.from][0] as Extract<
+        SerializedDeclaration,
         { kind: "module" }
       >;
       if (prevSymbol) {

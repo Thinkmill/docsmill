@@ -123,8 +123,10 @@ export function SymbolReference({
     return <span className={styles.unknownExternalReference}>{name}</span>;
   }
 
-  const symbol = symbols[fullName];
-  const firstDocsBit = splitDocs(symbol.docs).first;
+  const decls = symbols[fullName];
+  const firstDocsBit = splitDocs(
+    decls.find((x) => !!x.docs.length)?.docs || ""
+  ).first;
 
   const isRootSymbol = rootSymbols.has(fullName);
 
@@ -136,7 +138,7 @@ export function SymbolReference({
     href: `#${goodIdentifiers[fullName]}`,
     children: isRootSymbol ? JSON.stringify(name) : name,
   };
-  if (symbols[fullName].kind === "unknown") {
+  if (symbols[fullName][0].kind === "unknown") {
     props.style = { color: "red" };
   }
 
@@ -166,7 +168,7 @@ export function SymbolReference({
         <Syntax kind="bracket">(</Syntax>
         <SymbolReference
           fullName={canonicalExportLocation.parent}
-          name={symbols[canonicalExportLocation.parent].name}
+          name={symbols[canonicalExportLocation.parent][0].name}
         />
         <Syntax kind="bracket">)</Syntax>.{inner}
       </span>

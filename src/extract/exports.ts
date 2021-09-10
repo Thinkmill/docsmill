@@ -33,14 +33,15 @@ function collectImportableSymbolsFromModuledNode(
     }
     const exportLocations = state.get(symbol)!;
     exportLocations.set(moduledNode, exportName);
-
-    if (
-      decl instanceof SourceFile ||
-      (decl instanceof ModuleDeclaration &&
-        decl.getDeclarationKind() === ModuleDeclarationKind.Namespace)
-    ) {
-      // need to see if this can be circular
-      collectImportableSymbolsFromModuledNode(decl, state);
+    for (const decl of decls) {
+      if (
+        decl instanceof SourceFile ||
+        (decl instanceof ModuleDeclaration &&
+          decl.getDeclarationKind() === ModuleDeclarationKind.Namespace)
+      ) {
+        // need to see if this can be circular
+        collectImportableSymbolsFromModuledNode(decl, state);
+      }
     }
   }
 }

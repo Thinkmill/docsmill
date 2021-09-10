@@ -10,7 +10,7 @@ export type Parameter = {
   kind: "optional" | "rest" | "normal";
 };
 
-export type SerializedSymbol =
+export type SerializedDeclaration =
   | {
       kind: "function";
       name: string;

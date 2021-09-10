@@ -7,13 +7,17 @@ import {
   getSymbolsForInnerBitsAndGoodIdentifiers,
   collectEntrypointsOfPackage,
 } from "./utils";
-import { SerializedSymbol } from "../lib/types";
+import { SerializedDeclaration } from "../lib/types";
 import { convertDeclaration } from "./convert-declaration";
+import { assert } from "console";
 
 function getInitialState() {
   return {
     rootSymbols: new Map<Symbol, string>(),
-    publicSymbols: new Map<Symbol, SerializedSymbol>(),
+    publicSymbols: new Map<
+      Symbol,
+      [SerializedDeclaration, ...SerializedDeclaration[]]
+    >(),
     symbolsQueue: new Set<Symbol>(),
     symbolsToSymbolsWhichReferenceTheSymbol: new Map<Symbol, Set<Symbol>>(),
     currentlyVistedSymbol: undefined as Symbol | undefined,
@@ -48,7 +52,7 @@ export function collectSymbol(symbol: Symbol) {
     state.referencedExternalSymbols.add(symbol);
     return;
   }
-  if (state.currentlyVistedSymbol) {
+  if (state.currentlyVistedSymbol && symbol !== state.currentlyVistedSymbol) {
     if (!state.symbolsToSymbolsWhichReferenceTheSymbol.has(symbol)) {
       state.symbolsToSymbolsWhichReferenceTheSymbol.set(symbol, new Set());
     }
@@ -63,7 +67,7 @@ export function collectSymbol(symbol: Symbol) {
 export type DocInfo = {
   packageName: string;
   rootSymbols: string[];
-  accessibleSymbols: { [k: string]: SerializedSymbol };
+  accessibleSymbols: { [k: string]: SerializedDeclaration[] };
   symbolReferences: { [k: string]: string[] };
   canonicalExportLocations: {
     [k: string]: readonly [exportName: string, fileSymbolId: string];
@@ -188,7 +192,18 @@ function resolveSymbolQueue() {
     const symbol: Symbol = state.symbolsQueue.values().next().value;
     state.symbolsQueue.delete(symbol);
     state.currentlyVistedSymbol = symbol;
-    const decl = symbol.getDeclarations()[0];
-    state.publicSymbols.set(symbol, convertDeclaration(decl));
+    const decls = symbol.getDeclarations();
+    assert(
+      decls.length >= 1,
+      "symbols in symbol queue must have at least one declaration"
+    );
+
+    state.publicSymbols.set(
+      symbol,
+      decls.map((decl) => convertDeclaration(decl)) as [
+        SerializedDeclaration,
+        ...SerializedDeclaration[]
+      ]
+    );
   }
 }
