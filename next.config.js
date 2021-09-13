@@ -33,17 +33,4 @@ const withBundleAnalyzer =
 
 module.exports = withBundleAnalyzer({
   enabled: process.env.ANALYZE === "true",
-})(
-  withVanillaExtract({
-    async rewrites() {
-      return {
-        beforeFiles: [
-          {
-            source: "/npm/:pkg((?!@?[^@]+@\\d+\\.\\d+\\.\\d+[a-zA-Z0-9-]*).*)",
-            destination: "/api/version-redirect",
-          },
-        ],
-      };
-    },
-  })
-);
+})(withVanillaExtract({}));

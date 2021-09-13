@@ -3,12 +3,12 @@ import {
   GetStaticPropsContext,
   GetStaticPathsResult,
   InferGetStaticPropsType,
+  GetStaticPropsResult,
 } from "next";
 import * as semver from "semver";
 
 import { Root } from "../../components/root";
-import { useEffect, useMemo } from "react";
-import { useRouter } from "next/router";
+import { useMemo } from "react";
 import { resolveToPackageVersion } from "../../extract/utils";
 import {
   getPackageMetadata,
@@ -20,42 +20,29 @@ import { DocInfo } from "../../extract";
 export default function Npm(
   _props: InferGetStaticPropsType<typeof getStaticProps>
 ) {
-  const props = useMemo(() => {
-    if (_props.kind === "package") {
-      if (typeof _props.data === "object") {
-        return { kind: "package" as const, data: _props.data };
-      }
-      const decompressed = decompressFromUTF16(_props.data);
-      if (decompressed === null) {
-        throw new Error("decompression failed");
-      }
-      return {
-        kind: "package" as const,
-        data: JSON.parse(decompressed) as DocInfo,
-      };
+  const data = useMemo(() => {
+    if (typeof _props.data === "object") {
+      return _props.data;
     }
-    return _props;
+    const decompressed = decompressFromUTF16(_props.data);
+    if (decompressed === null) {
+      throw new Error("decompression failed");
+    }
+    return JSON.parse(decompressed) as DocInfo;
   }, [_props]);
-  const router = useRouter();
-  useEffect(() => {
-    if (props.kind === "redirect") {
-      router.push(props.to);
-    }
-  }, [props, router]);
-  if (props.kind === "redirect") {
-    return "Loading...";
-  }
-  if (props.kind === "not-found") {
-    return "This package does not exist";
-  }
-  return <Root {...props.data} />;
+
+  return <Root {...data} />;
 }
 
 export function getStaticPaths(): GetStaticPathsResult {
   return { paths: [], fallback: "blocking" };
 }
 
-export async function getStaticProps({ params }: GetStaticPropsContext) {
+export async function getStaticProps({
+  params,
+}: GetStaticPropsContext): Promise<
+  GetStaticPropsResult<{ data: DocInfo | string }>
+> {
   const query: string = (params as any).pkg.join("/");
   const [, pkgName, specifier] = query.match(/^(@?[^@]+)(?:@(.+))?/)!;
   try {
@@ -63,7 +50,11 @@ export async function getStaticProps({ params }: GetStaticPropsContext) {
       const pkg = await getPackageMetadata(pkgName);
       const version = resolveToPackageVersion(pkg, specifier);
       return {
-        props: { kind: "redirect" as const, to: `/npm/${pkgName}@${version}` },
+        redirect: {
+          permanent: false,
+          destination: `/npm/${pkgName}@${version}`,
+        },
+        revalidate: 60 * 20,
       };
     }
 
@@ -84,15 +75,12 @@ export async function getStaticProps({ params }: GetStaticPropsContext) {
       data = compressToUTF16(stringified);
     }
     return {
-      props: {
-        data,
-        kind: "package" as const,
-      },
+      props: { data },
       revalidate: 60 * 60,
     };
   } catch (err) {
     if (err instanceof PackageNotFoundError) {
-      return { props: { kind: "not-found" as const } };
+      return { notFound: true } as const;
     }
     throw err;
   }
