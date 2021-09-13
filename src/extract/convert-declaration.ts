@@ -20,7 +20,7 @@ import {
   TypeAliasDeclaration,
   VariableDeclaration,
 } from "ts-morph";
-import { addExportedSymbol, collectSymbol, getRootSymbolName } from ".";
+import { collectSymbol, getRootSymbolName } from ".";
 import { ClassMember, SerializedDeclaration } from "../lib/types";
 import { convertTypeNode } from "./convert-node";
 import { _convertType } from "./convert-type";
@@ -289,7 +289,6 @@ function collectExportsFromModule(moduledDecl: ModuledNode) {
     }
     let innerSymbol = decl.getSymbolOrThrow();
     innerSymbol = innerSymbol.getAliasedSymbol() || innerSymbol;
-    addExportedSymbol(innerSymbol);
     collectSymbol(innerSymbol);
     exports[exportName] = getSymbolIdentifier(innerSymbol);
   }

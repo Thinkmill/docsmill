@@ -21,14 +21,10 @@ function getInitialState() {
     symbolsQueue: new Set<Symbol>(),
     symbolsToSymbolsWhichReferenceTheSymbol: new Map<Symbol, Set<Symbol>>(),
     currentlyVistedSymbol: undefined as Symbol | undefined,
-    exportedSymbols: new Set<Symbol>(),
+    // exportedSymbols: new Set<Symbol>(),
     referencedExternalSymbols: new Set<Symbol>(),
     pkgDir: "",
   };
-}
-
-export function addExportedSymbol(symbol: Symbol) {
-  state.exportedSymbols.add(symbol);
 }
 
 export function getRootSymbolName(symbol: Symbol) {
