@@ -16,6 +16,7 @@ import {
   PropertyDeclaration,
   PropertySignature,
   SourceFile,
+  StringLiteral,
   ts,
   TypeAliasDeclaration,
   VariableDeclaration,
@@ -61,7 +62,11 @@ export function convertDeclaration(decl: Node): SerializedDeclaration {
         : _convertType(decl.getReturnType(), 0),
     };
   }
-  if (decl instanceof SourceFile) {
+  if (
+    decl instanceof SourceFile ||
+    (decl instanceof ModuleDeclaration &&
+      decl.getDeclarationKind() === ModuleDeclarationKind.Module)
+  ) {
     let jsDocs = getJsDocsFromSourceFile(decl);
 
     // if you have a file that re-exports _everything_ from somewhere else
@@ -88,7 +93,11 @@ export function convertDeclaration(decl: Node): SerializedDeclaration {
 
     return {
       kind: "module",
-      name: getRootSymbolName(decl.getSymbolOrThrow()) || decl.getFilePath(),
+      name:
+        getRootSymbolName(decl.getSymbolOrThrow()) ||
+        (decl instanceof ModuleDeclaration
+          ? (decl.getNameNodes() as StringLiteral).getLiteralValue()
+          : decl.getFilePath()),
       docs: getDocsFromJSDocNodes(jsDocs),
       exports: collectExportsFromModule(decl),
     };
@@ -295,7 +304,7 @@ function collectExportsFromModule(moduledDecl: ModuledNode) {
   return exports;
 }
 
-function getJsDocsFromSourceFile(decl: SourceFile) {
+function getJsDocsFromSourceFile(decl: Node) {
   const jsDocs: JSDoc[] = [];
   decl.forEachChild((node) => {
     if (!!(node.compilerNode as any).jsDoc) {

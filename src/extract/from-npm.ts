@@ -4,6 +4,8 @@ import {
   ts,
   Symbol,
   SourceFile,
+  ModuleDeclaration,
+  StringLiteral,
 } from "ts-morph";
 import fetch from "node-fetch";
 import semver from "semver";
@@ -13,6 +15,7 @@ import getNpmTarballUrl from "get-npm-tarball-url";
 import { DocInfo, getDocsInfo } from ".";
 import { collectEntrypointsOfPackage, resolveToPackageVersion } from "./utils";
 import { getPackageMetadata } from "./fetch-package-metadata";
+import { assert } from "../lib/assert";
 
 async function handleTarballStream(tarballStream: NodeJS.ReadableStream) {
   const extract = tarballStream.pipe(gunzip()).pipe(tar.extract());
@@ -213,8 +216,23 @@ export async function getPackage(
   );
 
   const rootSymbols = new Map<Symbol, string>();
+
+  for (const module of project.getTypeChecker().getAmbientModules()) {
+    const decl = module.getDeclarations()[0];
+    assert(
+      decl instanceof ModuleDeclaration,
+      "expected module declaration on ambient module symbol"
+    );
+    const nameNode = decl.getNameNodes();
+    assert(
+      nameNode instanceof StringLiteral,
+      "expected module declaration from ambient module symbol to have string literal name node"
+    );
+    rootSymbols.set(module, nameNode.getLiteralValue());
+  }
   for (const [entrypoint, resolved] of entrypoints) {
     const sourceFile = project.getSourceFile(resolved);
+    sourceFile.is
     const sourceFileSymbol = sourceFile?.getSymbol();
     if (sourceFileSymbol) {
       rootSymbols.set(sourceFileSymbol, entrypoint);
