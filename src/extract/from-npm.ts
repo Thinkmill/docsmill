@@ -232,7 +232,6 @@ export async function getPackage(
   }
   for (const [entrypoint, resolved] of entrypoints) {
     const sourceFile = project.getSourceFile(resolved);
-    sourceFile.is
     const sourceFileSymbol = sourceFile?.getSymbol();
     if (sourceFileSymbol) {
       rootSymbols.set(sourceFileSymbol, entrypoint);
