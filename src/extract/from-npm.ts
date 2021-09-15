@@ -207,7 +207,8 @@ export async function getPackage(
         rootSymbols,
         pkgPath,
         dep,
-        version
+        version,
+        project
       );
       for (const [symbolId, identifier] of Object.entries(goodIdentifiers)) {
         externalPackages.set(symbolId, { version, pkg: dep, id: identifier });
@@ -239,8 +240,13 @@ export async function getPackage(
   }
 
   return {
-    ...getDocsInfo(rootSymbols, pkgPath, pkgName, version, (symbolId) =>
-      externalPackages.get(symbolId)
+    ...getDocsInfo(
+      rootSymbols,
+      pkgPath,
+      pkgName,
+      version,
+      project,
+      (symbolId) => externalPackages.get(symbolId)
     ),
     versions: [...versions].reverse(),
   };

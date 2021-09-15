@@ -91,58 +91,67 @@ export function convertTypeNode(node: TypeNode): SerializedType {
       node.getExpression() as EntityName
     );
   }
+  const compilerNode = node.compilerNode;
 
-  if (TypeNode.isAnyKeyword(node)) {
+  if (compilerNode.kind === ts.SyntaxKind.AnyKeyword) {
     return { kind: "intrinsic", value: "any" };
   }
-  if (TypeNode.isUndefinedKeyword(node)) {
+  if (compilerNode.kind === ts.SyntaxKind.UndefinedKeyword) {
     return { kind: "intrinsic", value: "undefined" };
   }
-  if (TypeNode.isSymbolKeyword(node)) {
+  if (compilerNode.kind === ts.SyntaxKind.SymbolKeyword) {
     return { kind: "intrinsic", value: "symbol" };
   }
-  if (TypeNode.isNeverKeyword(node)) {
+  if (compilerNode.kind === ts.SyntaxKind.NeverKeyword) {
     return { kind: "intrinsic", value: "never" };
   }
-  if (TypeNode.isBooleanKeyword(node)) {
+  if (compilerNode.kind === ts.SyntaxKind.BooleanKeyword) {
     return { kind: "intrinsic", value: "boolean" };
   }
-  if (TypeNode.isObjectKeyword(node)) {
+  if (compilerNode.kind === ts.SyntaxKind.ObjectKeyword) {
     return { kind: "intrinsic", value: "object" };
   }
-  if (TypeNode.isStringKeyword(node)) {
+  if (compilerNode.kind === ts.SyntaxKind.StringKeyword) {
     return { kind: "intrinsic", value: "string" };
   }
-  if (TypeNode.isNumberKeyword(node)) {
+  if (compilerNode.kind === ts.SyntaxKind.NumberKeyword) {
     return { kind: "intrinsic", value: "number" };
   }
-  if (TypeNode.is(ts.SyntaxKind.VoidKeyword)(node as any)) {
+  if (compilerNode.kind === ts.SyntaxKind.VoidKeyword) {
     return { kind: "intrinsic", value: "void" };
   }
-  if (TypeNode.is(ts.SyntaxKind.UnknownKeyword)(node as any)) {
+  if (compilerNode.kind === ts.SyntaxKind.UnknownKeyword) {
     return { kind: "intrinsic", value: "unknown" };
   }
+  if (compilerNode.kind === ts.SyntaxKind.BigIntKeyword) {
+    return { kind: "intrinsic", value: "bigint" };
+  }
+  if (compilerNode.kind === ts.SyntaxKind.IntrinsicKeyword) {
+    return { kind: "intrinsic", value: "intrinsic" };
+  }
 
-  if (TypeNode.isLiteralTypeNode(node)) {
-    const literal = node.getLiteral();
-    if (TypeNode.isNullLiteral(literal)) {
+  if (ts.isThisTypeNode(compilerNode)) {
+    return { kind: "intrinsic", value: "this" };
+  }
+
+  if (ts.isLiteralTypeNode(compilerNode)) {
+    const literal = compilerNode.literal;
+    if (literal.kind === ts.SyntaxKind.NullKeyword) {
       return { kind: "intrinsic", value: "null" };
     }
-    if (TypeNode.isStringLiteral(literal)) {
-      const value = literal.getLiteralValue();
-      return { kind: "string-literal", value };
+    if (ts.isStringLiteral(literal)) {
+      return { kind: "string-literal", value: literal.text };
     }
-    if (TypeNode.isNumericLiteral(literal)) {
-      const value = literal.getLiteralValue();
-      return { kind: "numeric-literal", value };
+    if (ts.isNumericLiteral(literal)) {
+      return { kind: "numeric-literal", value: Number(literal.text) };
     }
-    if (TypeNode.isBigIntLiteral(literal)) {
-      return { kind: "bigint-literal", value: literal.getText() };
+    if (ts.isBigIntLiteral(literal)) {
+      return { kind: "bigint-literal", value: literal.text };
     }
-    if (TypeNode.isTrueLiteral(literal)) {
+    if (literal.kind === ts.SyntaxKind.TrueKeyword) {
       return { kind: "intrinsic", value: "true" };
     }
-    if (TypeNode.isFalseLiteral(literal)) {
+    if (literal.kind === ts.SyntaxKind.FalseKeyword) {
       return { kind: "intrinsic", value: "false" };
     }
   }
@@ -330,8 +339,9 @@ export function convertTypeNode(node: TypeNode): SerializedType {
     };
   }
 
-  if (TypeNode.isThisTypeNode(node)) {
-    return { kind: "intrinsic", value: "this" };
-  }
-  return { kind: "raw", value: node.getText(), tsKind: node.getKindName() };
+  return {
+    kind: "raw",
+    value: compilerNode.getText(),
+    tsKind: ts.SyntaxKind[compilerNode.kind],
+  };
 }

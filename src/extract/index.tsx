@@ -23,7 +23,12 @@ function getInitialState() {
     currentlyVistedSymbol: undefined as Symbol | undefined,
     referencedExternalSymbols: new Set<Symbol>(),
     pkgDir: "",
+    project: undefined as unknown as Project,
   };
+}
+
+export function getProject() {
+  return state.project;
 }
 
 export function getRootSymbolName(symbol: Symbol) {
@@ -79,6 +84,7 @@ export function getDocsInfo(
   pkgDir: string,
   packageName: string,
   currentVersion: string,
+  project: Project,
   getExternalReference: (
     symbolId: string
   ) => { pkg: string; version: string; id: string } | undefined = () =>
@@ -88,6 +94,7 @@ export function getDocsInfo(
   state.rootSymbols = rootSymbols;
   state.symbolsQueue = new Set(rootSymbols.keys());
   state.pkgDir = pkgDir;
+  state.project = project;
 
   resolveSymbolQueue();
 
@@ -153,33 +160,13 @@ export function getDocsInfo(
   };
 }
 
-export async function getInfo({
-  tsConfigFilePath,
-  packagePath,
-}: {
-  tsConfigFilePath: string;
-  packagePath: string;
-}) {
+export async function getInfo(filename: string) {
   let project = new Project({
-    tsConfigFilePath,
+    tsConfigFilePath: "./tsconfig.json",
   });
-  const pkgPath = path.resolve(packagePath);
-  const pkgJson = JSON.parse(
-    await project.getFileSystem().readFile(`${pkgPath}/package.json`)
-  );
-
-  const entrypoints = await collectEntrypointsOfPackage(
-    project,
-    pkgJson.name,
-    pkgPath
-  );
-  const rootSymbols = new Map<Symbol, string>();
-  for (const [filepath, entrypointName] of Object.entries(entrypoints)) {
-    const sourceFile = project.getSourceFileOrThrow(filepath);
-    const symbol = sourceFile.getSymbolOrThrow();
-    rootSymbols.set(symbol, entrypointName);
-  }
-  return getDocsInfo(rootSymbols, pkgPath, pkgJson.name, pkgJson.version);
+  const sourceFile = project.getSourceFileOrThrow(path.resolve(filename));
+  const rootSymbols = new Map([[sourceFile.getSymbolOrThrow(), "test"]]);
+  return getDocsInfo(rootSymbols, ".", "test", "0.0.0", project);
 }
 
 function resolveSymbolQueue() {
