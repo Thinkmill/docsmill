@@ -12,6 +12,7 @@ import { Markdown } from "./markdown";
 import { Syntax } from "./syntax";
 import * as styles from "./symbol-references.css";
 import { Tooltip } from "./tooltip";
+import Link from "next/link";
 
 const NamesInScopeContext = createContext<Map<string, SymbolId>>(new Map());
 
@@ -96,19 +97,15 @@ export function SymbolReference({
       <span className={codeFont}>
         <Syntax kind="keyword">import</Syntax>
         <Syntax kind="bracket">(</Syntax>
-        <a
-          className={styles.rootSymbolReference}
-          href={`/npm/${external.pkg}@${external.version}`}
-        >
-          {JSON.stringify(pkgDisplayName)}
-        </a>
+        <Link href={`/npm/${external.pkg}@${external.version}`}>
+          <a className={styles.rootSymbolReference}>
+            {JSON.stringify(pkgDisplayName)}
+          </a>
+        </Link>
         <Syntax kind="bracket">)</Syntax>.
-        <a
-          className={styles.nonRootSymbolReference}
-          href={`/npm/${external.pkg}@${external.version}#${external.id}`}
-        >
-          {name}
-        </a>
+        <Link href={`/npm/${external.pkg}@${external.version}#${external.id}`}>
+          <a className={styles.nonRootSymbolReference}>{name}</a>
+        </Link>
       </span>
     );
   }

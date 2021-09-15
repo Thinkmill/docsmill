@@ -12,7 +12,7 @@ export default function Index() {
       }}
     >
       <div style={{ maxWidth: 600, flex: 1 }}>
-        <PackageSearch />
+        <PackageSearch autoFocus />
       </div>
     </div>
   );

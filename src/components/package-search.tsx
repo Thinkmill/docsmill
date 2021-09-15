@@ -6,7 +6,7 @@ import {
   getAlgoliaResults,
 } from "@algolia/autocomplete-js";
 import algoliasearch from "algoliasearch";
-import { createElement, useEffect, useRef, Fragment } from "react";
+import { createElement, useEffect, useRef, Fragment, useMemo } from "react";
 import { render } from "react-dom";
 import {
   NPM_SEARCH_ALGOLIA_API_KEY,
@@ -20,12 +20,17 @@ import { useRouter } from "next/router";
 
 const searchClient = algoliasearch(
   NPM_SEARCH_ALGOLIA_APP_ID,
-  NPM_SEARCH_ALGOLIA_API_KEY
+  NPM_SEARCH_ALGOLIA_API_KEY,
+  // this avoids preflight requests
+  { authMode: 0 }
 );
 
-export function Autocomplete<TItem extends BaseItem>(
-  props: Omit<AutocompleteOptions<TItem>, "container" | "renderer" | "render">
-) {
+export function Autocomplete<TItem extends BaseItem>({
+  apiRef,
+  ...props
+}: Omit<AutocompleteOptions<TItem>, "container" | "renderer" | "render"> & {
+  apiRef?: (val: AutocompleteApi<TItem> | null) => void;
+}) {
   const containerRef = useRef(null);
   const searchRef = useRef<AutocompleteApi<TItem> | null>(null);
 
@@ -50,103 +55,126 @@ export function Autocomplete<TItem extends BaseItem>(
 
   useEffect(() => {
     searchRef.current?.update(props);
+    apiRef?.(searchRef.current);
   });
 
   return <div ref={containerRef} />;
 }
 
-export function PackageSearch() {
+type Item = {
+  name: string;
+  tags: { latest: string; [key: string]: string };
+  _highlightResult?: {};
+  types: {
+    ts: false | "included" | "definitely-typed";
+  };
+};
+
+export function PackageSearch({ autoFocus }: { autoFocus?: boolean }) {
   const router = useRouter();
+  const apiRef = useRef<AutocompleteApi<Item> | null>(null);
   return (
     <div style={{ display: "flex" }}>
       <span style={{ flex: 1 }}>
-        <Autocomplete<{
-          name: string;
-          tags: { latest: string; [key: string]: string };
-          _highlightResult?: {};
-          types: {
-            ts: false | "included" | "definitely-typed";
-          };
-        }>
-          placeholder={"Search for an npm package"}
-          getSources={({ query }) => [
-            {
-              sourceId: "packages",
-              getItems() {
-                return getAlgoliaResults({
-                  searchClient,
-                  queries: [
-                    {
-                      indexName: NPM_SEARCH_ALGOLIA_INDEX,
-                      query,
-                      params: {
-                        hitsPerPage: 10,
-                        // these are purely optimisations to reduce the amount that's downloaded
-                        // you can temporarily remove them to see all the data
-                        attributesToRetrieve: ["name", "tags", "types"],
-                        attributesToHighlight: ["name"],
-                      },
+        {useMemo(
+          () => (
+            <Autocomplete<Item>
+              placeholder={"Search for an npm package"}
+              getSources={({ query, setQuery, setStatus }) => [
+                {
+                  sourceId: "packages",
+                  getItems() {
+                    return getAlgoliaResults({
+                      searchClient,
+                      queries: [
+                        {
+                          indexName: NPM_SEARCH_ALGOLIA_INDEX,
+                          query,
+                          params: {
+                            hitsPerPage: 10,
+                            // these are purely optimisations to reduce the amount that's downloaded
+                            // you can temporarily remove them to see all the data
+                            attributesToRetrieve: ["name", "tags", "types"],
+                            attributesToHighlight: ["name"],
+                          },
+                        },
+                      ],
+                    });
+                  },
+                  onSelect(item) {
+                    setStatus("stalled");
+                    router.push(item.itemUrl!).then((x) => {
+                      setQuery("");
+                      setStatus("idle");
+                      (document.activeElement as any)?.blur();
+                    });
+                  },
+                  getItemUrl({ item }) {
+                    return `/npm/${item.name}@${item.tags.latest}`;
+                  },
+                  templates: {
+                    footer() {
+                      return attribution;
                     },
-                  ],
-                });
-              },
-              onSelect(item) {
-                router.push(item.itemUrl!);
-              },
-              getItemUrl({ item }) {
-                return `/npm/${item.name}@${item.tags.latest}`;
-              },
-              templates: {
-                footer() {
-                  return attribution;
-                },
-                item({ item }) {
-                  const parsedHighlight = parseAlgoliaHitHighlight({
-                    hit: item,
-                    attribute: "name",
-                  });
-                  return (
-                    <div className={styles.searchItem}>
-                      <div>
-                        <span>
-                          {parsedHighlight.map((part, i) => {
-                            return (
-                              <span
-                                className={
-                                  part.isHighlighted
-                                    ? styles.highlightedPart
-                                    : undefined
-                                }
-                                key={i}
-                              >
-                                {part.value}
-                              </span>
-                            );
-                          })}
-                        </span>
-                        <div>
-                          <small>{item.tags.latest}</small>
+
+                    item({ item }) {
+                      const parsedHighlight = parseAlgoliaHitHighlight({
+                        hit: item,
+                        attribute: "name",
+                      });
+                      return (
+                        <div className={styles.searchItem}>
+                          <div>
+                            <span>
+                              {parsedHighlight.map((part, i) => {
+                                return (
+                                  <span
+                                    className={
+                                      part.isHighlighted
+                                        ? styles.highlightedPart
+                                        : undefined
+                                    }
+                                    key={i}
+                                  >
+                                    {part.value}
+                                  </span>
+                                );
+                              })}
+                            </span>
+                            <div>
+                              <small>{item.tags.latest}</small>
+                            </div>
+                          </div>
+                          <span>
+                            {item.types.ts === "included"
+                              ? "Included Types"
+                              : item.types.ts === "definitely-typed"
+                              ? "DefinitelyTyped"
+                              : "No Types"}
+                          </span>
                         </div>
-                      </div>
-                      <span>
-                        {item.types.ts === "included"
-                          ? "Included Types"
-                          : item.types.ts === "definitely-typed"
-                          ? "DefinitelyTyped"
-                          : "No Types"}
-                      </span>
-                    </div>
-                  );
+                      );
+                    },
+                  },
                 },
-              },
-            },
-          ]}
-          navigator={{
-            navigate({ itemUrl }) {
-              router.push(itemUrl);
-            },
-          }}
-        />
+              ]}
+              navigator={{
+                navigate({ itemUrl }) {
+                  apiRef.current?.setStatus("stalled");
+                  router.push(itemUrl).then(() => {
+                    apiRef.current?.setQuery("");
+                    apiRef.current?.setStatus("idle");
+                  });
+                },
+              }}
+              autoFocus={autoFocus}
+              apiRef={(val) => {
+                apiRef.current = val;
+              }}
+            />
+          ),
+          [router.push]
+        )}
       </span>
     </div>
   );

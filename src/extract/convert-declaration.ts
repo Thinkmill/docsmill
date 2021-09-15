@@ -276,7 +276,7 @@ function collectExportsFromModule(moduledDecl: ModuledNode) {
     const decl = exportedDeclarations[0];
     if (!decl) {
       console.log(
-        `could not declaration for export ${exportName} in ${
+        `no declarations for export ${exportName} in ${
           moduledDecl instanceof SourceFile
             ? moduledDecl.getFilePath()
             : moduledDecl instanceof ModuleDeclaration

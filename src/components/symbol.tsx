@@ -24,6 +24,7 @@ import { Syntax } from "./syntax";
 import { Indent } from "./indent";
 import * as symbolReferenceStyles from "./symbol-references.css";
 import { a } from "./markdown.css";
+import Link from "next/link";
 
 function SymbolAnchor({
   fullName,
@@ -571,12 +572,15 @@ function Exports({ fullName }: { fullName: string }) {
                 {exported.exports.map((exportInfo) => {
                   return (
                     <div key={exportInfo.name}>
-                      <a
-                        href={`/npm/${exported.from}@${exported.version}`}
-                        className={symbolReferenceStyles.nonRootSymbolReference}
-                      >
-                        {exportInfo.name}
-                      </a>
+                      <Link href={`/npm/${exported.from}@${exported.version}`}>
+                        <a
+                          className={
+                            symbolReferenceStyles.nonRootSymbolReference
+                          }
+                        >
+                          {exportInfo.name}
+                        </a>
+                      </Link>
                       ,
                     </div>
                   );
@@ -584,12 +588,11 @@ function Exports({ fullName }: { fullName: string }) {
               </Indent>
               <Syntax kind="bracket">{" } "}</Syntax>
               <Syntax kind="keyword">from </Syntax>
-              <a
-                href={`/npm/${exported.from}@${exported.version}`}
-                className={symbolReferenceStyles.rootSymbolReference}
-              >
-                {JSON.stringify(exported.from)}
-              </a>
+              <Link href={`/npm/${exported.from}@${exported.version}`}>
+                <a className={symbolReferenceStyles.rootSymbolReference}>
+                  {JSON.stringify(exported.from)}
+                </a>
+              </Link>
             </div>
           );
         }
