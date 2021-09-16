@@ -236,11 +236,27 @@ export function Type({ type }: { type: SerializedType }): JSX.Element {
       <Fragment>
         <span className={codeFont}>{"{ "}</span>
         <Indent>
+          {type.readonly === -1 && <Syntax kind="bracket">-</Syntax>}
+          {type.readonly !== 0 && (
+            <Fragment>
+              <Syntax kind="keyword">readonly </Syntax>
+            </Fragment>
+          )}
           <span className={codeFont}>
             [<Syntax kind="parameter">{type.param.name} </Syntax>
             <Syntax kind="keyword">in </Syntax>
           </span>
-          <Type type={type.param.constraint} />]<Syntax kind="colon">: </Syntax>
+          <Type type={type.param.constraint} />
+          {type.as && (
+            <Fragment>
+              <Syntax kind="keyword"> as </Syntax>
+              <Type type={type.as} />
+            </Fragment>
+          )}
+          <Syntax kind="bracket">
+            ]{type.optional === 1 ? "?" : type.optional === -1 ? "-?" : ""}
+          </Syntax>
+          <Syntax kind="colon">: </Syntax>
           <Type type={type.type} />
           <span className={codeFont}>;</span>
         </Indent>
@@ -288,6 +304,25 @@ export function Type({ type }: { type: SerializedType }): JSX.Element {
       </Fragment>
     );
   }
+  if (type.kind === "template") {
+    return (
+      <Fragment>
+        <Syntax kind="string">`{type.head}</Syntax>
+        {type.rest.map((element) => {
+          return (
+            <Fragment>
+              <Syntax kind="colon">{"${"}</Syntax>
+              <Type type={element.type} />
+              <Syntax kind="colon">{"}"}</Syntax>
+              <Syntax kind="string">{element.text}</Syntax>
+            </Fragment>
+          );
+        })}
+        <Syntax kind="string">`</Syntax>
+      </Fragment>
+    );
+  }
+
   return (
     <span className={codeFont} style={{ color: "red" }}>
       {type.value}

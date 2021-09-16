@@ -190,6 +190,9 @@ export type SerializedType =
       kind: "mapped";
       param: { name: string; constraint: SerializedType };
       type: SerializedType;
+      as: SerializedType | null;
+      readonly: -1 | 0 | 1;
+      optional: -1 | 0 | 1;
     }
   | {
       kind: "signature";
@@ -209,5 +212,10 @@ export type SerializedType =
       param: string;
       /** This can be optional for `asserts condition` where `condition` is a param */
       type?: SerializedType;
+    }
+  | {
+      kind: "template";
+      head: string;
+      rest: { type: SerializedType; text: string }[];
     }
   | { kind: "raw"; value: string; tsKind?: string };

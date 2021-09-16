@@ -1,6 +1,7 @@
 import {
   ArrowFunction,
   ClassDeclaration,
+  ClassStaticBlockDeclaration,
   ConstructorDeclaration,
   EnumDeclaration,
   EnumMember,
@@ -165,12 +166,13 @@ export function convertDeclaration(decl: Node): SerializedDeclaration {
       implements: decl.getImplements().map((x) => convertTypeNode(x)),
       willBeComparedNominally: decl
         .getMembers()
-        .some(
-          (member) =>
-            member.hasModifier("private") ||
-            member.hasModifier("protected") ||
-            (!(member instanceof ConstructorDeclaration) &&
-              member.getNameNode() instanceof PrivateIdentifier)
+        .some((member) =>
+          member instanceof ClassStaticBlockDeclaration
+            ? false
+            : member.hasModifier("private") ||
+              member.hasModifier("protected") ||
+              (!(member instanceof ConstructorDeclaration) &&
+                member.getNameNode() instanceof PrivateIdentifier)
         ),
       constructors: decl.getConstructors().map((x) => {
         return {
@@ -181,8 +183,9 @@ export function convertDeclaration(decl: Node): SerializedDeclaration {
       }),
       members: decl.getMembers().flatMap((member): ClassMember[] => {
         if (
-          member.hasModifier("private") ||
-          member instanceof ConstructorDeclaration
+          member instanceof ConstructorDeclaration ||
+          member instanceof ClassStaticBlockDeclaration ||
+          member.hasModifier("private")
         ) {
           return [];
         }
