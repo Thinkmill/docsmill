@@ -77,7 +77,7 @@ export async function getStaticProps({
     const version = resolveToPackageVersion(pkg, specifier);
     return {
       redirect: {
-        permanent: false,
+        statusCode: 302,
         destination: `/npm/${pkgName}@${version}${rest}`,
       },
       revalidate: 60 * 20,
