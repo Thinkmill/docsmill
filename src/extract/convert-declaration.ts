@@ -25,7 +25,7 @@ import {
 import { collectSymbol, getRootSymbolName } from ".";
 import { ClassMember, SerializedDeclaration } from "../lib/types";
 import { convertTypeNode } from "./convert-node";
-import { _convertType } from "./convert-type";
+import { convertType } from "./convert-type";
 import {
   getDocs,
   getTypeParameters,
@@ -43,9 +43,7 @@ export function convertDeclaration(decl: Node): SerializedDeclaration {
       name: decl.getName(),
       docs: getDocs(decl),
       typeParams: getTypeParameters(decl),
-      type: typeNode
-        ? convertTypeNode(typeNode)
-        : _convertType(decl.getType(), 0),
+      type: typeNode ? convertTypeNode(typeNode) : convertType(decl.getType()),
     };
   }
   if (decl instanceof FunctionDeclaration) {
@@ -60,7 +58,7 @@ export function convertDeclaration(decl: Node): SerializedDeclaration {
       typeParams: getTypeParameters(decl),
       returnType: returnTypeNode
         ? convertTypeNode(returnTypeNode)
-        : _convertType(decl.getReturnType(), 0),
+        : convertType(decl.getReturnType()),
     };
   }
   if (
@@ -99,7 +97,7 @@ export function convertDeclaration(decl: Node): SerializedDeclaration {
         (decl instanceof ModuleDeclaration
           ? (decl.getNameNodes() as StringLiteral).getLiteralValue()
           : decl.getFilePath()),
-      docs: getDocsFromJSDocNodes(jsDocs),
+      docs: getDocsFromJSDocNodes(jsDocs.map((x) => x.compilerNode)),
       exports: collectExportsFromModule(decl),
     };
   }
@@ -118,7 +116,7 @@ export function convertDeclaration(decl: Node): SerializedDeclaration {
         typeParams: getTypeParameters(init),
         returnType: returnTypeNode
           ? convertTypeNode(returnTypeNode)
-          : _convertType(init.getReturnType(), 0),
+          : convertType(init.getReturnType()),
       };
     }
     return {
@@ -126,9 +124,7 @@ export function convertDeclaration(decl: Node): SerializedDeclaration {
       name: decl.getName(),
       docs: getDocs(variableStatement),
       variableKind: variableStatement.getDeclarationKind(),
-      type: typeNode
-        ? convertTypeNode(typeNode)
-        : _convertType(decl.getType(), 0),
+      type: typeNode ? convertTypeNode(typeNode) : convertType(decl.getType()),
     };
   }
   if (decl instanceof PropertySignature) {
@@ -138,9 +134,7 @@ export function convertDeclaration(decl: Node): SerializedDeclaration {
       name: decl.getName(),
       docs: getDocs(decl),
       variableKind: "const",
-      type: typeNode
-        ? convertTypeNode(typeNode)
-        : _convertType(decl.getType(), 0),
+      type: typeNode ? convertTypeNode(typeNode) : convertType(decl.getType()),
     };
   }
   if (decl instanceof InterfaceDeclaration) {
@@ -210,7 +204,7 @@ export function convertDeclaration(decl: Node): SerializedDeclaration {
               parameters: getParameters(member),
               returnType: returnTypeNode
                 ? convertTypeNode(returnTypeNode)
-                : _convertType(member.getReturnType(), 0),
+                : convertType(member.getReturnType()),
               typeParams: getTypeParameters(member),
             };
           });
@@ -226,7 +220,7 @@ export function convertDeclaration(decl: Node): SerializedDeclaration {
               optional: member.hasQuestionToken(),
               type: typeNode
                 ? convertTypeNode(typeNode)
-                : _convertType(member.getType(), 0),
+                : convertType(member.getType()),
               static: member.isStatic(),
               readonly: member.isReadonly(),
             },

@@ -1,4 +1,4 @@
-export function fakeAssert<T>(val: any): asserts val is T {}
+export function fakeAssert<T>(_val: any): asserts _val is T {}
 
 export function assertNever(arg: never): never {
   debugger;

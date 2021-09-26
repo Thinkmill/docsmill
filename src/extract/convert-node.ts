@@ -1,24 +1,18 @@
+import { TypeNode, Node, ts, CompilerNodeToWrappedType } from "ts-morph";
 import {
-  TypeNode,
-  Node,
-  ts,
-  EntityName,
-  CompilerNodeToWrappedType,
-  TypeParameterDeclaration,
-} from "ts-morph";
-import {
-  getParameters,
-  getTypeParameters,
   getSymbolIdentifier,
-  getObjectMembers,
+  getTypeParametersFromCompilerNode,
+  getParametersFromCompilerNode,
+  getObjectMembersFromCompilerNode,
+  getAliasedSymbol,
 } from "./utils";
-import { _convertType } from "./convert-type";
-import { collectSymbol } from ".";
-import { fakeAssert, assert, assertNever } from "../lib/assert";
+import { collectSymbol, getProject } from ".";
+import { assert, assertNever } from "../lib/assert";
 import { SerializedType, TupleElement } from "../lib/types";
-import { assertEnumType } from "graphql";
 
-function wrapInTsMorphNode<LocalCompilerNodeType extends ts.Node = ts.Node>(
+export function wrapInTsMorphNode<
+  LocalCompilerNodeType extends ts.Node = ts.Node
+>(
   someNode: Node,
   compilerNode: LocalCompilerNodeType
 ): CompilerNodeToWrappedType<LocalCompilerNodeType> {
@@ -42,76 +36,99 @@ function getModifierKind(
   return 1;
 }
 
+function printEntityName(entityName: ts.EntityName): string {
+  if (!entityName) {
+    debugger;
+  }
+  if (ts.isIdentifier(entityName)) {
+    return entityName.text;
+  }
+  return `${printEntityName(entityName.left)}.${entityName.right.text}`;
+}
+
+function printNode(node: ts.Node) {
+  if (ts.isEntityName(node)) {
+    return printEntityName(node);
+  } else {
+    try {
+      return node.getText();
+    } catch (err) {
+      return ts
+        .createPrinter()
+        .printNode(ts.EmitHint.Unspecified, node, undefined as any);
+    }
+  }
+}
+
 function handleReference(
-  typeArguments: TypeNode[],
-  typeName: EntityName
+  typeArguments: ts.NodeArray<ts.TypeNode> | undefined,
+  typeName: ts.Node
 ): SerializedType {
-  let symbol = typeName.getSymbol();
+  const typeChecker = getProject().getTypeChecker().compilerObject;
+  let symbol =
+    ((typeName as any).symbol as ts.Symbol) ||
+    typeChecker.getSymbolAtLocation(typeName);
   if (!symbol) {
     return {
       kind: "reference",
       fullName: "unknown",
-      name: typeName.getText(),
-      typeArguments: typeArguments.map((x) => convertTypeNode(x)),
+      name: printNode(typeName),
+      typeArguments: (typeArguments || []).map((x) => convertTypeNode(x)),
     };
   }
 
-  if (symbol.getDeclarations()?.[0] instanceof TypeParameterDeclaration) {
+  if (symbol.flags & ts.SymbolFlags.TypeParameter) {
     return {
       kind: "type-parameter",
       name: symbol.getName(),
     };
   }
 
-  if (
-    symbol.getName() === "Array" &&
-    symbol.getFullyQualifiedName() === "Array"
-  ) {
+  const aliasedSymbol = getAliasedSymbol(symbol);
+  if (aliasedSymbol) {
+    symbol = aliasedSymbol;
+  }
+
+  if (symbol.getName() === "Array") {
+    assert(typeArguments !== undefined && typeArguments.length === 1);
     return {
       kind: "array",
       readonly: false,
       inner: convertTypeNode(typeArguments[0]),
     };
   }
-  if (
-    symbol.getName() === "ReadonlyArray" &&
-    symbol.getFullyQualifiedName() === "ReadonlyArray"
-  ) {
+  if (symbol.getName() === "ReadonlyArray") {
+    assert(typeArguments !== undefined && typeArguments.length === 1);
     return {
       kind: "array",
       readonly: true,
       inner: convertTypeNode(typeArguments[0]),
     };
   }
-  symbol = symbol.getAliasedSymbol() || symbol;
   collectSymbol(symbol);
   const fullName = getSymbolIdentifier(symbol);
   let name = symbol.getName();
   if (fullName === "unknown") {
-    name = typeName.getText();
+    name = printNode(typeName);
   }
 
   return {
     kind: "reference",
     fullName,
     name,
-    typeArguments: typeArguments.map((x) => convertTypeNode(x)),
+    typeArguments: (typeArguments || []).map((x) => convertTypeNode(x)),
   };
 }
 
-export function convertTypeNode(node: TypeNode): SerializedType {
-  const compilerNode = node.compilerNode;
+export function convertTypeNode(_node: TypeNode | ts.TypeNode): SerializedType {
+  const compilerNode = (_node as any).compilerNode
+    ? ((_node as any).compilerNode as ts.TypeNode)
+    : (_node as ts.TypeNode);
   if (ts.isTypeReferenceNode(compilerNode)) {
-    return handleReference(
-      (compilerNode.typeArguments ?? []).map((x) => wrapInTsMorphNode(node, x)),
-      wrapInTsMorphNode(node, compilerNode.typeName)
-    );
+    return handleReference(compilerNode.typeArguments, compilerNode.typeName);
   }
   if (ts.isExpressionWithTypeArguments(compilerNode)) {
-    return handleReference(
-      (compilerNode.typeArguments ?? []).map((x) => wrapInTsMorphNode(node, x)),
-      wrapInTsMorphNode(node, compilerNode.expression) as EntityName
-    );
+    return handleReference(compilerNode.typeArguments, compilerNode.expression);
   }
 
   if (compilerNode.kind === ts.SyntaxKind.AnyKeyword) {
@@ -180,37 +197,29 @@ export function convertTypeNode(node: TypeNode): SerializedType {
   if (ts.isUnionTypeNode(compilerNode)) {
     return {
       kind: "union",
-      types: compilerNode.types.map((x) =>
-        convertTypeNode(wrapInTsMorphNode(node, x))
-      ),
+      types: compilerNode.types.map((x) => convertTypeNode(x)),
     };
   }
   if (ts.isIndexedAccessTypeNode(compilerNode)) {
     return {
       kind: "indexed-access",
-      object: convertTypeNode(wrapInTsMorphNode(node, compilerNode.objectType)),
-      index: convertTypeNode(wrapInTsMorphNode(node, compilerNode.indexType)),
+      object: convertTypeNode(compilerNode.objectType),
+      index: convertTypeNode(compilerNode.indexType),
     };
   }
   if (ts.isConditionalTypeNode(compilerNode)) {
     return {
       kind: "conditional",
-      checkType: convertTypeNode(
-        wrapInTsMorphNode(node, compilerNode.checkType)
-      ),
-      extendsType: convertTypeNode(
-        wrapInTsMorphNode(node, compilerNode.extendsType)
-      ),
-      trueType: convertTypeNode(wrapInTsMorphNode(node, compilerNode.trueType)),
-      falseType: convertTypeNode(
-        wrapInTsMorphNode(node, compilerNode.falseType)
-      ),
+      checkType: convertTypeNode(compilerNode.checkType),
+      extendsType: convertTypeNode(compilerNode.extendsType),
+      trueType: convertTypeNode(compilerNode.trueType),
+      falseType: convertTypeNode(compilerNode.falseType),
     };
   }
   if (ts.isParenthesizedTypeNode(compilerNode)) {
     return {
       kind: "paren",
-      value: convertTypeNode(wrapInTsMorphNode(node, compilerNode.type)),
+      value: convertTypeNode(compilerNode.type),
     };
   }
 
@@ -221,9 +230,7 @@ export function convertTypeNode(node: TypeNode): SerializedType {
   if (ts.isIntersectionTypeNode(compilerNode)) {
     return {
       kind: "intersection",
-      types: compilerNode.types.map((x) =>
-        convertTypeNode(wrapInTsMorphNode(node, x))
-      ),
+      types: compilerNode.types.map((x) => convertTypeNode(x)),
     };
   }
   if (ts.isMappedTypeNode(compilerNode)) {
@@ -236,48 +243,38 @@ export function convertTypeNode(node: TypeNode): SerializedType {
       kind: "mapped",
       param: {
         name: typeParam.name.text,
-        constraint: convertTypeNode(
-          wrapInTsMorphNode(node, typeParam.constraint)
-        ),
+        constraint: convertTypeNode(typeParam.constraint),
       },
       type: compilerNode.type
-        ? convertTypeNode(wrapInTsMorphNode(node, compilerNode.type))
+        ? convertTypeNode(compilerNode.type)
         : { kind: "intrinsic", value: "any" },
-      as: compilerNode.nameType
-        ? convertTypeNode(wrapInTsMorphNode(node, compilerNode.nameType))
-        : null,
+      as: compilerNode.nameType ? convertTypeNode(compilerNode.nameType) : null,
       optional: getModifierKind(compilerNode.questionToken),
       readonly: getModifierKind(compilerNode.readonlyToken),
     };
   }
-  if (TypeNode.isTypeLiteralNode(node)) {
+  if (ts.isTypeLiteralNode(compilerNode)) {
     return {
       kind: "object",
-      members: getObjectMembers(node),
+      members: getObjectMembersFromCompilerNode(compilerNode),
     };
   }
 
-  if (TypeNode.isFunctionTypeNode(node)) {
-    const returnTypeNode = node.getReturnTypeNode();
+  if (ts.isFunctionTypeNode(compilerNode)) {
     return {
       kind: "signature",
-      parameters: getParameters(node),
-      typeParams: getTypeParameters(node),
-      returnType: returnTypeNode
-        ? convertTypeNode(returnTypeNode)
-        : _convertType(node.getReturnType(), 0),
+      parameters: getParametersFromCompilerNode(compilerNode),
+      typeParams: getTypeParametersFromCompilerNode(compilerNode),
+      returnType: convertTypeNode(compilerNode.type),
     };
   }
 
-  if (TypeNode.isConstructorTypeNode(node)) {
-    const returnTypeNode = node.getReturnTypeNode();
+  if (ts.isConstructorTypeNode(compilerNode)) {
     return {
       kind: "constructor",
-      parameters: getParameters(node),
-      typeParams: [],
-      returnType: returnTypeNode
-        ? convertTypeNode(returnTypeNode)
-        : _convertType(node.getReturnType(), 0),
+      parameters: getParametersFromCompilerNode(compilerNode),
+      typeParams: getTypeParametersFromCompilerNode(compilerNode),
+      returnType: convertTypeNode(compilerNode.type),
     };
   }
 
@@ -285,7 +282,7 @@ export function convertTypeNode(node: TypeNode): SerializedType {
     return {
       kind: "array",
       readonly: false,
-      inner: convertTypeNode(wrapInTsMorphNode(node, compilerNode.elementType)),
+      inner: convertTypeNode(compilerNode.elementType),
     };
   }
 
@@ -302,7 +299,7 @@ export function convertTypeNode(node: TypeNode): SerializedType {
               ? "optional"
               : "required",
             label: element.name.text,
-            type: convertTypeNode(wrapInTsMorphNode(node, element.type)),
+            type: convertTypeNode(element.type),
           };
         }
         let innerType = element;
@@ -320,7 +317,7 @@ export function convertTypeNode(node: TypeNode): SerializedType {
         return {
           kind,
           label: null,
-          type: convertTypeNode(wrapInTsMorphNode(node, innerType)),
+          type: convertTypeNode(innerType),
         };
       }),
     };
@@ -331,7 +328,7 @@ export function convertTypeNode(node: TypeNode): SerializedType {
       return { kind: "intrinsic", value: "unique symbol" };
     }
     if (compilerNode.operator === ts.SyntaxKind.ReadonlyKeyword) {
-      const inner = convertTypeNode(wrapInTsMorphNode(node, compilerNode.type));
+      const inner = convertTypeNode(compilerNode.type);
       if (inner.kind === "array" || inner.kind === "tuple") {
         return {
           ...inner,
@@ -346,25 +343,58 @@ export function convertTypeNode(node: TypeNode): SerializedType {
     if (compilerNode.operator === ts.SyntaxKind.KeyOfKeyword) {
       return {
         kind: "keyof",
-        value: convertTypeNode(wrapInTsMorphNode(node, compilerNode.type)),
+        value: convertTypeNode(compilerNode.type),
       };
     }
     assertNever(compilerNode.operator);
   }
 
-  if (TypeNode.isImportTypeNode(node)) {
-    let qualifier = node.getQualifier();
-    if (qualifier) {
-      return handleReference(node.getTypeArguments(), qualifier);
+  if (ts.isImportTypeNode(compilerNode)) {
+    if (compilerNode.isTypeOf) {
+      let node = compilerNode.qualifier || compilerNode;
+      const typeChecker = getProject().getTypeChecker().compilerObject;
+      let symbol =
+        ((node as any).symbol as ts.Symbol) ||
+        typeChecker.getSymbolAtLocation(node);
+      if (symbol) {
+        const aliasedSymbol = getAliasedSymbol(symbol);
+        if (aliasedSymbol) {
+          symbol = aliasedSymbol;
+        }
+
+        return {
+          kind: "typeof",
+          fullName: getSymbolIdentifier(symbol),
+          name: symbol.getName(),
+        };
+      }
+
+      return {
+        kind: "typeof",
+        fullName: "unknown",
+        name: compilerNode.qualifier
+          ? printEntityName(compilerNode.qualifier)
+          : printNode(compilerNode),
+      };
     }
-    return _convertType(node.getType(), 0);
+    let qualifier = compilerNode.qualifier;
+    if (qualifier) {
+      return handleReference(compilerNode.typeArguments, qualifier);
+    }
+    assert(false);
   }
 
   if (ts.isTypeQueryNode(compilerNode)) {
-    const entityName = wrapInTsMorphNode(node, compilerNode.exprName);
-    let symbol = entityName.getSymbol();
+    const entityName = compilerNode.exprName;
+    const typeChecker = getProject().getTypeChecker().compilerObject;
+    let symbol =
+      ((entityName as any).symbol as ts.Symbol) ||
+      typeChecker.getSymbolAtLocation(entityName);
     if (symbol) {
-      symbol = symbol.getAliasedSymbol() || symbol;
+      const aliasedSymbol = getAliasedSymbol(symbol);
+      if (aliasedSymbol) {
+        symbol = aliasedSymbol;
+      }
 
       return {
         kind: "typeof",
@@ -372,6 +402,12 @@ export function convertTypeNode(node: TypeNode): SerializedType {
         name: symbol.getName(),
       };
     }
+
+    return {
+      kind: "typeof",
+      fullName: "unknown",
+      name: printEntityName(entityName),
+    };
   }
 
   if (ts.isTypePredicateNode(compilerNode)) {
@@ -383,7 +419,7 @@ export function convertTypeNode(node: TypeNode): SerializedType {
           ? "this"
           : compilerNode.parameterName.text,
       ...(compilerNode.type
-        ? { type: convertTypeNode(wrapInTsMorphNode(node, compilerNode.type)) }
+        ? { type: convertTypeNode(compilerNode.type) }
         : {}),
     };
   }
@@ -395,16 +431,17 @@ export function convertTypeNode(node: TypeNode): SerializedType {
       head: compilerNode.head.text,
       rest: compilerNode.templateSpans.map((element) => {
         return {
-          type: convertTypeNode(wrapInTsMorphNode(node, element.type)),
+          type: convertTypeNode(element.type),
           text: element.literal.text,
         };
       }),
     };
   }
 
+  debugger;
+
   return {
     kind: "raw",
-    value: compilerNode.getText(),
-    tsKind: ts.SyntaxKind[compilerNode.kind],
+    value: `${compilerNode.getText()} ${ts.SyntaxKind[compilerNode.kind]}`,
   };
 }

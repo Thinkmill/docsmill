@@ -103,7 +103,7 @@ export function PackageSearch({ autoFocus }: { autoFocus?: boolean }) {
                   },
                   onSelect(item) {
                     setStatus("stalled");
-                    router.push(item.itemUrl!).then((x) => {
+                    router.push(item.itemUrl!).then(() => {
                       setQuery("");
                       setStatus("idle");
                       (document.activeElement as any)?.blur();

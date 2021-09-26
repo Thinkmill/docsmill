@@ -105,6 +105,9 @@ export function Type({ type }: { type: SerializedType }): JSX.Element {
           if (prop.kind === "index") {
             return (
               <Indent key={i}>
+                {prop.readonly ? (
+                  <Syntax kind="keyword">readonly </Syntax>
+                ) : null}
                 <span className={codeFont}>
                   [key<Syntax kind="colon">: </Syntax>
                 </span>
@@ -204,20 +207,7 @@ export function Type({ type }: { type: SerializedType }): JSX.Element {
       <Fragment>
         {type.kind === "constructor" && <Syntax kind="keyword">new </Syntax>}
         <TypeParams params={type.typeParams} />
-        <Syntax kind="bracket">(</Syntax>
-        {type.parameters.map((param, i) => {
-          return (
-            <Fragment key={i}>
-              <Syntax kind="parameter">{param.name}</Syntax>
-              <Syntax kind="colon">: </Syntax>
-              <Type type={param.type} />
-              {i !== type.parameters.length - 1 && (
-                <Syntax kind="comma">, </Syntax>
-              )}
-            </Fragment>
-          );
-        })}
-        <Syntax kind="bracket">)</Syntax>
+        <Params params={type.parameters} />
         <Syntax kind="keyword">{" => "}</Syntax>
         <Type type={type.returnType} />
       </Fragment>
@@ -308,9 +298,9 @@ export function Type({ type }: { type: SerializedType }): JSX.Element {
     return (
       <Fragment>
         <Syntax kind="string">`{type.head}</Syntax>
-        {type.rest.map((element) => {
+        {type.rest.map((element, i) => {
           return (
-            <Fragment>
+            <Fragment key={i}>
               <Syntax kind="colon">{"${"}</Syntax>
               <Type type={element.type} />
               <Syntax kind="colon">{"}"}</Syntax>
@@ -326,7 +316,6 @@ export function Type({ type }: { type: SerializedType }): JSX.Element {
   return (
     <span className={codeFont} style={{ color: "red" }}>
       {type.value}
-      {type.tsKind && ` ${type.tsKind}`}
     </span>
   );
 }

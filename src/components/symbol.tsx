@@ -77,8 +77,7 @@ function ExportedFrom({ fullName }: { fullName: string }) {
 }
 
 export function RenderRootSymbol({ fullName }: { fullName: string }) {
-  const { symbols, canonicalExportLocations, goodIdentifiers } =
-    useDocsContext();
+  const { symbols, canonicalExportLocations } = useDocsContext();
   let decls = symbols[fullName];
   let isExported = false;
   if (canonicalExportLocations[fullName]) {
@@ -503,8 +502,10 @@ function Exports({ fullName }: { fullName: string }) {
 
               <RenderRootSymbol fullName={symbol} />
               {!!relatedSymbols?.length && (
-                <details className={styles.referencesContainer}>
-                  <summary>References</summary>
+                <details
+                  className={innerBits ? undefined : styles.referencesContainer}
+                >
+                  <summary>Referenced by</summary>
                   <ul>
                     {relatedSymbols.map((thing, i) => {
                       return (

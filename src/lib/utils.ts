@@ -1,6 +1,5 @@
 import { SerializedDeclaration } from "./types";
 import { useDocsContext } from "./DocsContext";
-import { assert } from "./assert";
 
 type TransformedExport =
   | {

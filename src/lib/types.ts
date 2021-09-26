@@ -129,7 +129,13 @@ type FunctionLike = {
 };
 
 export type ObjectMember =
-  | { kind: "index"; key: SerializedType; value: SerializedType }
+  | {
+      kind: "index";
+      docs: string;
+      readonly: boolean;
+      key: SerializedType;
+      value: SerializedType;
+    }
   | {
       kind: "prop";
       name: string;
@@ -218,4 +224,4 @@ export type SerializedType =
       head: string;
       rest: { type: SerializedType; text: string }[];
     }
-  | { kind: "raw"; value: string; tsKind?: string };
+  | { kind: "raw"; value: string };

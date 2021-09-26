@@ -1,15 +1,14 @@
-import { Project, Symbol, SourceFile } from "ts-morph";
+import { Project, Symbol, SourceFile, ts } from "ts-morph";
 import path from "path";
 import { findCanonicalExportLocations } from "./exports";
-import { _convertType } from "./convert-type";
 import {
   getSymbolIdentifier,
   getSymbolsForInnerBitsAndGoodIdentifiers,
-  collectEntrypointsOfPackage,
+  wrapInTsMorphSymbol,
 } from "./utils";
 import { SerializedDeclaration } from "../lib/types";
 import { convertDeclaration } from "./convert-declaration";
-import { assert } from "console";
+import { assert } from "../lib/assert";
 
 function getInitialState() {
   return {
@@ -37,7 +36,10 @@ export function getRootSymbolName(symbol: Symbol) {
 
 let state = getInitialState();
 
-export function collectSymbol(symbol: Symbol) {
+export function collectSymbol(_symbol: Symbol | ts.Symbol) {
+  const symbol =
+    _symbol instanceof Symbol ? _symbol : wrapInTsMorphSymbol(_symbol);
+
   if (symbol.getDeclarations().length === 0) {
     return;
   }
