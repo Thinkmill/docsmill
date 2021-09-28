@@ -1,15 +1,9 @@
 import {
-  ClassDeclaration,
-  ClassStaticBlockDeclaration,
-  ConstructorDeclaration,
   JSDoc,
-  MethodDeclaration,
   ModuleDeclaration,
   ModuleDeclarationKind,
   ModuledNode,
   Node,
-  PrivateIdentifier,
-  PropertyDeclaration,
   PropertySignature,
   SourceFile,
   StringLiteral,
@@ -25,8 +19,6 @@ import { convertTypeNode } from "./convert-node";
 import { convertType } from "./convert-type";
 import {
   getDocs,
-  getTypeParameters,
-  getParameters,
   getSymbolIdentifier,
   getDocsFromJSDocNodes,
   getDocsFromCompilerNode,
@@ -198,87 +190,102 @@ export function convertDeclaration(
       members: getObjectMembersFromCompilerNode(compilerNode),
     };
   }
-  if (decl instanceof ClassDeclaration) {
-    const extendsNode = decl.getExtends();
+  if (ts.isClassDeclaration(compilerNode)) {
+    const extendsNode = compilerNode.heritageClauses?.find(
+      (x) => x.token === ts.SyntaxKind.ExtendsKeyword
+    );
+    if (extendsNode) {
+      assert(
+        extendsNode.types.length === 1,
+        "expected extends clause in class declaration to only have one type"
+      );
+    }
+    const implementsNode = compilerNode.heritageClauses?.find(
+      (x) => x.token === ts.SyntaxKind.ImplementsKeyword
+    );
     return {
       kind: "class",
       // just like function declarations, the only case where a class declaration doesn't have a name is when it's a default export
       // (yes, class expressions never have to have names but this is a class declaration, not a class expression)
-      name: decl.getName() || "default",
-      docs: getDocs(decl),
-      typeParams: getTypeParameters(decl),
-      extends: extendsNode ? convertTypeNode(extendsNode) : null,
-      implements: decl.getImplements().map((x) => convertTypeNode(x)),
-      willBeComparedNominally: decl
-        .getMembers()
-        .some((member) =>
-          member instanceof ClassStaticBlockDeclaration
-            ? false
-            : member.hasModifier("private") ||
-              member.hasModifier("protected") ||
-              (!(member instanceof ConstructorDeclaration) &&
-                member.getNameNode() instanceof PrivateIdentifier)
-        ),
-      constructors: decl.getConstructors().map((x) => {
-        return {
-          docs: getDocs(x),
-          parameters: getParameters(x),
-          typeParams: getTypeParameters(x),
-        };
+      name: compilerNode.name?.text || "default",
+      docs: getDocsFromCompilerNode(compilerNode),
+      typeParams: getTypeParametersFromCompilerNode(compilerNode),
+      extends: extendsNode ? convertTypeNode(extendsNode.types[0]) : null,
+      implements: (implementsNode?.types || []).map((x) => convertTypeNode(x)),
+      willBeComparedNominally: compilerNode.members.some((member) => {
+        member.modifiers?.some(
+          (x) =>
+            x.kind === ts.SyntaxKind.PrivateKeyword ||
+            x.kind === ts.SyntaxKind.ProtectedKeyword
+        ) ||
+          (member.name && ts.isPrivateIdentifier(member.name));
       }),
-      members: decl.getMembers().flatMap((member): ClassMember[] => {
-        if (
-          member instanceof ConstructorDeclaration ||
-          member instanceof ClassStaticBlockDeclaration ||
-          member.hasModifier("private")
-        ) {
+      constructors: compilerNode.members.flatMap((x) => {
+        if (!ts.isConstructorDeclaration(x)) {
           return [];
         }
-        if (member.getNameNode() instanceof PrivateIdentifier) {
-          return [];
-        }
-        if (member instanceof MethodDeclaration) {
-          // TODO: show protected
-          // (and have a tooltip explaining what protected does)
-
-          return [
-            ...member.getOverloads(),
-            ...(member.isOverload() ? [] : [member]),
-          ].map((member) => {
-            const returnTypeNode = member.getReturnTypeNode();
+        return [
+          {
+            docs: getDocsFromCompilerNode(x),
+            parameters: getParametersFromCompilerNode(x),
+            typeParams: getTypeParametersFromCompilerNode(x),
+          },
+        ];
+      }),
+      members: compilerNode.members
+        .filter(
+          (member) =>
+            !(
+              ts.isConstructorDeclaration(member) ||
+              ts.isClassStaticBlockDeclaration(member) ||
+              member.modifiers?.some(
+                (x) => x.kind === ts.SyntaxKind.PrivateKeyword
+              ) ||
+              (member.name && ts.isPrivateIdentifier(member.name)) ||
+              ts.isSemicolonClassElement(member)
+            )
+        )
+        .map((member): ClassMember => {
+          const isStatic =
+            member.modifiers?.some(
+              (x) => x.kind === ts.SyntaxKind.StaticKeyword
+            ) || false;
+          if (ts.isMethodDeclaration(member)) {
+            // TODO: show protected
+            // (and have a tooltip explaining what protected does)
             return {
               kind: "method",
-              docs: getDocs(member),
-              name: member.getName(),
-              static: member.isStatic(),
-              optional: member.hasQuestionToken(),
-              parameters: getParameters(member),
-              returnType: returnTypeNode
-                ? convertTypeNode(returnTypeNode)
-                : convertType(member.getReturnType()),
-              typeParams: getTypeParameters(member),
+              docs: getDocsFromCompilerNode(member),
+              name: printPropertyName(member.name),
+              static: isStatic,
+              optional: !!member.questionToken,
+              parameters: getParametersFromCompilerNode(member),
+              returnType: getReturnType(member),
+              typeParams: getTypeParametersFromCompilerNode(member),
             };
-          });
-        }
-        if (member instanceof PropertyDeclaration) {
-          const typeNode = member.getTypeNode();
-
-          return [
-            {
+          }
+          if (ts.isPropertyDeclaration(member)) {
+            return {
               kind: "prop",
-              docs: getDocs(member),
-              name: member.getName(),
-              optional: member.hasQuestionToken(),
-              type: typeNode
-                ? convertTypeNode(typeNode)
-                : convertType(member.getType()),
-              static: member.isStatic(),
-              readonly: member.isReadonly(),
-            },
-          ];
-        }
-        return [{ kind: "unknown", content: member.getText() }];
-      }),
+              docs: getDocsFromCompilerNode(member),
+              name: printPropertyName(member.name),
+              optional: !!member.questionToken,
+              type: member.type
+                ? convertTypeNode(member.type)
+                : convertType(
+                    getProject()
+                      .getTypeChecker()
+                      .compilerObject.getTypeAtLocation(member)
+                  ),
+              static: isStatic,
+              readonly:
+                member.modifiers?.some(
+                  (x) => x.kind === ts.SyntaxKind.ReadonlyKeyword
+                ) || false,
+            };
+          }
+          return { kind: "unknown", content: member.getText() };
+        }),
     };
   }
   if (ts.isEnumDeclaration(compilerNode)) {
@@ -331,6 +338,20 @@ export function convertDeclaration(
     docs,
     content: decl.getText(),
   };
+}
+
+function printPropertyName(propertyName: ts.PropertyName) {
+  if (
+    ts.isIdentifier(propertyName) ||
+    ts.isPrivateIdentifier(propertyName) ||
+    ts.isNumericLiteral(propertyName)
+  ) {
+    return propertyName.text;
+  }
+  if (ts.isStringLiteral(propertyName)) {
+    return JSON.stringify(propertyName.text);
+  }
+  return propertyName.getText();
 }
 
 function collectExportsFromModule(moduledDecl: ModuledNode) {

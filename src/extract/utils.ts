@@ -1,11 +1,4 @@
-import {
-  JSDocableNode,
-  TypeParameteredNode,
-  ParameteredNode,
-  ts,
-  Symbol,
-  Project,
-} from "ts-morph";
+import { JSDocableNode, ts, Symbol, Project } from "ts-morph";
 import semver from "semver";
 import path from "path";
 import { convertTypeNode } from "./convert-node";
@@ -20,18 +13,6 @@ import {
   SerializedDeclaration,
 } from "../lib/types";
 import { PackageMetadata } from "./fetch-package-metadata";
-
-export function getTypeParameters(node: TypeParameteredNode): TypeParam[] {
-  return node.getTypeParameters().map((typeParam) => {
-    const constraint = typeParam.getConstraint();
-    const defaultType = typeParam.getDefault();
-    return {
-      name: typeParam.getName(),
-      constraint: constraint ? convertTypeNode(constraint) : null,
-      default: defaultType ? convertTypeNode(defaultType) : null,
-    };
-  });
-}
 
 export function getTypeParametersFromCompilerNode(
   node: ts.Node & {
@@ -130,21 +111,6 @@ export function getObjectMembersFromCompilerNode(
       };
     }
     return { kind: "unknown", content: member.getText() };
-  });
-}
-
-export function getParameters(node: ParameteredNode): Parameter[] {
-  return node.getParameters().map((x): Parameter => {
-    const typeNode = x.getTypeNode();
-    return {
-      name: x.getName(),
-      type: typeNode ? convertTypeNode(typeNode) : convertType(x.getType()),
-      kind: x.isRestParameter()
-        ? "rest"
-        : x.isOptional()
-        ? "optional"
-        : "normal",
-    };
   });
 }
 
