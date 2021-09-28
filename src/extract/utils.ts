@@ -14,7 +14,7 @@ import {
 } from "../lib/types";
 import { PackageMetadata } from "./fetch-package-metadata";
 
-export function getTypeParametersFromCompilerNode(
+export function getTypeParameters(
   node: ts.Node & {
     typeParameters?: ts.NodeArray<ts.TypeParameterDeclaration>;
   }
@@ -30,7 +30,7 @@ export function getTypeParametersFromCompilerNode(
   });
 }
 
-export function getObjectMembersFromCompilerNode(
+export function getObjectMembers(
   node: ts.Node & {
     members: ts.NodeArray<ts.TypeElement>;
   }
@@ -89,8 +89,8 @@ export function getObjectMembersFromCompilerNode(
           ? member.name.text
           : member.name.getText(),
         optional: !!member.questionToken,
-        parameters: getParametersFromCompilerNode(member),
-        typeParams: getTypeParametersFromCompilerNode(member),
+        parameters: getParameters(member),
+        typeParams: getTypeParameters(member),
         docs: getDocsFromCompilerNode(member),
         returnType: member.type
           ? convertTypeNode(member.type)
@@ -102,8 +102,8 @@ export function getObjectMembersFromCompilerNode(
       assert(member.questionToken === undefined);
       return {
         kind: isCallSignature ? "call" : "constructor",
-        parameters: getParametersFromCompilerNode(member),
-        typeParams: getTypeParametersFromCompilerNode(member),
+        parameters: getParameters(member),
+        typeParams: getTypeParameters(member),
         docs: getDocsFromCompilerNode(member),
         returnType: member.type
           ? convertTypeNode(member.type)
@@ -114,7 +114,7 @@ export function getObjectMembersFromCompilerNode(
   });
 }
 
-export function getParametersFromCompilerNode(
+export function getParameters(
   node: ts.Node & {
     parameters: ts.NodeArray<ts.ParameterDeclaration>;
   }

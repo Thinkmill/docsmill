@@ -22,9 +22,9 @@ import {
   getSymbolIdentifier,
   getDocsFromJSDocNodes,
   getDocsFromCompilerNode,
-  getTypeParametersFromCompilerNode,
-  getParametersFromCompilerNode,
-  getObjectMembersFromCompilerNode,
+  getTypeParameters,
+  getParameters,
+  getObjectMembers,
 } from "./utils";
 import { assert } from "../lib/assert";
 
@@ -53,7 +53,7 @@ export function convertDeclaration(
       kind: "type-alias",
       name: compilerNode.name.text,
       docs: getDocsFromCompilerNode(compilerNode),
-      typeParams: getTypeParametersFromCompilerNode(compilerNode),
+      typeParams: getTypeParameters(compilerNode),
       type: convertTypeNode(compilerNode.type),
     };
   }
@@ -64,9 +64,9 @@ export function convertDeclaration(
       // the only case where a function declaration doesn't have a name is when it's a default export
       // (yes, function expressions never have to have names but this is a function declaration, not a function expression)
       name: compilerNode.name?.text || "default",
-      parameters: getParametersFromCompilerNode(compilerNode),
+      parameters: getParameters(compilerNode),
       docs: getDocsFromCompilerNode(compilerNode),
-      typeParams: getTypeParametersFromCompilerNode(compilerNode),
+      typeParams: getTypeParameters(compilerNode),
       returnType: getReturnType(compilerNode),
     };
   }
@@ -139,9 +139,9 @@ export function convertDeclaration(
       return {
         kind: "function",
         name: compilerNode.name.text,
-        parameters: getParametersFromCompilerNode(compilerNode.initializer),
+        parameters: getParameters(compilerNode.initializer),
         docs,
-        typeParams: getTypeParametersFromCompilerNode(compilerNode.initializer),
+        typeParams: getTypeParameters(compilerNode.initializer),
         returnType: getReturnType(compilerNode.initializer),
       };
     }
@@ -179,7 +179,7 @@ export function convertDeclaration(
       kind: "interface",
       name: compilerNode.name.text,
       docs: getDocsFromCompilerNode(compilerNode),
-      typeParams: getTypeParametersFromCompilerNode(compilerNode),
+      typeParams: getTypeParameters(compilerNode),
       extends: (compilerNode.heritageClauses || []).flatMap((x) => {
         assert(
           x.token === ts.SyntaxKind.ExtendsKeyword,
@@ -187,7 +187,7 @@ export function convertDeclaration(
         );
         return x.types.map((x) => convertTypeNode(x));
       }),
-      members: getObjectMembersFromCompilerNode(compilerNode),
+      members: getObjectMembers(compilerNode),
     };
   }
   if (ts.isClassDeclaration(compilerNode)) {
@@ -209,7 +209,7 @@ export function convertDeclaration(
       // (yes, class expressions never have to have names but this is a class declaration, not a class expression)
       name: compilerNode.name?.text || "default",
       docs: getDocsFromCompilerNode(compilerNode),
-      typeParams: getTypeParametersFromCompilerNode(compilerNode),
+      typeParams: getTypeParameters(compilerNode),
       extends: extendsNode ? convertTypeNode(extendsNode.types[0]) : null,
       implements: (implementsNode?.types || []).map((x) => convertTypeNode(x)),
       willBeComparedNominally: compilerNode.members.some((member) => {
@@ -227,8 +227,8 @@ export function convertDeclaration(
         return [
           {
             docs: getDocsFromCompilerNode(x),
-            parameters: getParametersFromCompilerNode(x),
-            typeParams: getTypeParametersFromCompilerNode(x),
+            parameters: getParameters(x),
+            typeParams: getTypeParameters(x),
           },
         ];
       }),
@@ -259,9 +259,9 @@ export function convertDeclaration(
               name: printPropertyName(member.name),
               static: isStatic,
               optional: !!member.questionToken,
-              parameters: getParametersFromCompilerNode(member),
+              parameters: getParameters(member),
               returnType: getReturnType(member),
-              typeParams: getTypeParametersFromCompilerNode(member),
+              typeParams: getTypeParameters(member),
             };
           }
           if (ts.isPropertyDeclaration(member)) {

@@ -1,9 +1,9 @@
 import { TypeNode, Node, ts, CompilerNodeToWrappedType } from "ts-morph";
 import {
   getSymbolIdentifier,
-  getTypeParametersFromCompilerNode,
-  getParametersFromCompilerNode,
-  getObjectMembersFromCompilerNode,
+  getTypeParameters,
+  getParameters,
+  getObjectMembers,
   getAliasedSymbol,
 } from "./utils";
 import { collectSymbol, getProject } from ".";
@@ -256,15 +256,15 @@ export function convertTypeNode(_node: TypeNode | ts.TypeNode): SerializedType {
   if (ts.isTypeLiteralNode(compilerNode)) {
     return {
       kind: "object",
-      members: getObjectMembersFromCompilerNode(compilerNode),
+      members: getObjectMembers(compilerNode),
     };
   }
 
   if (ts.isFunctionTypeNode(compilerNode)) {
     return {
       kind: "signature",
-      parameters: getParametersFromCompilerNode(compilerNode),
-      typeParams: getTypeParametersFromCompilerNode(compilerNode),
+      parameters: getParameters(compilerNode),
+      typeParams: getTypeParameters(compilerNode),
       returnType: convertTypeNode(compilerNode.type),
     };
   }
@@ -272,8 +272,8 @@ export function convertTypeNode(_node: TypeNode | ts.TypeNode): SerializedType {
   if (ts.isConstructorTypeNode(compilerNode)) {
     return {
       kind: "constructor",
-      parameters: getParametersFromCompilerNode(compilerNode),
-      typeParams: getTypeParametersFromCompilerNode(compilerNode),
+      parameters: getParameters(compilerNode),
+      typeParams: getTypeParameters(compilerNode),
       returnType: convertTypeNode(compilerNode.type),
     };
   }
