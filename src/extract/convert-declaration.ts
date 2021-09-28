@@ -1,5 +1,4 @@
 import {
-  ArrowFunction,
   ClassDeclaration,
   ClassStaticBlockDeclaration,
   ConstructorDeclaration,
@@ -15,7 +14,6 @@ import {
   SourceFile,
   StringLiteral,
   ts,
-  VariableDeclaration,
 } from "ts-morph";
 import { collectSymbol, getProject, getRootSymbolName } from ".";
 import {
@@ -53,7 +51,10 @@ function getReturnType(node: ts.SignatureDeclaration): SerializedType {
   return convertType(returnType);
 }
 
-export function convertDeclaration(decl: Node): SerializedDeclaration {
+export function convertDeclaration(
+  decl: Node,
+  symbol: ts.Symbol
+): SerializedDeclaration {
   const compilerNode = decl.compilerNode;
   if (ts.isTypeAliasDeclaration(compilerNode)) {
     return {
@@ -117,30 +118,58 @@ export function convertDeclaration(decl: Node): SerializedDeclaration {
       exports: collectExportsFromModule(decl),
     };
   }
-  if (decl instanceof VariableDeclaration) {
-    const typeNode = decl.getTypeNode();
-    const init = decl.getInitializer();
-    const variableStatement = decl.getVariableStatementOrThrow();
+  if (ts.isVariableDeclaration(compilerNode)) {
+    const variableStatement = compilerNode.parent.parent;
+    assert(
+      ts.isVariableStatement(variableStatement),
+      "expected to only get variable declarations as part of a variable statement"
+    );
 
-    if (!typeNode && init instanceof ArrowFunction) {
-      const returnTypeNode = init.getReturnTypeNode();
+    const docs =
+      variableStatement.declarationList.declarations.indexOf(compilerNode) === 1
+        ? (
+            getDocsFromCompilerNode(variableStatement) +
+            "\n\n" +
+            getDocsFromCompilerNode(compilerNode)
+          ).trim()
+        : getDocsFromCompilerNode(compilerNode);
+
+    assert(
+      ts.isIdentifier(compilerNode.name),
+      "expected name of variable declaration to be an identifier when serializing from declaration of symbol"
+    );
+
+    if (
+      !compilerNode.type &&
+      compilerNode.initializer &&
+      ts.isArrowFunction(compilerNode.initializer)
+    ) {
       return {
         kind: "function",
-        name: decl.getName(),
-        parameters: getParameters(init),
-        docs: getDocs(variableStatement),
-        typeParams: getTypeParameters(init),
-        returnType: returnTypeNode
-          ? convertTypeNode(returnTypeNode)
-          : convertType(init.getReturnType()),
+        name: compilerNode.name.text,
+        parameters: getParametersFromCompilerNode(compilerNode.initializer),
+        docs,
+        typeParams: getTypeParametersFromCompilerNode(compilerNode.initializer),
+        returnType: getReturnType(compilerNode.initializer),
       };
     }
     return {
       kind: "variable",
-      name: decl.getName(),
-      docs: getDocs(variableStatement),
-      variableKind: variableStatement.getDeclarationKind(),
-      type: typeNode ? convertTypeNode(typeNode) : convertType(decl.getType()),
+      name: compilerNode.name.text,
+      docs,
+      variableKind:
+        variableStatement.declarationList.flags & ts.NodeFlags.Const
+          ? "const"
+          : variableStatement.declarationList.flags & ts.NodeFlags.Let
+          ? "let"
+          : "var",
+      type: compilerNode.type
+        ? convertTypeNode(compilerNode.type)
+        : convertType(
+            getProject()
+              .getTypeChecker()
+              .compilerObject.getTypeAtLocation(compilerNode)
+          ),
     };
   }
   if (decl instanceof PropertySignature) {
@@ -295,7 +324,6 @@ export function convertDeclaration(decl: Node): SerializedDeclaration {
     };
   }
   let docs = Node.isJSDocableNode(decl) ? getDocs(decl) : "";
-  let symbol = decl.getSymbolOrThrow();
   console.log(symbol.getName(), decl.getKindName());
   return {
     kind: "unknown",

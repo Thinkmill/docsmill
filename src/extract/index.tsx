@@ -184,7 +184,7 @@ function resolveSymbolQueue() {
 
     state.publicSymbols.set(
       symbol,
-      decls.map((decl) => convertDeclaration(decl)) as [
+      decls.map((decl) => convertDeclaration(decl, symbol.compilerSymbol)) as [
         SerializedDeclaration,
         ...SerializedDeclaration[]
       ]
