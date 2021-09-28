@@ -147,10 +147,10 @@ export async function getPackage(
     await project.getFileSystem().readFile(`${pkgPath}/package.json`)
   );
 
-  const externalPackages: Map<
+  const resolvedDeps = new Map<
     string,
-    { version: string; pkg: string; id: string }
-  > = new Map();
+    { entrypoints: Map<string, string>; version: string; pkgPath: string }
+  >();
 
   await Promise.all(
     [...dependencies].map(async (dep) => {
@@ -194,27 +194,35 @@ export async function getPackage(
       [...entrypoints.values()].map((resolved) =>
         project.addSourceFileAtPath(resolved)
       );
-
-      const rootSymbols = new Map<Symbol, string>();
-      for (const [entrypoint, resolved] of entrypoints) {
-        const sourceFile = project.getSourceFile(resolved);
-        const sourceFileSymbol = sourceFile?.getSymbol();
-        if (sourceFileSymbol) {
-          rootSymbols.set(sourceFileSymbol, entrypoint);
-        }
-      }
-      const { goodIdentifiers } = getDocsInfo(
-        rootSymbols,
-        pkgPath,
-        dep,
-        version,
-        project
-      );
-      for (const [symbolId, identifier] of Object.entries(goodIdentifiers)) {
-        externalPackages.set(symbolId, { version, pkg: dep, id: identifier });
-      }
+      resolvedDeps.set(dep, { entrypoints, version, pkgPath });
     })
   );
+
+  const externalPackages: Map<
+    string,
+    { version: string; pkg: string; id: string }
+  > = new Map();
+
+  for (const [dep, { entrypoints, version, pkgPath }] of resolvedDeps) {
+    const rootSymbols = new Map<Symbol, string>();
+    for (const [entrypoint, resolved] of entrypoints) {
+      const sourceFile = project.getSourceFile(resolved);
+      const sourceFileSymbol = sourceFile?.getSymbol();
+      if (sourceFileSymbol) {
+        rootSymbols.set(sourceFileSymbol, entrypoint);
+      }
+    }
+    const { goodIdentifiers } = getDocsInfo(
+      rootSymbols,
+      pkgPath,
+      dep,
+      version,
+      project
+    );
+    for (const [symbolId, identifier] of Object.entries(goodIdentifiers)) {
+      externalPackages.set(symbolId, { version, pkg: dep, id: identifier });
+    }
+  }
 
   const rootSymbols = new Map<Symbol, string>();
 
