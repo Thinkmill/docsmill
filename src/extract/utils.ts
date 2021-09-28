@@ -4,8 +4,6 @@ import {
   ParameteredNode,
   ts,
   Symbol,
-  TypeElementMemberedNode,
-  Node,
   Project,
 } from "ts-morph";
 import semver from "semver";
@@ -13,7 +11,7 @@ import path from "path";
 import { convertTypeNode } from "./convert-node";
 import { convertType } from "./convert-type";
 import hashString from "@emotion/hash";
-import { assert, assertNever } from "../lib/assert";
+import { assert } from "../lib/assert";
 import { DocInfo, getProject } from ".";
 import {
   TypeParam,
@@ -48,71 +46,6 @@ export function getTypeParametersFromCompilerNode(
         : null,
       default: typeParam.default ? convertTypeNode(typeParam.default) : null,
     };
-  });
-}
-
-export function getObjectMembers(
-  node: TypeElementMemberedNode
-): ObjectMember[] {
-  return node.getMembers().map((member): ObjectMember => {
-    if (Node.isIndexSignatureDeclaration(member)) {
-      return {
-        kind: "index",
-        key: convertTypeNode(member.getKeyTypeNode()),
-        value: convertTypeNode(member.getReturnTypeNodeOrThrow()),
-        docs: "",
-        readonly: member.hasModifier("readonly"),
-      };
-    }
-    if (Node.isPropertySignature(member)) {
-      return {
-        kind: "prop",
-        name: member.getName(),
-        docs: getDocs(member),
-        optional: member.hasQuestionToken(),
-        readonly: member.isReadonly(),
-        type: convertTypeNode(member.getTypeNodeOrThrow()),
-      };
-    }
-    if (Node.isMethodSignature(member)) {
-      const returnTypeNode = member.getReturnTypeNode();
-      return {
-        kind: "method",
-        name: member.getName(),
-        optional: member.hasQuestionToken(),
-        parameters: getParameters(member),
-        typeParams: getTypeParameters(member),
-        docs: getDocs(member),
-        returnType: returnTypeNode
-          ? convertTypeNode(returnTypeNode)
-          : convertType(member.getReturnType()),
-      };
-    }
-    if (Node.isCallSignatureDeclaration(member)) {
-      const returnTypeNode = member.getReturnTypeNode();
-      return {
-        kind: "call",
-        parameters: getParameters(member),
-        typeParams: getTypeParameters(member),
-        docs: getDocs(member),
-        returnType: returnTypeNode
-          ? convertTypeNode(returnTypeNode)
-          : convertType(member.getReturnType()),
-      };
-    }
-    if (Node.isConstructSignatureDeclaration(member)) {
-      const returnTypeNode = member.getReturnTypeNode();
-      return {
-        kind: "constructor",
-        parameters: getParameters(member),
-        typeParams: getTypeParameters(member),
-        docs: getDocs(member),
-        returnType: returnTypeNode
-          ? convertTypeNode(returnTypeNode)
-          : convertType(member.getReturnType()),
-      };
-    }
-    assertNever(member);
   });
 }
 

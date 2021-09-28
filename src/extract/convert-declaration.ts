@@ -3,10 +3,6 @@ import {
   ClassDeclaration,
   ClassStaticBlockDeclaration,
   ConstructorDeclaration,
-  EnumDeclaration,
-  EnumMember,
-  FunctionDeclaration,
-  InterfaceDeclaration,
   JSDoc,
   MethodDeclaration,
   ModuleDeclaration,
@@ -19,11 +15,14 @@ import {
   SourceFile,
   StringLiteral,
   ts,
-  TypeAliasDeclaration,
   VariableDeclaration,
 } from "ts-morph";
-import { collectSymbol, getRootSymbolName } from ".";
-import { ClassMember, SerializedDeclaration } from "../lib/types";
+import { collectSymbol, getProject, getRootSymbolName } from ".";
+import {
+  ClassMember,
+  SerializedDeclaration,
+  SerializedType,
+} from "../lib/types";
 import { convertTypeNode } from "./convert-node";
 import { convertType } from "./convert-type";
 import {
@@ -32,33 +31,50 @@ import {
   getParameters,
   getSymbolIdentifier,
   getDocsFromJSDocNodes,
-  getObjectMembers,
+  getDocsFromCompilerNode,
+  getTypeParametersFromCompilerNode,
+  getParametersFromCompilerNode,
+  getObjectMembersFromCompilerNode,
 } from "./utils";
+import { assert } from "../lib/assert";
+
+function getReturnType(node: ts.SignatureDeclaration): SerializedType {
+  if (node.type) {
+    return convertTypeNode(node.type);
+  }
+  const signature = getProject()
+    .getTypeChecker()
+    .compilerObject.getSignatureFromDeclaration(node);
+  assert(
+    signature !== undefined,
+    "expected to always get signature from signature declaration"
+  );
+  const returnType = signature.getReturnType();
+  return convertType(returnType);
+}
 
 export function convertDeclaration(decl: Node): SerializedDeclaration {
-  if (decl instanceof TypeAliasDeclaration) {
-    const typeNode = decl.getTypeNode();
+  const compilerNode = decl.compilerNode;
+  if (ts.isTypeAliasDeclaration(compilerNode)) {
     return {
       kind: "type-alias",
-      name: decl.getName(),
-      docs: getDocs(decl),
-      typeParams: getTypeParameters(decl),
-      type: typeNode ? convertTypeNode(typeNode) : convertType(decl.getType()),
+      name: compilerNode.name.text,
+      docs: getDocsFromCompilerNode(compilerNode),
+      typeParams: getTypeParametersFromCompilerNode(compilerNode),
+      type: convertTypeNode(compilerNode.type),
     };
   }
-  if (decl instanceof FunctionDeclaration) {
-    const returnTypeNode = decl.getReturnTypeNode();
+
+  if (ts.isFunctionDeclaration(compilerNode)) {
     return {
       kind: "function",
       // the only case where a function declaration doesn't have a name is when it's a default export
       // (yes, function expressions never have to have names but this is a function declaration, not a function expression)
-      name: decl.getName() || "default",
-      parameters: getParameters(decl),
-      docs: getDocs(decl),
-      typeParams: getTypeParameters(decl),
-      returnType: returnTypeNode
-        ? convertTypeNode(returnTypeNode)
-        : convertType(decl.getReturnType()),
+      name: compilerNode.name?.text || "default",
+      parameters: getParametersFromCompilerNode(compilerNode),
+      docs: getDocsFromCompilerNode(compilerNode),
+      typeParams: getTypeParametersFromCompilerNode(compilerNode),
+      returnType: getReturnType(compilerNode),
     };
   }
   if (
@@ -137,14 +153,20 @@ export function convertDeclaration(decl: Node): SerializedDeclaration {
       type: typeNode ? convertTypeNode(typeNode) : convertType(decl.getType()),
     };
   }
-  if (decl instanceof InterfaceDeclaration) {
+  if (ts.isInterfaceDeclaration(compilerNode)) {
     return {
       kind: "interface",
-      name: decl.getName(),
-      docs: getDocs(decl),
-      typeParams: getTypeParameters(decl),
-      extends: decl.getExtends().map((x) => convertTypeNode(x)),
-      members: getObjectMembers(decl),
+      name: compilerNode.name.text,
+      docs: getDocsFromCompilerNode(compilerNode),
+      typeParams: getTypeParametersFromCompilerNode(compilerNode),
+      extends: (compilerNode.heritageClauses || []).flatMap((x) => {
+        assert(
+          x.token === ts.SyntaxKind.ExtendsKeyword,
+          "expected interface declaration to only have extends and never implements"
+        );
+        return x.types.map((x) => convertTypeNode(x));
+      }),
+      members: getObjectMembersFromCompilerNode(compilerNode),
     };
   }
   if (decl instanceof ClassDeclaration) {
@@ -230,25 +252,35 @@ export function convertDeclaration(decl: Node): SerializedDeclaration {
       }),
     };
   }
-  if (decl instanceof EnumDeclaration) {
+  if (ts.isEnumDeclaration(compilerNode)) {
     return {
       kind: "enum",
-      const: decl.isConstEnum(),
-      name: decl.getName(),
-      docs: getDocs(decl),
-      members: decl.getMembers().map((member) => {
-        const symbol = member.getSymbolOrThrow();
+      const: !!compilerNode.modifiers?.some(
+        (x) => x.kind === ts.SyntaxKind.ConstKeyword
+      ),
+      name: compilerNode.name.text,
+      docs: getDocsFromCompilerNode(compilerNode),
+      members: compilerNode.members.map((member) => {
+        const symbol = getProject()
+          .getTypeChecker()
+          .compilerObject.getSymbolAtLocation(member.name);
+        assert(symbol !== undefined, "expected enum member to have symbol");
         collectSymbol(symbol);
         return getSymbolIdentifier(symbol);
       }),
     };
   }
-  if (decl instanceof EnumMember) {
+  if (ts.isEnumMember(compilerNode)) {
     return {
       kind: "enum-member",
-      name: decl.getName(),
-      docs: getDocs(decl),
-      value: decl.getValue() ?? null,
+      name: ts.isIdentifier(compilerNode.name)
+        ? compilerNode.name.text
+        : compilerNode.name.getText(),
+      docs: getDocsFromCompilerNode(compilerNode),
+      value:
+        getProject()
+          .getTypeChecker()
+          .compilerObject.getConstantValue(compilerNode) ?? null,
     };
   }
   if (
