@@ -1,12 +1,4 @@
-import {
-  Project,
-  ModuleResolutionKind,
-  ts,
-  Symbol,
-  SourceFile,
-  ModuleDeclaration,
-  StringLiteral,
-} from "ts-morph";
+import { Project, ts, SourceFile } from "ts-morph";
 import fetch from "node-fetch";
 import semver from "semver";
 import tar from "tar-stream";
@@ -117,7 +109,7 @@ export async function getPackage(
     compilerOptions: {
       noEmit: true,
       strict: true,
-      moduleResolution: ModuleResolutionKind.NodeJs,
+      moduleResolution: ts.ModuleResolutionKind.NodeJs,
     },
     useInMemoryFileSystem: true,
   });
@@ -204,12 +196,12 @@ export async function getPackage(
   > = new Map();
 
   for (const [dep, { entrypoints, version, pkgPath }] of resolvedDeps) {
-    const rootSymbols = new Map<Symbol, string>();
+    const rootSymbols = new Map<ts.Symbol, string>();
     for (const [entrypoint, resolved] of entrypoints) {
       const sourceFile = project.getSourceFile(resolved);
       const sourceFileSymbol = sourceFile?.getSymbol();
       if (sourceFileSymbol) {
-        rootSymbols.set(sourceFileSymbol, entrypoint);
+        rootSymbols.set(sourceFileSymbol.compilerSymbol, entrypoint);
       }
     }
     const { goodIdentifiers } = getDocsInfo(
@@ -224,26 +216,27 @@ export async function getPackage(
     }
   }
 
-  const rootSymbols = new Map<Symbol, string>();
+  const rootSymbols = new Map<ts.Symbol, string>();
 
-  for (const module of project.getTypeChecker().getAmbientModules()) {
-    const decl = module.getDeclarations()[0];
+  for (const module of project
+    .getTypeChecker()
+    .compilerObject.getAmbientModules()) {
+    const decl = module.declarations?.[0];
     assert(
-      decl instanceof ModuleDeclaration,
+      decl !== undefined && ts.isModuleDeclaration(decl),
       "expected module declaration on ambient module symbol"
     );
-    const nameNode = decl.getNameNodes();
     assert(
-      nameNode instanceof StringLiteral,
+      ts.isStringLiteral(decl.name),
       "expected module declaration from ambient module symbol to have string literal name node"
     );
-    rootSymbols.set(module, nameNode.getLiteralValue());
+    rootSymbols.set(module, decl.name.text);
   }
   for (const [entrypoint, resolved] of entrypoints) {
     const sourceFile = project.getSourceFile(resolved);
     const sourceFileSymbol = sourceFile?.getSymbol();
     if (sourceFileSymbol) {
-      rootSymbols.set(sourceFileSymbol, entrypoint);
+      rootSymbols.set(sourceFileSymbol.compilerSymbol, entrypoint);
     }
   }
 

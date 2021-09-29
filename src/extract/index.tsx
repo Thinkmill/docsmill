@@ -1,4 +1,4 @@
-import { Project, Symbol, ts } from "ts-morph";
+import { Project, ts } from "ts-morph";
 import path from "path";
 import { findCanonicalExportLocations } from "./exports";
 import {
@@ -85,7 +85,7 @@ export type DocInfo = {
 };
 
 export function getDocsInfo(
-  rootSymbols: Map<Symbol, string>,
+  rootSymbols: Map<ts.Symbol, string>,
   pkgDir: string,
   packageName: string,
   currentVersion: string,
@@ -96,12 +96,8 @@ export function getDocsInfo(
     undefined
 ): DocInfo {
   state = getInitialState();
-  state.rootSymbols = new Map(
-    [...rootSymbols].map(([symbol, name]) => [symbol.compilerSymbol, name])
-  );
-  state.symbolsQueue = new Set(
-    [...rootSymbols.keys()].map((x) => x.compilerSymbol)
-  );
+  state.rootSymbols = rootSymbols;
+  state.symbolsQueue = new Set(rootSymbols.keys());
   state.pkgDir = pkgDir;
   state.project = project;
 
@@ -170,7 +166,9 @@ export async function getInfo(filename: string) {
     tsConfigFilePath: "./tsconfig.json",
   });
   const sourceFile = project.getSourceFileOrThrow(path.resolve(filename));
-  const rootSymbols = new Map([[sourceFile.getSymbolOrThrow(), "test"]]);
+  const rootSymbols = new Map([
+    [sourceFile.getSymbolOrThrow().compilerSymbol, "test"],
+  ]);
   return getDocsInfo(rootSymbols, ".", "test", "0.0.0", project);
 }
 
