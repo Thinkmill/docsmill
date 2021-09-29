@@ -1,4 +1,4 @@
-import { TypeNode, Node, ts, CompilerNodeToWrappedType } from "ts-morph";
+import { ts } from "ts-morph";
 import {
   getSymbolIdentifier,
   getTypeParameters,
@@ -10,15 +10,6 @@ import {
 import { collectSymbol } from ".";
 import { assert, assertNever } from "../lib/assert";
 import { SerializedType, TupleElement } from "../lib/types";
-
-export function wrapInTsMorphNode<
-  LocalCompilerNodeType extends ts.Node = ts.Node
->(
-  someNode: Node,
-  compilerNode: LocalCompilerNodeType
-): CompilerNodeToWrappedType<LocalCompilerNodeType> {
-  return (someNode as any)._getNodeFromCompilerNode(compilerNode);
-}
 
 function getModifierKind(
   modifier:
@@ -118,10 +109,7 @@ function handleReference(
   };
 }
 
-export function convertTypeNode(_node: TypeNode | ts.TypeNode): SerializedType {
-  const compilerNode = (_node as any).compilerNode
-    ? ((_node as any).compilerNode as ts.TypeNode)
-    : (_node as ts.TypeNode);
+export function convertTypeNode(compilerNode: ts.TypeNode): SerializedType {
   if (ts.isTypeReferenceNode(compilerNode)) {
     return handleReference(compilerNode.typeArguments, compilerNode.typeName);
   }

@@ -9,7 +9,6 @@ import {
 import { SerializedDeclaration } from "../lib/types";
 import { convertDeclaration } from "./convert-declaration";
 import { assert } from "../lib/assert";
-import { wrapInTsMorphNode } from "./convert-node";
 
 function getInitialState() {
   return {
@@ -133,21 +132,14 @@ export function getDocsInfo(
       )
     ),
     canonicalExportLocations: Object.fromEntries(
-      [
-        ...findCanonicalExportLocations(
-          [...state.rootSymbols.keys()].map((symbol) =>
-            wrapInTsMorphNode(
-              project.getSourceFiles()[0],
-              symbol.declarations![0] as ts.SourceFile
-            )
-          )
-        ),
-      ].map(([symbol, { exportName, parent }]) => {
-        return [
-          getSymbolIdentifier(symbol),
-          [exportName, getSymbolIdentifier(parent.getSymbolOrThrow())] as const,
-        ];
-      })
+      [...findCanonicalExportLocations([...state.rootSymbols.keys()])].map(
+        ([symbol, { exportName, parent }]) => {
+          return [
+            getSymbolIdentifier(symbol),
+            [exportName, getSymbolIdentifier(parent)] as const,
+          ];
+        }
+      )
     ),
   };
 

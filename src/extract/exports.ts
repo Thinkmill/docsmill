@@ -1,81 +1,76 @@
-import {
-  Symbol,
-  SourceFile,
-  ModuleDeclaration,
-  ModuleDeclarationKind,
-  Node,
-  ModuledNode as _ModuledNode,
-} from "ts-morph";
+import { ts } from "ts-morph";
+import { assert } from "../lib/assert";
+import { getExportedDeclarations } from "./get-exported-declarations";
+import { getSymbolAtLocation } from "./utils";
 
 type ExportName = string;
 
-type ModuledNode = Node & _ModuledNode;
-
 function collectImportableSymbolsFromModuledNode(
-  moduledNode: ModuledNode,
-  state: Map<Symbol, Map<ModuledNode, ExportName>>
+  moduleSymbol: ts.Symbol,
+  state: Map<ts.Symbol, Map<ts.Symbol, ExportName>>
 ) {
-  for (const [exportName, decls] of moduledNode.getExportedDeclarations()) {
-    // this should be properly handled
-    // if (decls.length !== 1) {
-    //   throw new Error(
-    //     "unexpected more than one exported decl for the same export name"
-    //   );
-    // }
+  for (const [exportName, decls] of getExportedDeclarations(moduleSymbol)) {
     const decl = decls[0];
     if (!decl) {
       console.log(
-        `no declarations for export ${exportName} in ${
-          moduledNode instanceof SourceFile
-            ? moduledNode.getFilePath()
-            : moduledNode instanceof ModuleDeclaration
-            ? moduledNode.getName()
-            : "unknown"
-        }`
+        `no declarations for export ${exportName} in ${moduleSymbol.getName()}`
       );
       continue;
     }
-    const symbol = decl.getSymbolOrThrow();
+    const symbol = getSymbolAtLocation(decl);
+
+    assert(
+      symbol !== undefined,
+      "expected symbol to exist in exported declaration"
+    );
 
     if (!state.has(symbol)) {
       state.set(symbol, new Map());
     }
     const exportLocations = state.get(symbol)!;
-    exportLocations.set(moduledNode, exportName);
+    exportLocations.set(moduleSymbol, exportName);
     for (const decl of decls) {
       if (
-        decl instanceof SourceFile ||
-        (decl instanceof ModuleDeclaration &&
-          decl.getDeclarationKind() === ModuleDeclarationKind.Namespace)
+        ts.isSourceFile(decl) ||
+        (ts.isModuleDeclaration(decl) &&
+          ts.isIdentifier(decl.name) &&
+          decl.body &&
+          ts.isModuleBlock(decl.body))
       ) {
         // need to see if this can be circular
-        collectImportableSymbolsFromModuledNode(decl, state);
+        const symbol = getSymbolAtLocation(decl);
+        assert(
+          symbol !== undefined,
+          "expected symbol to exist in exported declaration"
+        );
+        collectImportableSymbolsFromModuledNode(symbol, state);
       }
     }
   }
 }
 
 export function findCanonicalExportLocations(
-  sourceFiles: SourceFile[]
-): Map<Symbol, { parent: ModuledNode; exportName: ExportName }> {
-  const state = new Map<Symbol, Map<ModuledNode, ExportName>>();
-  for (const sourceFile of sourceFiles) {
-    collectImportableSymbolsFromModuledNode(sourceFile, state);
+  rootSymbols: ts.Symbol[]
+): Map<ts.Symbol, { parent: ts.Symbol; exportName: ExportName }> {
+  const state = new Map<ts.Symbol, Map<ts.Symbol, ExportName>>();
+  for (const rootSymbol of rootSymbols) {
+    collectImportableSymbolsFromModuledNode(rootSymbol, state);
   }
   const map = new Map<
-    Symbol,
-    { parent: ModuledNode; exportName: ExportName }
+    ts.Symbol,
+    { parent: ts.Symbol; exportName: ExportName }
   >();
   for (const [symbol, exportLocations] of state) {
-    let current: [ModuledNode, string] | undefined;
+    let current: [ts.Symbol, string] | undefined;
     for (const val of exportLocations) {
       if (!current) {
         current = val;
       }
       if (
-        val[0] instanceof SourceFile &&
-        (!(current[0] instanceof SourceFile) ||
-          val[0].getFilePath().length < current[0].getFilePath().length)
+        ts.isSourceFile(val[0].declarations![0]) &&
+        (!ts.isSourceFile(current[0].declarations![0]) ||
+          val[0].declarations![0].fileName.length <
+            current[0].declarations![0].fileName.length)
       ) {
         current = val;
       }
