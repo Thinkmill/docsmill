@@ -118,7 +118,7 @@ export type ClassMember =
 
 export type TupleElement = {
   label: string | null;
-  kind: "optional" | "required" | "rest" | "variadic";
+  kind: "optional" | "required" | "rest";
   type: SerializedType;
 };
 

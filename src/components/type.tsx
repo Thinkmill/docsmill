@@ -155,14 +155,11 @@ export function Type({ type }: { type: SerializedType }): JSX.Element {
         {type.elements.map((element, i) => {
           return (
             <Fragment key={i}>
-              {(element.kind === "rest" || element.kind === "variadic") && (
-                <Syntax kind="colon">...</Syntax>
-              )}
+              {element.kind === "rest" && <Syntax kind="colon">...</Syntax>}
               <Type type={element.type} />
               {element.kind === "optional" && (
                 <span className={codeFont}>?</span>
               )}
-              {element.kind === "rest" && <Syntax kind="bracket">[]</Syntax>}
               {i !== type.elements.length - 1 && (
                 <Syntax kind="comma">, </Syntax>
               )}

@@ -109,6 +109,22 @@ function handleReference(
   };
 }
 
+const intrinsics = new Map([
+  [ts.SyntaxKind.AnyKeyword, "any"],
+  [ts.SyntaxKind.UndefinedKeyword, "undefined"],
+  [ts.SyntaxKind.SymbolKeyword, "symbol"],
+  [ts.SyntaxKind.NeverKeyword, "never"],
+  [ts.SyntaxKind.BooleanKeyword, "boolean"],
+  [ts.SyntaxKind.ObjectKeyword, "object"],
+  [ts.SyntaxKind.StringKeyword, "string"],
+  [ts.SyntaxKind.NumberKeyword, "number"],
+  [ts.SyntaxKind.VoidExpression, "void"],
+  [ts.SyntaxKind.UnknownKeyword, "unknown"],
+  [ts.SyntaxKind.BigIntKeyword, "bigint"],
+  [ts.SyntaxKind.IntrinsicKeyword, "intrinsic"],
+  [ts.SyntaxKind.ThisType, "this"],
+]);
+
 export function convertTypeNode(compilerNode: ts.TypeNode): SerializedType {
   if (ts.isTypeReferenceNode(compilerNode)) {
     return handleReference(compilerNode.typeArguments, compilerNode.typeName);
@@ -117,45 +133,10 @@ export function convertTypeNode(compilerNode: ts.TypeNode): SerializedType {
     return handleReference(compilerNode.typeArguments, compilerNode.expression);
   }
 
-  if (compilerNode.kind === ts.SyntaxKind.AnyKeyword) {
-    return { kind: "intrinsic", value: "any" };
-  }
-  if (compilerNode.kind === ts.SyntaxKind.UndefinedKeyword) {
-    return { kind: "intrinsic", value: "undefined" };
-  }
-  if (compilerNode.kind === ts.SyntaxKind.SymbolKeyword) {
-    return { kind: "intrinsic", value: "symbol" };
-  }
-  if (compilerNode.kind === ts.SyntaxKind.NeverKeyword) {
-    return { kind: "intrinsic", value: "never" };
-  }
-  if (compilerNode.kind === ts.SyntaxKind.BooleanKeyword) {
-    return { kind: "intrinsic", value: "boolean" };
-  }
-  if (compilerNode.kind === ts.SyntaxKind.ObjectKeyword) {
-    return { kind: "intrinsic", value: "object" };
-  }
-  if (compilerNode.kind === ts.SyntaxKind.StringKeyword) {
-    return { kind: "intrinsic", value: "string" };
-  }
-  if (compilerNode.kind === ts.SyntaxKind.NumberKeyword) {
-    return { kind: "intrinsic", value: "number" };
-  }
-  if (compilerNode.kind === ts.SyntaxKind.VoidKeyword) {
-    return { kind: "intrinsic", value: "void" };
-  }
-  if (compilerNode.kind === ts.SyntaxKind.UnknownKeyword) {
-    return { kind: "intrinsic", value: "unknown" };
-  }
-  if (compilerNode.kind === ts.SyntaxKind.BigIntKeyword) {
-    return { kind: "intrinsic", value: "bigint" };
-  }
-  if (compilerNode.kind === ts.SyntaxKind.IntrinsicKeyword) {
-    return { kind: "intrinsic", value: "intrinsic" };
-  }
+  const intrinsic = intrinsics.get(compilerNode.kind);
 
-  if (ts.isThisTypeNode(compilerNode)) {
-    return { kind: "intrinsic", value: "this" };
+  if (intrinsic !== undefined) {
+    return { kind: "intrinsic", value: intrinsic };
   }
 
   if (ts.isLiteralTypeNode(compilerNode)) {
@@ -280,7 +261,7 @@ export function convertTypeNode(compilerNode: ts.TypeNode): SerializedType {
         if (ts.isNamedTupleMember(element)) {
           return {
             kind: element.dotDotDotToken
-              ? "variadic"
+              ? "rest"
               : element.questionToken
               ? "optional"
               : "required",
@@ -298,7 +279,7 @@ export function convertTypeNode(compilerNode: ts.TypeNode): SerializedType {
         }
         if (isRest) {
           innerType = element.type;
-          kind = "variadic";
+          kind = "rest";
         }
         return {
           kind,
