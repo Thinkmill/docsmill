@@ -2,9 +2,9 @@ import { Project, Symbol, ts } from "ts-morph";
 import path from "path";
 import { findCanonicalExportLocations } from "./exports";
 import {
+  getAliasedSymbol,
   getSymbolIdentifier,
   getSymbolsForInnerBitsAndGoodIdentifiers,
-  wrapInTsMorphSymbol,
 } from "./utils";
 import { SerializedDeclaration } from "../lib/types";
 import { convertDeclaration } from "./convert-declaration";
@@ -15,13 +15,16 @@ function getInitialState() {
   return {
     rootSymbols: new Map<ts.Symbol, string>(),
     publicSymbols: new Map<
-      Symbol,
+      ts.Symbol,
       [SerializedDeclaration, ...SerializedDeclaration[]]
     >(),
-    symbolsQueue: new Set<Symbol>(),
-    symbolsToSymbolsWhichReferenceTheSymbol: new Map<Symbol, Set<Symbol>>(),
-    currentlyVistedSymbol: undefined as Symbol | undefined,
-    referencedExternalSymbols: new Set<Symbol>(),
+    symbolsQueue: new Set<ts.Symbol>(),
+    symbolsToSymbolsWhichReferenceTheSymbol: new Map<
+      ts.Symbol,
+      Set<ts.Symbol>
+    >(),
+    currentlyVistedSymbol: undefined as ts.Symbol | undefined,
+    referencedExternalSymbols: new Set<ts.Symbol>(),
     pkgDir: "",
     project: undefined as unknown as Project,
   };
@@ -41,20 +44,16 @@ export function getRootSymbolName(symbol: ts.Symbol) {
 
 let state = getInitialState();
 
-export function collectSymbol(_symbol: Symbol | ts.Symbol) {
-  const symbol =
-    _symbol instanceof Symbol ? _symbol : wrapInTsMorphSymbol(_symbol);
-
-  if (symbol.getDeclarations().length === 0) {
+export function collectSymbol(symbol: ts.Symbol) {
+  if (!symbol.declarations?.length) {
     return;
   }
-  const decl = symbol.getDeclarations()[0];
+  const decl = symbol.declarations[0];
   if (
-    !decl.getSourceFile().getFilePath().includes(state.pkgDir) ||
+    !decl.getSourceFile().fileName.includes(state.pkgDir) ||
     decl
       .getSourceFile()
-      .getFilePath()
-      .includes(path.join(state.pkgDir, "node_modules"))
+      .fileName.includes(path.join(state.pkgDir, "node_modules"))
   ) {
     state.referencedExternalSymbols.add(symbol);
     return;
@@ -101,7 +100,9 @@ export function getDocsInfo(
   state.rootSymbols = new Map(
     [...rootSymbols].map(([symbol, name]) => [symbol.compilerSymbol, name])
   );
-  state.symbolsQueue = new Set(rootSymbols.keys());
+  state.symbolsQueue = new Set(
+    [...rootSymbols.keys()].map((x) => x.compilerSymbol)
+  );
   state.pkgDir = pkgDir;
   state.project = project;
 
@@ -123,9 +124,9 @@ export function getDocsInfo(
       [...state.symbolsToSymbolsWhichReferenceTheSymbol].map(
         ([symbol, symbolsThatReferenceIt]) => {
           return [
-            getSymbolIdentifier(symbol.getAliasedSymbol() || symbol),
+            getSymbolIdentifier(getAliasedSymbol(symbol) || symbol),
             [...symbolsThatReferenceIt].map((x) =>
-              getSymbolIdentifier(x.getAliasedSymbol() || x)
+              getSymbolIdentifier(getAliasedSymbol(x) || x)
             ),
           ];
         }
@@ -183,18 +184,18 @@ export async function getInfo(filename: string) {
 
 function resolveSymbolQueue() {
   while (state.symbolsQueue.size) {
-    const symbol: Symbol = state.symbolsQueue.values().next().value;
+    const symbol: ts.Symbol = state.symbolsQueue.values().next().value;
     state.symbolsQueue.delete(symbol);
     state.currentlyVistedSymbol = symbol;
-    const decls = symbol.getDeclarations();
+    const decls = symbol.declarations;
     assert(
-      decls.length >= 1,
+      decls !== undefined && decls.length >= 1,
       "symbols in symbol queue must have at least one declaration"
     );
 
     state.publicSymbols.set(
       symbol,
-      decls.map((decl) => convertDeclaration(decl.compilerNode)) as [
+      decls.map((decl) => convertDeclaration(decl)) as [
         SerializedDeclaration,
         ...SerializedDeclaration[]
       ]
