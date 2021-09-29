@@ -1,5 +1,5 @@
 import { ts, Type } from "ts-morph";
-import { getProject } from ".";
+import { getTypeChecker } from ".";
 import { assert } from "../lib/assert";
 import { SerializedType } from "../lib/types";
 import { convertTypeNode } from "./convert-node";
@@ -9,15 +9,13 @@ export function wrapInTsMorphType(someType: Type, compilerType: ts.Type) {
 }
 
 export function convertType(type: ts.Type | Type): SerializedType {
-  const compilerNode = getProject()
-    .getTypeChecker()
-    .compilerObject.typeToTypeNode(
-      (type as any).compilerType
-        ? ((type as any).compilerType as ts.Type)
-        : (type as ts.Type),
-      undefined,
-      ts.NodeBuilderFlags.NoTruncation
-    );
+  const compilerNode = getTypeChecker().typeToTypeNode(
+    (type as any).compilerType
+      ? ((type as any).compilerType as ts.Type)
+      : (type as ts.Type),
+    undefined,
+    ts.NodeBuilderFlags.NoTruncation
+  );
   assert(compilerNode !== undefined);
   return convertTypeNode(compilerNode);
 }

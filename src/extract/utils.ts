@@ -5,7 +5,7 @@ import { convertTypeNode } from "./convert-node";
 import { convertType } from "./convert-type";
 import hashString from "@emotion/hash";
 import { assert } from "../lib/assert";
-import { DocInfo, getProject } from ".";
+import { DocInfo, getProject, getTypeChecker } from ".";
 import {
   TypeParam,
   ObjectMember,
@@ -124,9 +124,7 @@ export function getParameters(
       name: ts.isIdentifier(x.name) ? x.name.text : x.name.getText(),
       type: x.type
         ? convertTypeNode(x.type)
-        : convertType(
-            getProject().getTypeChecker().compilerObject.getTypeAtLocation(x)
-          ),
+        : convertType(getTypeChecker().getTypeAtLocation(x)),
       kind: x.dotDotDotToken
         ? "rest"
         : x.questionToken || x.initializer
@@ -149,9 +147,7 @@ function getJsDocCommentTextMarkdown(
   return comment
     .map((x) => {
       if (ts.isJSDocLink(x) && x.name) {
-        const symbol = getProject()
-          .getTypeChecker()
-          .compilerObject.getSymbolAtLocation(x.name);
+        const symbol = getSymbolAtLocation(x.name);
         if (symbol) {
           const finalSymbol = getAliasedSymbol(symbol) || symbol;
 
@@ -180,7 +176,7 @@ export function getAliasedSymbol(symbol: ts.Symbol): ts.Symbol | undefined {
   if (!(symbol.flags & ts.SymbolFlags.Alias)) {
     return undefined;
   }
-  return getProject().getTypeChecker().compilerObject.getAliasedSymbol(symbol);
+  return getTypeChecker().getAliasedSymbol(symbol);
 }
 
 export function getDocsFromJSDocNodes(nodes: ts.JSDoc[]) {
@@ -241,6 +237,28 @@ export function getSymbolIdentifier(_symbol: Symbol | ts.Symbol) {
       })
       .join("-")
   );
+}
+
+export function getSymbolAtLocation(
+  compilerNode: ts.Node
+): ts.Symbol | undefined {
+  const typeChecker = getTypeChecker();
+  const boundSymbol = (compilerNode as any).symbol as ts.Symbol | undefined;
+  if (boundSymbol !== undefined) {
+    return boundSymbol;
+  }
+
+  const typeCheckerSymbol = typeChecker.getSymbolAtLocation(compilerNode);
+  if (typeCheckerSymbol !== undefined) {
+    return typeCheckerSymbol;
+  }
+
+  const nameNode = (compilerNode as any).name as ts.Node | undefined;
+  if (nameNode != null) {
+    return getSymbolAtLocation(nameNode);
+  }
+
+  return undefined;
 }
 
 export function getSymbolsForInnerBitsAndGoodIdentifiers(

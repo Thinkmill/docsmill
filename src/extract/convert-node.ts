@@ -5,8 +5,9 @@ import {
   getParameters,
   getObjectMembers,
   getAliasedSymbol,
+  getSymbolAtLocation,
 } from "./utils";
-import { collectSymbol, getProject } from ".";
+import { collectSymbol } from ".";
 import { assert, assertNever } from "../lib/assert";
 import { SerializedType, TupleElement } from "../lib/types";
 
@@ -64,10 +65,7 @@ function handleReference(
   typeArguments: ts.NodeArray<ts.TypeNode> | undefined,
   typeName: ts.Node
 ): SerializedType {
-  const typeChecker = getProject().getTypeChecker().compilerObject;
-  let symbol =
-    ((typeName as any).symbol as ts.Symbol) ||
-    typeChecker.getSymbolAtLocation(typeName);
+  let symbol = getSymbolAtLocation(typeName);
   if (!symbol) {
     return {
       kind: "reference",
@@ -352,10 +350,7 @@ export function convertTypeNode(_node: TypeNode | ts.TypeNode): SerializedType {
   if (ts.isImportTypeNode(compilerNode)) {
     if (compilerNode.isTypeOf) {
       let node = compilerNode.qualifier || compilerNode;
-      const typeChecker = getProject().getTypeChecker().compilerObject;
-      let symbol =
-        ((node as any).symbol as ts.Symbol) ||
-        typeChecker.getSymbolAtLocation(node);
+      let symbol = getSymbolAtLocation(node);
       if (symbol) {
         const aliasedSymbol = getAliasedSymbol(symbol);
         if (aliasedSymbol) {
@@ -386,10 +381,7 @@ export function convertTypeNode(_node: TypeNode | ts.TypeNode): SerializedType {
 
   if (ts.isTypeQueryNode(compilerNode)) {
     const entityName = compilerNode.exprName;
-    const typeChecker = getProject().getTypeChecker().compilerObject;
-    let symbol =
-      ((entityName as any).symbol as ts.Symbol) ||
-      typeChecker.getSymbolAtLocation(entityName);
+    let symbol = getSymbolAtLocation(entityName);
     if (symbol) {
       const aliasedSymbol = getAliasedSymbol(symbol);
       if (aliasedSymbol) {

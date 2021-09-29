@@ -1,15 +1,5 @@
-import {
-  JSDoc,
-  ModuleDeclaration,
-  ModuleDeclarationKind,
-  ModuledNode,
-  Node,
-  PropertySignature,
-  SourceFile,
-  StringLiteral,
-  ts,
-} from "ts-morph";
-import { collectSymbol, getProject, getRootSymbolName } from ".";
+import { ts } from "ts-morph";
+import { collectSymbol, getRootSymbolName, getTypeChecker } from ".";
 import {
   ClassMember,
   SerializedDeclaration,
@@ -18,23 +8,23 @@ import {
 import { convertTypeNode } from "./convert-node";
 import { convertType } from "./convert-type";
 import {
-  getDocs,
   getSymbolIdentifier,
   getDocsFromJSDocNodes,
   getDocsFromCompilerNode,
   getTypeParameters,
   getParameters,
   getObjectMembers,
+  getAliasedSymbol,
+  getSymbolAtLocation,
 } from "./utils";
 import { assert } from "../lib/assert";
+import { getExportedDeclarations } from "./get-exported-declarations";
 
 function getReturnType(node: ts.SignatureDeclaration): SerializedType {
   if (node.type) {
     return convertTypeNode(node.type);
   }
-  const signature = getProject()
-    .getTypeChecker()
-    .compilerObject.getSignatureFromDeclaration(node);
+  const signature = getTypeChecker().getSignatureFromDeclaration(node);
   assert(
     signature !== undefined,
     "expected to always get signature from signature declaration"
@@ -44,10 +34,8 @@ function getReturnType(node: ts.SignatureDeclaration): SerializedType {
 }
 
 export function convertDeclaration(
-  decl: Node,
-  symbol: ts.Symbol
+  compilerNode: ts.Node
 ): SerializedDeclaration {
-  const compilerNode = decl.compilerNode;
   if (ts.isTypeAliasDeclaration(compilerNode)) {
     return {
       kind: "type-alias",
@@ -71,26 +59,52 @@ export function convertDeclaration(
     };
   }
   if (
-    decl instanceof SourceFile ||
-    (decl instanceof ModuleDeclaration &&
-      decl.getDeclarationKind() === ModuleDeclarationKind.Module)
+    ts.isSourceFile(compilerNode) ||
+    (ts.isModuleDeclaration(compilerNode) &&
+      ts.isStringLiteral(compilerNode.name))
   ) {
-    let jsDocs = getJsDocsFromSourceFile(decl);
+    // decl instanceof SourceFile ||
+    // (decl instanceof ModuleDeclaration &&
+    //   decl.getDeclarationKind() === ModuleDeclarationKind.Module)
+
+    let jsDocs = getJsDocsFromSourceFile(compilerNode);
 
     // if you have a file that re-exports _everything_ from somewhere else
     // then look at that place for jsdocs since e.g. Preconstruct
     // generates a declaration file that re-exports from the actual place that might include a JSDoc comment
-    if (jsDocs.length === 0) {
+    if (jsDocs.length === 0 && ts.isSourceFile(compilerNode)) {
       let foundStar = false;
-      let sourceFile: undefined | SourceFile = undefined;
-      for (const exportDecl of decl.getExportDeclarations()) {
-        const file = exportDecl.getModuleSpecifierSourceFile();
-        if (!file || (sourceFile && file !== sourceFile)) {
+      let sourceFile: undefined | ts.SourceFile = undefined;
+
+      for (const exportDecl of compilerNode.statements) {
+        if (
+          exportDecl.modifiers?.some(
+            (x) => x.kind === ts.SyntaxKind.ExportKeyword
+          )
+        ) {
+          sourceFile = undefined;
+          break;
+        }
+        if (!ts.isExportDeclaration(exportDecl)) {
+          continue;
+        }
+
+        const file =
+          exportDecl.moduleSpecifier &&
+          ts.isStringLiteral(exportDecl.moduleSpecifier)
+            ? getSymbolAtLocation(exportDecl.moduleSpecifier)?.valueDeclaration
+            : undefined;
+
+        if (
+          !file ||
+          !ts.isSourceFile(file) ||
+          (sourceFile && file !== sourceFile)
+        ) {
           sourceFile = undefined;
           break;
         }
         sourceFile = file;
-        if (exportDecl.getNodeProperty("exportClause") === undefined) {
+        if (exportDecl.exportClause === undefined) {
           foundStar = true;
         }
       }
@@ -99,15 +113,19 @@ export function convertDeclaration(
       }
     }
 
+    const symbol = getSymbolAtLocation(compilerNode);
+
+    assert(symbol !== undefined, "expected symbol to exist");
+
     return {
       kind: "module",
       name:
-        getRootSymbolName(decl.getSymbolOrThrow()) ||
-        (decl instanceof ModuleDeclaration
-          ? (decl.getNameNodes() as StringLiteral).getLiteralValue()
-          : decl.getFilePath()),
-      docs: getDocsFromJSDocNodes(jsDocs.map((x) => x.compilerNode)),
-      exports: collectExportsFromModule(decl),
+        getRootSymbolName(symbol) ||
+        (ts.isModuleDeclaration(compilerNode)
+          ? (compilerNode.name as ts.StringLiteral).text
+          : compilerNode.fileName),
+      docs: getDocsFromJSDocNodes(jsDocs),
+      exports: collectExportsFromModule(symbol),
     };
   }
   if (ts.isVariableDeclaration(compilerNode)) {
@@ -157,21 +175,18 @@ export function convertDeclaration(
           : "var",
       type: compilerNode.type
         ? convertTypeNode(compilerNode.type)
-        : convertType(
-            getProject()
-              .getTypeChecker()
-              .compilerObject.getTypeAtLocation(compilerNode)
-          ),
+        : convertType(getTypeChecker().getTypeAtLocation(compilerNode)),
     };
   }
-  if (decl instanceof PropertySignature) {
-    const typeNode = decl.getTypeNode();
+  if (ts.isPropertySignature(compilerNode)) {
     return {
       kind: "variable",
-      name: decl.getName(),
-      docs: getDocs(decl),
+      name: printPropertyName(compilerNode.name),
+      docs: getDocsFromCompilerNode(compilerNode),
       variableKind: "const",
-      type: typeNode ? convertTypeNode(typeNode) : convertType(decl.getType()),
+      type: compilerNode.type
+        ? convertTypeNode(compilerNode.type)
+        : convertType(getTypeChecker().getTypeAtLocation(compilerNode)),
     };
   }
   if (ts.isInterfaceDeclaration(compilerNode)) {
@@ -272,11 +287,7 @@ export function convertDeclaration(
               optional: !!member.questionToken,
               type: member.type
                 ? convertTypeNode(member.type)
-                : convertType(
-                    getProject()
-                      .getTypeChecker()
-                      .compilerObject.getTypeAtLocation(member)
-                  ),
+                : convertType(getTypeChecker().getTypeAtLocation(member)),
               static: isStatic,
               readonly:
                 member.modifiers?.some(
@@ -297,9 +308,7 @@ export function convertDeclaration(
       name: compilerNode.name.text,
       docs: getDocsFromCompilerNode(compilerNode),
       members: compilerNode.members.map((member) => {
-        const symbol = getProject()
-          .getTypeChecker()
-          .compilerObject.getSymbolAtLocation(member.name);
+        const symbol = getSymbolAtLocation(member.name);
         assert(symbol !== undefined, "expected enum member to have symbol");
         collectSymbol(symbol);
         return getSymbolIdentifier(symbol);
@@ -313,30 +322,38 @@ export function convertDeclaration(
         ? compilerNode.name.text
         : compilerNode.name.getText(),
       docs: getDocsFromCompilerNode(compilerNode),
-      value:
-        getProject()
-          .getTypeChecker()
-          .compilerObject.getConstantValue(compilerNode) ?? null,
+      value: getTypeChecker().getConstantValue(compilerNode) ?? null,
     };
   }
   if (
-    decl instanceof ModuleDeclaration &&
-    decl.getDeclarationKind() === ModuleDeclarationKind.Namespace
+    ts.isModuleDeclaration(compilerNode) &&
+    ts.isIdentifier(compilerNode.name) &&
+    compilerNode.body &&
+    ts.isModuleBlock(compilerNode.body)
   ) {
+    const symbol = getSymbolAtLocation(compilerNode);
+    assert(symbol !== undefined, "expected module declaration to have symbol");
     return {
       kind: "namespace",
-      name: decl.getName(),
-      docs: getDocs(decl),
-      exports: collectExportsFromModule(decl),
+      name: symbol.getName(),
+      docs: getDocsFromCompilerNode(compilerNode),
+      exports: collectExportsFromModule(symbol),
     };
   }
-  let docs = Node.isJSDocableNode(decl) ? getDocs(decl) : "";
-  console.log(symbol.getName(), decl.getKindName());
+  let docs = getDocsFromCompilerNode(compilerNode);
+  const symbol = getSymbolAtLocation(compilerNode);
+  assert(symbol !== undefined, "expected symbol to exist");
+  console.log(symbol.getName(), ts.SyntaxKind[compilerNode.kind]);
+  // console.log(
+  //   Object.keys(ts.SymbolFlags).filter(
+  //     (key) => symbol.flags & ts.SymbolFlags[key as keyof typeof ts.SymbolFlags]
+  //   )
+  // );
   return {
     kind: "unknown",
     name: symbol.getName(),
     docs,
-    content: decl.getText(),
+    content: compilerNode.getText(),
   };
 }
 
@@ -354,44 +371,38 @@ function printPropertyName(propertyName: ts.PropertyName) {
   return propertyName.getText();
 }
 
-function collectExportsFromModule(moduledDecl: ModuledNode) {
+function collectExportsFromModule(symbol: ts.Symbol) {
   let exports: Record<string, string | 0> = {};
-  for (const [
-    exportName,
-    exportedDeclarations,
-  ] of moduledDecl.getExportedDeclarations()) {
+  for (const [exportName, exportedDeclarations] of getExportedDeclarations(
+    symbol
+  )) {
     const decl = exportedDeclarations[0];
     if (!decl) {
       console.log(
-        `no declarations for export ${exportName} in ${
-          moduledDecl instanceof SourceFile
-            ? moduledDecl.getFilePath()
-            : moduledDecl instanceof ModuleDeclaration
-            ? moduledDecl.getName()
-            : "unknown"
-        }`
+        `no declarations for export ${exportName} in ${symbol.getName()}`
       );
       exports[exportName] = 0;
       continue;
     }
-    let innerSymbol = decl.getSymbolOrThrow();
-    innerSymbol = innerSymbol.getAliasedSymbol() || innerSymbol;
+    let innerSymbol = getSymbolAtLocation(decl);
+    assert(
+      innerSymbol !== undefined,
+      "expected symbol to exist for exported declaration"
+    );
+    innerSymbol = getAliasedSymbol(innerSymbol) || innerSymbol;
     collectSymbol(innerSymbol);
     exports[exportName] = getSymbolIdentifier(innerSymbol);
   }
   return exports;
 }
 
-function getJsDocsFromSourceFile(decl: Node) {
-  const jsDocs: JSDoc[] = [];
+function getJsDocsFromSourceFile(decl: ts.Node) {
+  const jsDocs: ts.JSDoc[] = [];
   decl.forEachChild((node) => {
-    if (!!(node.compilerNode as any).jsDoc) {
-      const nodes: ts.JSDoc[] = (node.compilerNode as any).jsDoc ?? [];
-      const jsdocs: JSDoc[] = nodes.map((n) =>
-        (node as any)._getNodeFromCompilerNode(n)
-      );
-      for (const doc of jsdocs) {
-        if (doc.getTags().some((tag) => tag.getTagName() === "module")) {
+    if (!!(node as any).jsDoc) {
+      const nodes: ts.JSDoc[] = (node as any).jsDoc ?? [];
+      for (const doc of nodes) {
+        if (doc.tags?.some((tag) => tag.tagName.text === "module")) {
           jsDocs.push(doc);
         }
       }

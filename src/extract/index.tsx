@@ -1,4 +1,4 @@
-import { Project, Symbol, SourceFile, ts } from "ts-morph";
+import { Project, Symbol, ts } from "ts-morph";
 import path from "path";
 import { findCanonicalExportLocations } from "./exports";
 import {
@@ -9,10 +9,11 @@ import {
 import { SerializedDeclaration } from "../lib/types";
 import { convertDeclaration } from "./convert-declaration";
 import { assert } from "../lib/assert";
+import { wrapInTsMorphNode } from "./convert-node";
 
 function getInitialState() {
   return {
-    rootSymbols: new Map<Symbol, string>(),
+    rootSymbols: new Map<ts.Symbol, string>(),
     publicSymbols: new Map<
       Symbol,
       [SerializedDeclaration, ...SerializedDeclaration[]]
@@ -30,7 +31,11 @@ export function getProject() {
   return state.project;
 }
 
-export function getRootSymbolName(symbol: Symbol) {
+export function getTypeChecker() {
+  return state.project.getTypeChecker().compilerObject;
+}
+
+export function getRootSymbolName(symbol: ts.Symbol) {
   return state.rootSymbols.get(symbol);
 }
 
@@ -93,7 +98,9 @@ export function getDocsInfo(
     undefined
 ): DocInfo {
   state = getInitialState();
-  state.rootSymbols = rootSymbols;
+  state.rootSymbols = new Map(
+    [...rootSymbols].map(([symbol, name]) => [symbol.compilerSymbol, name])
+  );
   state.symbolsQueue = new Set(rootSymbols.keys());
   state.pkgDir = pkgDir;
   state.project = project;
@@ -127,8 +134,11 @@ export function getDocsInfo(
     canonicalExportLocations: Object.fromEntries(
       [
         ...findCanonicalExportLocations(
-          [...state.rootSymbols.keys()].map(
-            (symbol) => symbol.getDeclarations()[0] as SourceFile
+          [...state.rootSymbols.keys()].map((symbol) =>
+            wrapInTsMorphNode(
+              project.getSourceFiles()[0],
+              symbol.declarations![0] as ts.SourceFile
+            )
           )
         ),
       ].map(([symbol, { exportName, parent }]) => {
@@ -184,7 +194,7 @@ function resolveSymbolQueue() {
 
     state.publicSymbols.set(
       symbol,
-      decls.map((decl) => convertDeclaration(decl, symbol.compilerSymbol)) as [
+      decls.map((decl) => convertDeclaration(decl.compilerNode)) as [
         SerializedDeclaration,
         ...SerializedDeclaration[]
       ]
