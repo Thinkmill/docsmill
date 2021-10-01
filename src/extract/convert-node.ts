@@ -118,7 +118,7 @@ const intrinsics = new Map([
   [ts.SyntaxKind.ObjectKeyword, "object"],
   [ts.SyntaxKind.StringKeyword, "string"],
   [ts.SyntaxKind.NumberKeyword, "number"],
-  [ts.SyntaxKind.VoidExpression, "void"],
+  [ts.SyntaxKind.VoidKeyword, "void"],
   [ts.SyntaxKind.UnknownKeyword, "unknown"],
   [ts.SyntaxKind.BigIntKeyword, "bigint"],
   [ts.SyntaxKind.IntrinsicKeyword, "intrinsic"],
