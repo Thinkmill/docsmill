@@ -10,7 +10,7 @@ import { convertType } from "./convert-type";
 import {
   getSymbolIdentifier,
   getDocsFromJSDocNodes,
-  getDocsFromCompilerNode,
+  getDocs,
   getTypeParameters,
   getParameters,
   getObjectMembers,
@@ -40,7 +40,7 @@ export function convertDeclaration(
     return {
       kind: "type-alias",
       name: compilerNode.name.text,
-      docs: getDocsFromCompilerNode(compilerNode),
+      docs: getDocs(compilerNode),
       typeParams: getTypeParameters(compilerNode),
       type: convertTypeNode(compilerNode.type),
     };
@@ -53,7 +53,7 @@ export function convertDeclaration(
       // (yes, function expressions never have to have names but this is a function declaration, not a function expression)
       name: compilerNode.name?.text || "default",
       parameters: getParameters(compilerNode),
-      docs: getDocsFromCompilerNode(compilerNode),
+      docs: getDocs(compilerNode),
       typeParams: getTypeParameters(compilerNode),
       returnType: getReturnType(compilerNode),
     };
@@ -63,10 +63,6 @@ export function convertDeclaration(
     (ts.isModuleDeclaration(compilerNode) &&
       ts.isStringLiteral(compilerNode.name))
   ) {
-    // decl instanceof SourceFile ||
-    // (decl instanceof ModuleDeclaration &&
-    //   decl.getDeclarationKind() === ModuleDeclarationKind.Module)
-
     let jsDocs = getJsDocsFromSourceFile(compilerNode);
 
     // if you have a file that re-exports _everything_ from somewhere else
@@ -137,12 +133,8 @@ export function convertDeclaration(
 
     const docs =
       variableStatement.declarationList.declarations.indexOf(compilerNode) === 1
-        ? (
-            getDocsFromCompilerNode(variableStatement) +
-            "\n\n" +
-            getDocsFromCompilerNode(compilerNode)
-          ).trim()
-        : getDocsFromCompilerNode(compilerNode);
+        ? (getDocs(variableStatement) + "\n\n" + getDocs(compilerNode)).trim()
+        : getDocs(compilerNode);
 
     assert(
       ts.isIdentifier(compilerNode.name),
@@ -182,7 +174,7 @@ export function convertDeclaration(
     return {
       kind: "variable",
       name: printPropertyName(compilerNode.name),
-      docs: getDocsFromCompilerNode(compilerNode),
+      docs: getDocs(compilerNode),
       variableKind: "const",
       type: compilerNode.type
         ? convertTypeNode(compilerNode.type)
@@ -193,7 +185,7 @@ export function convertDeclaration(
     return {
       kind: "interface",
       name: compilerNode.name.text,
-      docs: getDocsFromCompilerNode(compilerNode),
+      docs: getDocs(compilerNode),
       typeParams: getTypeParameters(compilerNode),
       extends: (compilerNode.heritageClauses || []).flatMap((x) => {
         assert(
@@ -223,7 +215,7 @@ export function convertDeclaration(
       // just like function declarations, the only case where a class declaration doesn't have a name is when it's a default export
       // (yes, class expressions never have to have names but this is a class declaration, not a class expression)
       name: compilerNode.name?.text || "default",
-      docs: getDocsFromCompilerNode(compilerNode),
+      docs: getDocs(compilerNode),
       typeParams: getTypeParameters(compilerNode),
       extends: extendsNode ? convertTypeNode(extendsNode.types[0]) : null,
       implements: (implementsNode?.types || []).map((x) => convertTypeNode(x)),
@@ -241,7 +233,7 @@ export function convertDeclaration(
         }
         return [
           {
-            docs: getDocsFromCompilerNode(x),
+            docs: getDocs(x),
             parameters: getParameters(x),
             typeParams: getTypeParameters(x),
           },
@@ -270,7 +262,7 @@ export function convertDeclaration(
             // (and have a tooltip explaining what protected does)
             return {
               kind: "method",
-              docs: getDocsFromCompilerNode(member),
+              docs: getDocs(member),
               name: printPropertyName(member.name),
               static: isStatic,
               optional: !!member.questionToken,
@@ -282,7 +274,7 @@ export function convertDeclaration(
           if (ts.isPropertyDeclaration(member)) {
             return {
               kind: "prop",
-              docs: getDocsFromCompilerNode(member),
+              docs: getDocs(member),
               name: printPropertyName(member.name),
               optional: !!member.questionToken,
               type: member.type
@@ -306,7 +298,7 @@ export function convertDeclaration(
         (x) => x.kind === ts.SyntaxKind.ConstKeyword
       ),
       name: compilerNode.name.text,
-      docs: getDocsFromCompilerNode(compilerNode),
+      docs: getDocs(compilerNode),
       members: compilerNode.members.map((member) => {
         const symbol = getSymbolAtLocation(member.name);
         assert(symbol !== undefined, "expected enum member to have symbol");
@@ -321,7 +313,7 @@ export function convertDeclaration(
       name: ts.isIdentifier(compilerNode.name)
         ? compilerNode.name.text
         : compilerNode.name.getText(),
-      docs: getDocsFromCompilerNode(compilerNode),
+      docs: getDocs(compilerNode),
       value: getTypeChecker().getConstantValue(compilerNode) ?? null,
     };
   }
@@ -336,11 +328,11 @@ export function convertDeclaration(
     return {
       kind: "namespace",
       name: symbol.getName(),
-      docs: getDocsFromCompilerNode(compilerNode),
+      docs: getDocs(compilerNode),
       exports: collectExportsFromModule(symbol),
     };
   }
-  let docs = getDocsFromCompilerNode(compilerNode);
+  let docs = getDocs(compilerNode);
   const symbol = getSymbolAtLocation(compilerNode);
   assert(symbol !== undefined, "expected symbol to exist");
   console.log(symbol.getName(), ts.SyntaxKind[compilerNode.kind]);

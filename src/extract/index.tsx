@@ -29,10 +29,6 @@ function getInitialState() {
   };
 }
 
-export function getProject() {
-  return state.project;
-}
-
 export function getTypeChecker() {
   return state.project.getTypeChecker().compilerObject;
 }

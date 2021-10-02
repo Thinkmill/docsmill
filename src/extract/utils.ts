@@ -1,11 +1,11 @@
-import { JSDocableNode, ts, Symbol, Project } from "ts-morph";
+import { ts, Project } from "ts-morph";
 import semver from "semver";
 import path from "path";
 import { convertTypeNode } from "./convert-node";
 import { convertType } from "./convert-type";
 import hashString from "@emotion/hash";
 import { assert } from "../lib/assert";
-import { DocInfo, getProject, getTypeChecker } from ".";
+import { DocInfo, getTypeChecker } from ".";
 import {
   TypeParam,
   ObjectMember,
@@ -54,7 +54,7 @@ export function getObjectMembers(
           member.modifiers?.some(
             (x) => x.kind === ts.SyntaxKind.ReadonlyKeyword
           ) || false,
-        docs: getDocsFromCompilerNode(member),
+        docs: getDocs(member),
       };
     }
 
@@ -70,7 +70,7 @@ export function getObjectMembers(
         name: ts.isIdentifier(member.name)
           ? member.name.text
           : member.name.getText(),
-        docs: getDocsFromCompilerNode(member),
+        docs: getDocs(member),
         optional: !!member.questionToken,
         readonly:
           member.modifiers?.some(
@@ -91,7 +91,7 @@ export function getObjectMembers(
         optional: !!member.questionToken,
         parameters: getParameters(member),
         typeParams: getTypeParameters(member),
-        docs: getDocsFromCompilerNode(member),
+        docs: getDocs(member),
         returnType: member.type
           ? convertTypeNode(member.type)
           : { kind: "intrinsic", value: "any" },
@@ -104,7 +104,7 @@ export function getObjectMembers(
         kind: isCallSignature ? "call" : "constructor",
         parameters: getParameters(member),
         typeParams: getTypeParameters(member),
-        docs: getDocsFromCompilerNode(member),
+        docs: getDocs(member),
         returnType: member.type
           ? convertTypeNode(member.type)
           : { kind: "intrinsic", value: "any" },
@@ -168,10 +168,6 @@ function getJsDocCommentTextMarkdown(
     .join("");
 }
 
-export function wrapInTsMorphSymbol(symbol: ts.Symbol): Symbol {
-  return (getProject() as any)._context.compilerFactory.getSymbol(symbol);
-}
-
 export function getAliasedSymbol(symbol: ts.Symbol): ts.Symbol | undefined {
   if (!(symbol.flags & ts.SymbolFlags.Alias)) {
     return undefined;
@@ -198,7 +194,7 @@ export function getDocsFromJSDocNodes(nodes: ts.JSDoc[]) {
     .join("\n\n");
 }
 
-export function getDocsFromCompilerNode(decl: ts.Node) {
+export function getDocs(decl: ts.Node) {
   let nodes = ((decl as any).jsDoc ?? []) as ts.JSDoc[];
   return getDocsFromJSDocNodes(
     nodes.filter(
@@ -208,21 +204,9 @@ export function getDocsFromCompilerNode(decl: ts.Node) {
   );
 }
 
-export function getDocs(decl: JSDocableNode) {
-  return getDocsFromJSDocNodes(
-    decl
-      .getJsDocs()
-      .filter((x) => x.getTags().every((x) => x.getTagName() !== "module"))
-      .map((x) => x.compilerNode)
-  );
-}
-
-export function getSymbolIdentifier(_symbol: Symbol | ts.Symbol) {
-  const symbol =
-    _symbol instanceof Symbol ? _symbol : wrapInTsMorphSymbol(_symbol);
-  const decls = symbol.getDeclarations();
-  if (decls.length === 0) {
-    const fullName = symbol.getFullyQualifiedName();
+export function getSymbolIdentifier(symbol: ts.Symbol) {
+  if (!symbol.declarations?.length) {
+    const fullName = getTypeChecker().getFullyQualifiedName(symbol);
     if (fullName === "unknown" || fullName === "globalThis") {
       return fullName;
     }
@@ -230,10 +214,10 @@ export function getSymbolIdentifier(_symbol: Symbol | ts.Symbol) {
   }
 
   return hashString(
-    decls
+    symbol.declarations
       .map((decl) => {
-        const filepath = decl.getSourceFile().getFilePath();
-        return `${decl.getKindName()}-${filepath}-${decl.getPos()}-${decl.getEnd()}`;
+        const filepath = decl.getSourceFile().fileName;
+        return `${decl.kind}-${filepath}-${decl.pos}-${decl.end}`;
       })
       .join("-")
   );
@@ -388,7 +372,7 @@ export async function collectEntrypointsOfPackage(
   const moduleResolutionCache = ts.createModuleResolutionCache(
     project.getFileSystem().getCurrentDirectory(),
     (x) => x,
-    project.getCompilerOptions()
+    project.compilerOptions.get()
   );
   for (const x of packageJsons) {
     const entrypoint = path.join(
@@ -398,7 +382,7 @@ export async function collectEntrypointsOfPackage(
     const resolved = ts.resolveModuleName(
       entrypoint,
       "/index.js",
-      project.getCompilerOptions(),
+      project.compilerOptions.get(),
       project.getModuleResolutionHost(),
       moduleResolutionCache
     ).resolvedModule?.resolvedFileName;
