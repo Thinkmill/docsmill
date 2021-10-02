@@ -1,4 +1,4 @@
-import { Project, ts, SourceFile } from "ts-morph";
+import { Project, ts, InMemoryFileSystemHost, FileSystemHost } from "ts-morph";
 import fetch from "node-fetch";
 import semver from "semver";
 import tar from "tar-stream";
@@ -83,7 +83,7 @@ async function getTarballAndVersions(pkgName: string, pkgSpecifier: string) {
 }
 
 async function addPackageToNodeModules(
-  project: Project,
+  fileSystem: FileSystemHost,
   pkgName: string,
   pkgSpecifier: string
 ) {
@@ -92,7 +92,6 @@ async function addPackageToNodeModules(
     pkgSpecifier
   );
 
-  const fileSystem = project.getFileSystem();
   const pkgPath = `/node_modules/${pkgName}`;
   for (let [filepath, fileContent] of content) {
     filepath = `${pkgPath}${filepath}`;
@@ -105,47 +104,61 @@ export async function getPackage(
   pkgName: string,
   pkgSpecifier: string
 ): Promise<DocInfo> {
-  let project = new Project({
-    compilerOptions: {
-      noEmit: true,
-      strict: true,
-      moduleResolution: ts.ModuleResolutionKind.NodeJs,
-    },
-    useInMemoryFileSystem: true,
-  });
+  const fileSystem = new InMemoryFileSystemHost();
+
+  const compilerOptions: ts.CompilerOptions = {
+    noEmit: true,
+    strict: true,
+    moduleResolution: ts.ModuleResolutionKind.NodeJs,
+  };
 
   const { versions, version, pkgPath } = await addPackageToNodeModules(
-    project,
+    fileSystem,
     pkgName,
     pkgSpecifier
   );
 
+  const earlyModuleResolutionCache = ts.createModuleResolutionCache(
+    fileSystem.getCurrentDirectory(),
+    (x) => x,
+    compilerOptions
+  );
+
+  const moduleResolutionHost = createModuleResolutionHost(fileSystem);
+
+  const resolveModule =
+    (cache: ts.ModuleResolutionCache) =>
+    (moduleName: string, containingFile: string) =>
+      ts.resolveModuleName(
+        moduleName,
+        containingFile,
+        compilerOptions,
+        moduleResolutionHost,
+        cache
+      );
+
   const entrypoints = await collectEntrypointsOfPackage(
-    project,
+    fileSystem,
+    resolveModule(earlyModuleResolutionCache),
     pkgName,
     pkgPath
   );
 
-  const visited = new Set<SourceFile>();
-  const queue = new Set(
-    [...entrypoints.values()].map((resolved) =>
-      project.addSourceFileAtPath(resolved)
-    )
-  );
-
-  const dependencies = collectUnresolvedPackages(project, queue, visited);
+  const { collectedPackages, filesInPackageReferencedFromEntrypoints } =
+    collectUnresolvedPackages(
+      fileSystem,
+      resolveModule(earlyModuleResolutionCache),
+      entrypoints
+    );
 
   const pkgJson = JSON.parse(
-    await project.getFileSystem().readFile(`${pkgPath}/package.json`)
+    fileSystem.readFileSync(`${pkgPath}/package.json`)
   );
 
-  const resolvedDeps = new Map<
-    string,
-    { entrypoints: Map<string, string>; version: string; pkgPath: string }
-  >();
+  const resolvedDeps = new Map<string, { version: string; pkgPath: string }>();
 
   await Promise.all(
-    [...dependencies].map(async (dep) => {
+    [...collectedPackages].map(async (dep) => {
       const definitelyTypedDep = `@types/${
         dep.startsWith("@") ? dep.slice(1).replace("/", "__") : dep
       }`;
@@ -173,20 +186,12 @@ export async function getPackage(
       }
       if (typeof specifier !== "string") return;
       const { version, pkgPath } = await addPackageToNodeModules(
-        project,
+        fileSystem,
         dep,
         specifier
       );
 
-      const entrypoints = await collectEntrypointsOfPackage(
-        project,
-        dep,
-        pkgPath
-      );
-      [...entrypoints.values()].map((resolved) =>
-        project.addSourceFileAtPath(resolved)
-      );
-      resolvedDeps.set(dep, { entrypoints, version, pkgPath });
+      resolvedDeps.set(dep, { version, pkgPath });
     })
   );
 
@@ -195,11 +200,43 @@ export async function getPackage(
     { version: string; pkg: string; id: string }
   > = new Map();
 
-  for (const [dep, { entrypoints, version, pkgPath }] of resolvedDeps) {
+  let project = new Project({
+    compilerOptions,
+    fileSystem,
+  });
+
+  const moduleResolutionCache = ts.createModuleResolutionCache(
+    project.getFileSystem().getCurrentDirectory(),
+    (x) => x,
+    project.compilerOptions.get()
+  );
+  for (const fileName of filesInPackageReferencedFromEntrypoints) {
+    project.addSourceFileAtPath(fileName);
+  }
+
+  const resolvedDepsWithEntrypoints = new Map<
+    string,
+    { version: string; pkgPath: string; entrypoints: Map<string, string> }
+  >();
+
+  for (const [dep, { version, pkgPath }] of resolvedDeps) {
+    const entrypoints = await collectEntrypointsOfPackage(
+      fileSystem,
+      resolveModule(moduleResolutionCache),
+      dep,
+      pkgPath
+    );
+    [...entrypoints.values()].map((resolved) =>
+      project.addSourceFileAtPath(resolved)
+    );
+    resolvedDepsWithEntrypoints.set(dep, { entrypoints, pkgPath, version });
+  }
+
+  for (const [dep, { version, pkgPath }] of resolvedDepsWithEntrypoints) {
     const rootSymbols = new Map<ts.Symbol, string>();
     for (const [entrypoint, resolved] of entrypoints) {
-      const sourceFile = project.getSourceFile(resolved);
-      const sourceFileSymbol = sourceFile?.getSymbol();
+      const sourceFile = project.getSourceFileOrThrow(resolved);
+      const sourceFileSymbol = sourceFile.getSymbol();
       if (sourceFileSymbol) {
         rootSymbols.set(sourceFileSymbol.compilerSymbol, entrypoint);
       }
@@ -254,40 +291,57 @@ export async function getPackage(
 }
 
 function collectUnresolvedPackages(
-  project: Project,
-  queue: Set<SourceFile>,
-  visited: Set<SourceFile>
+  fileSystem: FileSystemHost,
+  resolveModule: (
+    moduleName: string,
+    containingFile: string
+  ) => ts.ResolvedModuleWithFailedLookupLocations,
+  entrypoints: Map<string, string>
 ) {
   const collectedPackages = new Set<string>();
-
-  while (queue.size) {
-    const sourceFile: SourceFile = queue.values().next().value;
-    queue.delete(sourceFile);
-    if (visited.has(sourceFile)) {
-      continue;
-    }
-    visited.add(sourceFile);
-    const filepath = sourceFile.getFilePath();
-    for (const node of sourceFile.getImportStringLiterals()) {
-      const literal = node.getLiteralValue();
-      const resolved = ts.resolveModuleName(
-        literal,
-        filepath,
-        project.getCompilerOptions(),
-        project.getModuleResolutionHost()
-      ).resolvedModule?.resolvedFileName;
-      if (resolved) {
-        queue.add(project.addSourceFileAtPath(resolved));
-        continue;
-      }
-
-      if (!literal.startsWith(".")) {
-        const match = /^(@[^/]+\/[^\/]+|[^/]+)/.exec(literal);
+  const queue = new Set(entrypoints.values());
+  for (const filepath of queue) {
+    const content = fileSystem.readFileSync(filepath);
+    const meta = ts.preProcessFile(content);
+    for (const reference of meta.typeReferenceDirectives.concat(
+      meta.importedFiles
+    )) {
+      if (!reference.fileName.startsWith(".")) {
+        const match = /^(@[^/]+\/[^\/]+|[^/]+)/.exec(reference.fileName);
         if (match) {
           collectedPackages.add(match[0]);
         }
+        continue;
+      }
+      const resolved = resolveModule(reference.fileName, filepath)
+        .resolvedModule?.resolvedFileName;
+      if (resolved) {
+        queue.add(resolved);
       }
     }
   }
-  return collectedPackages;
+  return { collectedPackages, filesInPackageReferencedFromEntrypoints: queue };
+}
+
+export function createModuleResolutionHost(
+  fileSystem: FileSystemHost
+): ts.ModuleResolutionHost {
+  return {
+    directoryExists: (dirName) => fileSystem.directoryExistsSync(dirName),
+    fileExists: (fileName) => fileSystem.fileExistsSync(fileName),
+    readFile: (fileName) => {
+      try {
+        return fileSystem.readFileSync(fileName);
+      } catch (err) {
+        // this is what the compiler api does
+        if (err && (err as any).code === "ENOENT") return undefined;
+        throw err;
+      }
+    },
+    getCurrentDirectory: () => fileSystem.getCurrentDirectory(),
+    getDirectories: (dirName) => {
+      return fileSystem.readDirSync(dirName);
+    },
+    realpath: (path) => fileSystem.realpathSync(path),
+  };
 }

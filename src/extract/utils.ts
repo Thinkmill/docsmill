@@ -1,4 +1,4 @@
-import { ts, Project } from "ts-morph";
+import { ts, FileSystemHost } from "ts-morph";
 import semver from "semver";
 import path from "path";
 import { convertTypeNode } from "./convert-node";
@@ -355,37 +355,30 @@ export function getSymbolsForInnerBitsAndGoodIdentifiers(
 }
 
 export async function collectEntrypointsOfPackage(
-  project: Project,
+  fileSystem: FileSystemHost,
+  resolveBareSpecifier: (
+    moduleName: string,
+    containingFile: string
+  ) => ts.ResolvedModuleWithFailedLookupLocations,
   pkgName: string,
   pkgPath: string
 ) {
   const packageJsons = new Set([
     `${pkgPath}/package.json`,
-    ...(await project
-      .getFileSystem()
-      .glob([
-        `${pkgPath}/**/package.json`,
-        `!${pkgPath}/node_modules/**/package.json`,
-      ])),
+    ...(await fileSystem.glob([
+      `${pkgPath}/**/package.json`,
+      `!${pkgPath}/node_modules/**/package.json`,
+    ])),
   ]);
   const entrypoints = new Map<string, string>();
-  const moduleResolutionCache = ts.createModuleResolutionCache(
-    project.getFileSystem().getCurrentDirectory(),
-    (x) => x,
-    project.compilerOptions.get()
-  );
+
   for (const x of packageJsons) {
     const entrypoint = path.join(
       pkgName,
       x.replace(pkgPath, "").replace(/\/?package\.json$/, "")
     );
-    const resolved = ts.resolveModuleName(
-      entrypoint,
-      "/index.js",
-      project.compilerOptions.get(),
-      project.getModuleResolutionHost(),
-      moduleResolutionCache
-    ).resolvedModule?.resolvedFileName;
+    const resolved = resolveBareSpecifier(entrypoint, "/index.ts")
+      .resolvedModule?.resolvedFileName;
     if (!resolved) continue;
     entrypoints.set(entrypoint, resolved);
   }

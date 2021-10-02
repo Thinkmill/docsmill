@@ -25,12 +25,14 @@ function getInitialState() {
     currentlyVistedSymbol: undefined as ts.Symbol | undefined,
     referencedExternalSymbols: new Set<ts.Symbol>(),
     pkgDir: "",
-    project: undefined as unknown as Project,
+    program: (): ts.Program => {
+      throw new Error("program not set");
+    },
   };
 }
 
 export function getTypeChecker() {
-  return state.project.getTypeChecker().compilerObject;
+  return state.program().getTypeChecker();
 }
 
 export function getRootSymbolName(symbol: ts.Symbol) {
@@ -95,8 +97,7 @@ export function getDocsInfo(
   state.rootSymbols = rootSymbols;
   state.symbolsQueue = new Set(rootSymbols.keys());
   state.pkgDir = pkgDir;
-  state.project = project;
-
+  state.program = () => project.getProgram().compilerObject;
   resolveSymbolQueue();
 
   const baseInfo = {
