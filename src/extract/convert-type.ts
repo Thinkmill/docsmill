@@ -1,4 +1,4 @@
-import { ts } from "ts-morph";
+import { ts } from "./ts";
 import { getTypeChecker } from ".";
 import { assert } from "../lib/assert";
 import { SerializedType } from "../lib/types";

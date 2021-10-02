@@ -1,4 +1,4 @@
-import { ts } from "ts-morph";
+import { ts } from "./ts";
 import { collectSymbol, getRootSymbolName, getTypeChecker } from ".";
 import {
   ClassMember,

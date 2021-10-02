@@ -1,4 +1,4 @@
-import { ts } from "ts-morph";
+import { ts } from "./ts";
 import { getTypeChecker } from ".";
 import { getAliasedSymbol, getSymbolAtLocation } from "./utils";
 

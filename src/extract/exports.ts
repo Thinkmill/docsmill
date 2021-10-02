@@ -1,4 +1,4 @@
-import { ts } from "ts-morph";
+import { ts } from "./ts";
 import { assert } from "../lib/assert";
 import { getExportedDeclarations } from "./get-exported-declarations";
 import { getSymbolAtLocation } from "./utils";
