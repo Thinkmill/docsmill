@@ -292,6 +292,10 @@ export function convertTypeNode(compilerNode: ts.TypeNode): SerializedType {
 
   if (ts.isTypeOperatorNode(compilerNode)) {
     if (compilerNode.operator === ts.SyntaxKind.UniqueKeyword) {
+      assert(
+        compilerNode.type.kind === ts.SyntaxKind.SymbolKeyword,
+        "expected inner type of unique type operator to be symbol"
+      );
       return { kind: "intrinsic", value: "unique symbol" };
     }
     if (compilerNode.operator === ts.SyntaxKind.ReadonlyKeyword) {
@@ -304,7 +308,7 @@ export function convertTypeNode(compilerNode: ts.TypeNode): SerializedType {
       }
       assert(
         false,
-        `non-array thing with readonly keyword with kind: ${inner.kind}`
+        `non-array type in readonly operator with kind: ${inner.kind}`
       );
     }
     if (compilerNode.operator === ts.SyntaxKind.KeyOfKeyword) {
@@ -386,7 +390,6 @@ export function convertTypeNode(compilerNode: ts.TypeNode): SerializedType {
   }
 
   if (ts.isTemplateLiteralTypeNode(compilerNode)) {
-    compilerNode.head;
     return {
       kind: "template",
       head: compilerNode.head.text,
