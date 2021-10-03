@@ -1,4 +1,4 @@
-import { createProject, ts } from "@ts-morph/bootstrap";
+import { ts } from "./ts";
 import path from "path";
 import { findCanonicalExportLocations } from "./exports";
 import {
@@ -156,18 +156,6 @@ export function getDocsInfo(
     ),
     externalSymbols,
   };
-}
-
-export async function getInfo(filename: string) {
-  let project = await createProject({
-    tsConfigFilePath: "./tsconfig.json",
-  });
-  const sourceFile = project.getSourceFileOrThrow(path.resolve(filename));
-  const program = project.createProgram();
-  const rootSymbol = program.getTypeChecker().getSymbolAtLocation(sourceFile);
-  assert(rootSymbol !== undefined);
-  const rootSymbols = new Map([[rootSymbol, "test"]]);
-  return getDocsInfo(rootSymbols, ".", "test", "0.0.0", program);
 }
 
 function resolveSymbolQueue() {

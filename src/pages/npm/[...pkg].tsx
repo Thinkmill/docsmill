@@ -1,4 +1,4 @@
-import { getPackage } from "../../extract/from-npm";
+import { getPackage } from "../../npm";
 import {
   GetStaticPropsContext,
   GetStaticPathsResult,
@@ -9,8 +9,8 @@ import * as semver from "semver";
 
 import { Root } from "../../components/root";
 import { useMemo } from "react";
-import { resolveToPackageVersion } from "../../extract/utils";
-import { getPackageMetadata } from "../../extract/fetch-package-metadata";
+import { resolveToPackageVersion } from "../../npm/utils";
+import { getPackageMetadata } from "../../npm/fetch-package-metadata";
 import { compressToUTF16, decompressFromUTF16 } from "lz-string";
 import { DocInfo } from "../../extract";
 

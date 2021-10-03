@@ -9,7 +9,7 @@ import semver from "semver";
 import tar from "tar-stream";
 import gunzip from "gunzip-maybe";
 import getNpmTarballUrl from "get-npm-tarball-url";
-import { DocInfo, getDocsInfo } from ".";
+import { DocInfo, getDocsInfo } from "../extract";
 import { collectEntrypointsOfPackage, resolveToPackageVersion } from "./utils";
 import { getPackageMetadata } from "./fetch-package-metadata";
 import { assert } from "../lib/assert";
