@@ -1,4 +1,4 @@
-import { ts, FileSystemHost } from "ts-morph";
+import { ts, FileSystemHost } from "@ts-morph/bootstrap";
 import semver from "semver";
 import path from "path";
 import { convertTypeNode } from "./convert-node";

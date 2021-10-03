@@ -1,4 +1,4 @@
-import { Project, ts } from "ts-morph";
+import { createProject, ts } from "@ts-morph/bootstrap";
 import path from "path";
 import { findCanonicalExportLocations } from "./exports";
 import {
@@ -87,7 +87,7 @@ export function getDocsInfo(
   pkgDir: string,
   packageName: string,
   currentVersion: string,
-  project: Project,
+  program: ts.Program,
   getExternalReference: (
     symbolId: string
   ) => { pkg: string; version: string; id: string } | undefined = () =>
@@ -97,7 +97,7 @@ export function getDocsInfo(
   state.rootSymbols = rootSymbols;
   state.symbolsQueue = new Set(rootSymbols.keys());
   state.pkgDir = pkgDir;
-  state.program = () => project.getProgram().compilerObject;
+  state.program = () => program;
   resolveSymbolQueue();
 
   const baseInfo = {
@@ -159,14 +159,15 @@ export function getDocsInfo(
 }
 
 export async function getInfo(filename: string) {
-  let project = new Project({
+  let project = await createProject({
     tsConfigFilePath: "./tsconfig.json",
   });
   const sourceFile = project.getSourceFileOrThrow(path.resolve(filename));
-  const rootSymbols = new Map([
-    [sourceFile.getSymbolOrThrow().compilerSymbol, "test"],
-  ]);
-  return getDocsInfo(rootSymbols, ".", "test", "0.0.0", project);
+  const program = project.createProgram();
+  const rootSymbol = program.getTypeChecker().getSymbolAtLocation(sourceFile);
+  assert(rootSymbol !== undefined);
+  const rootSymbols = new Map([[rootSymbol, "test"]]);
+  return getDocsInfo(rootSymbols, ".", "test", "0.0.0", program);
 }
 
 function resolveSymbolQueue() {

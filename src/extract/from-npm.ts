@@ -1,4 +1,9 @@
-import { Project, ts, InMemoryFileSystemHost, FileSystemHost } from "ts-morph";
+import {
+  createProjectSync,
+  ts,
+  InMemoryFileSystemHost,
+  FileSystemHost,
+} from "@ts-morph/bootstrap";
 import fetch from "node-fetch";
 import semver from "semver";
 import tar from "tar-stream";
@@ -144,12 +149,11 @@ export async function getPackage(
     pkgPath
   );
 
-  const { collectedPackages, filesInPackageReferencedFromEntrypoints } =
-    collectUnresolvedPackages(
-      fileSystem,
-      resolveModule(earlyModuleResolutionCache),
-      entrypoints
-    );
+  const collectedPackages = collectUnresolvedPackages(
+    fileSystem,
+    resolveModule(earlyModuleResolutionCache),
+    entrypoints
+  );
 
   const pkgJson = JSON.parse(
     fileSystem.readFileSync(`${pkgPath}/package.json`)
@@ -200,19 +204,16 @@ export async function getPackage(
     { version: string; pkg: string; id: string }
   > = new Map();
 
-  let project = new Project({
+  let project = createProjectSync({
     compilerOptions,
     fileSystem,
   });
 
   const moduleResolutionCache = ts.createModuleResolutionCache(
-    project.getFileSystem().getCurrentDirectory(),
+    project.fileSystem.getCurrentDirectory(),
     (x) => x,
     project.compilerOptions.get()
   );
-  for (const fileName of filesInPackageReferencedFromEntrypoints) {
-    project.addSourceFileAtPath(fileName);
-  }
 
   const resolvedDepsWithEntrypoints = new Map<
     string,
@@ -226,27 +227,38 @@ export async function getPackage(
       dep,
       pkgPath
     );
-    [...entrypoints.values()].map((resolved) =>
-      project.addSourceFileAtPath(resolved)
-    );
     resolvedDepsWithEntrypoints.set(dep, { entrypoints, pkgPath, version });
   }
 
-  for (const [dep, { version, pkgPath }] of resolvedDepsWithEntrypoints) {
+  const program = project.createProgram({
+    rootNames: [
+      ...entrypoints.values(),
+      ...[...resolvedDepsWithEntrypoints].flatMap(([_, { entrypoints }]) => [
+        ...entrypoints.values(),
+      ]),
+    ],
+    options: project.compilerOptions.get(),
+  });
+  for (const [
+    dep,
+    { version, pkgPath, entrypoints },
+  ] of resolvedDepsWithEntrypoints) {
     const rootSymbols = new Map<ts.Symbol, string>();
     for (const [entrypoint, resolved] of entrypoints) {
-      const sourceFile = project.getSourceFileOrThrow(resolved);
-      const sourceFileSymbol = sourceFile.getSymbol();
-      if (sourceFileSymbol) {
-        rootSymbols.set(sourceFileSymbol.compilerSymbol, entrypoint);
-      }
+      const sourceFile = program.getSourceFile(resolved);
+      assert(sourceFile !== undefined);
+      const sourceFileSymbol = program
+        .getTypeChecker()
+        .getSymbolAtLocation(sourceFile);
+      assert(sourceFileSymbol !== undefined);
+      rootSymbols.set(sourceFileSymbol, entrypoint);
     }
     const { goodIdentifiers } = getDocsInfo(
       rootSymbols,
       pkgPath,
       dep,
       version,
-      project
+      program
     );
     for (const [symbolId, identifier] of Object.entries(goodIdentifiers)) {
       externalPackages.set(symbolId, { version, pkg: dep, id: identifier });
@@ -255,9 +267,7 @@ export async function getPackage(
 
   const rootSymbols = new Map<ts.Symbol, string>();
 
-  for (const module of project
-    .getTypeChecker()
-    .compilerObject.getAmbientModules()) {
+  for (const module of program.getTypeChecker().getAmbientModules()) {
     const decl = module.declarations?.[0];
     assert(
       decl !== undefined && ts.isModuleDeclaration(decl),
@@ -270,10 +280,13 @@ export async function getPackage(
     rootSymbols.set(module, decl.name.text);
   }
   for (const [entrypoint, resolved] of entrypoints) {
-    const sourceFile = project.getSourceFile(resolved);
-    const sourceFileSymbol = sourceFile?.getSymbol();
+    const sourceFile = program.getSourceFile(resolved);
+    assert(sourceFile !== undefined);
+    const sourceFileSymbol = program
+      .getTypeChecker()
+      .getSymbolAtLocation(sourceFile);
     if (sourceFileSymbol) {
-      rootSymbols.set(sourceFileSymbol.compilerSymbol, entrypoint);
+      rootSymbols.set(sourceFileSymbol, entrypoint);
     }
   }
 
@@ -283,7 +296,7 @@ export async function getPackage(
       pkgPath,
       pkgName,
       version,
-      project,
+      program,
       (symbolId) => externalPackages.get(symbolId)
     ),
     versions: [...versions].reverse(),
@@ -320,7 +333,7 @@ function collectUnresolvedPackages(
       }
     }
   }
-  return { collectedPackages, filesInPackageReferencedFromEntrypoints: queue };
+  return collectedPackages;
 }
 
 export function createModuleResolutionHost(

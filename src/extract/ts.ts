@@ -1,1 +1,1 @@
-export { ts } from "ts-morph";
+export { ts } from "@ts-morph/bootstrap";
