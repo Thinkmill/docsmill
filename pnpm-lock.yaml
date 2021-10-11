@@ -13,6 +13,7 @@ specifiers:
   '@babel/preset-typescript': ^7.13.0
   '@babel/runtime': ^7.9.2
   '@emotion/hash': 0.8.0
+  '@monaco-editor/react': 4.3.1
   '@ts-morph/bootstrap': 0.11.0
   '@types/cssesc': 3.0.0
   '@types/gunzip-maybe': 1.4.0
@@ -34,7 +35,9 @@ specifiers:
   graphql: ^15.5.0
   gunzip-maybe: 1.4.2
   lz-string: 1.4.4
+  monaco-editor: 0.28.1
   next: ^11.1.0
+  next-transpile-modules: 8.0.0
   node-fetch: 3.0.0
   prettier: 2.3.1
   prism-react-renderer: 1.2.1
@@ -61,6 +64,7 @@ dependencies:
   '@babel/preset-typescript': 7.15.0_@babel+core@7.15.5
   '@babel/runtime': 7.15.4
   '@emotion/hash': 0.8.0
+  '@monaco-editor/react': 4.3.1_6d3d0daa55b05704d527adb1cf45674e
   '@ts-morph/bootstrap': 0.11.0
   '@types/cssesc': 3.0.0
   '@types/gunzip-maybe': 1.4.0
@@ -82,7 +86,9 @@ dependencies:
   graphql: 15.5.3
   gunzip-maybe: 1.4.2
   lz-string: 1.4.4
+  monaco-editor: 0.28.1
   next: 11.1.2_e673b0f3387e6960b41acb1bdc9e0796
+  next-transpile-modules: 8.0.0
   node-fetch: 3.0.0
   prettier: 2.3.1
   prism-react-renderer: 1.2.1_react@17.0.2
@@ -1537,6 +1543,29 @@ packages:
     resolution: {integrity: sha512-sqKVVVOe5ivCaXDWivIJYVSaEgdQK9ul7a4Kity5Iw7u9+wBAPbX1RMSnLLmp7O4Vzj0WOWwMAJsTL00xwaNug==}
     dev: false
 
+  /@monaco-editor/loader/1.2.0_monaco-editor@0.28.1:
+    resolution: {integrity: sha512-cJVCG/T/KxXgzYnjKqyAgsKDbH9mGLjcXxN6AmwumBwa2rVFkwvGcUj1RJtD0ko4XqLqJxwqsN/Z/KURB5f1OQ==}
+    peerDependencies:
+      monaco-editor: '>= 0.21.0 < 1'
+    dependencies:
+      monaco-editor: 0.28.1
+      state-local: 1.0.7
+    dev: false
+
+  /@monaco-editor/react/4.3.1_6d3d0daa55b05704d527adb1cf45674e:
+    resolution: {integrity: sha512-f+0BK1PP/W5I50hHHmwf11+Ea92E5H1VZXs+wvKplWUWOfyMa1VVwqkJrXjRvbcqHL+XdIGYWhWNdi4McEvnZg==}
+    peerDependencies:
+      monaco-editor: '>= 0.25.0 < 1'
+      react: ^16.8.0 || ^17.0.0
+      react-dom: ^16.8.0 || ^17.0.0
+    dependencies:
+      '@monaco-editor/loader': 1.2.0_monaco-editor@0.28.1
+      monaco-editor: 0.28.1
+      prop-types: 15.7.2
+      react: 17.0.2
+      react-dom: 17.0.2_react@17.0.2
+    dev: false
+
   /@napi-rs/triples/1.0.3:
     resolution: {integrity: sha512-jDJTpta+P4p1NZTFVLHJ/TLFVYVcOqv6l8xwOeBKNPMgY/zDYH/YH7SJbvrr/h1RcS9GzbPcLKGzpuK9cV56UA==}
     dev: false
@@ -2608,6 +2637,14 @@ packages:
     resolution: {integrity: sha512-+uw1inIHVPQoaVuHzRyXd21icM+cnt4CzD5rW+NC1wjOUSTOs+Te7FOv7AhN7vS9x/oIyhLP5PR1H+phQAHu5Q==}
     dependencies:
       once: 1.4.0
+    dev: false
+
+  /enhanced-resolve/5.8.3:
+    resolution: {integrity: sha512-EGAbGvH7j7Xt2nc0E7D99La1OiEs8LnyimkRgwExpUMScN6O+3x9tIWs7PLQZVNx4YD+00skHXPXi1yQHpAmZA==}
+    engines: {node: '>=10.13.0'}
+    dependencies:
+      graceful-fs: 4.2.8
+      tapable: 2.2.1
     dev: false
 
   /es-abstract/1.18.6:
@@ -3793,6 +3830,10 @@ packages:
     hasBin: true
     dev: false
 
+  /monaco-editor/0.28.1:
+    resolution: {integrity: sha512-P1vPqxB4B1ZFzTeR1ScggSp9/5NoQrLCq88fnlNUsuRAP1usEBN4TIpI2lw0AYIZNVIanHk0qwjze2uJwGOHUw==}
+    dev: false
+
   /ms/2.0.0:
     resolution: {integrity: sha1-VgiurfwAvmwpAd9fmGF4jeDVl8g=}
     dev: false
@@ -3811,6 +3852,13 @@ packages:
     resolution: {integrity: sha512-6iM8R99ze45ivyH8vybJ7X0yekIcPf5GgLV5K0ENCbmRcaRIDoj37BC8iLEmaaBfqqb8enuZ5p0uhY+lVAbAcA==}
     dependencies:
       querystring: 0.2.1
+    dev: false
+
+  /next-transpile-modules/8.0.0:
+    resolution: {integrity: sha512-Q2f2yB0zMJ8KJbIYAeZoIxG6cSfVk813zr6B5HzsLMBVcJ3FaF8lKr7WG66n0KlHCwjLSmf/6EkgI6QQVWHrDw==}
+    dependencies:
+      enhanced-resolve: 5.8.3
+      escalade: 3.1.1
     dev: false
 
   /next/11.1.2_e673b0f3387e6960b41acb1bdc9e0796:
@@ -4768,6 +4816,10 @@ packages:
       type-fest: 0.7.1
     dev: false
 
+  /state-local/1.0.7:
+    resolution: {integrity: sha512-HTEHMNieakEnoe33shBYcZ7NX83ACUjCu8c40iOGEZsngj9zRnkqS9j1pqQPXwobB0ZcVTk27REb7COQ0UR59w==}
+    dev: false
+
   /statuses/1.5.0:
     resolution: {integrity: sha1-Fhx9rBd2Wf2YEfQ3cfqZOBR4Yow=}
     engines: {node: '>= 0.6'}
@@ -4925,6 +4977,11 @@ packages:
     engines: {node: '>=10'}
     dependencies:
       has-flag: 4.0.0
+    dev: false
+
+  /tapable/2.2.1:
+    resolution: {integrity: sha512-GNzQvQTOIP6RyTfE2Qxb8ZVlNmw0n88vp1szwWRimP02mnTsx3Wtn5qRdqY9w2XduFNUgvOwhNnQsjwCp+kqaQ==}
+    engines: {node: '>=6'}
     dev: false
 
   /tar-stream/1.6.2:

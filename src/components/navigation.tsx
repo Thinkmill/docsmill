@@ -1,44 +1,9 @@
-import { ReactNode } from "react";
-
 import { useDocsContext } from "../lib/DocsContext";
 import { SymbolReference } from "./symbol-references";
 import { useGroupedExports } from "../lib/utils";
-
-import { ChevronDown } from "./icons/chevron-down";
-import { ChevronRight } from "./icons/chevron-right";
-import { Minus } from "./icons/minus";
-
-import * as styles from "./navigation.css";
 import { nonRootSymbolReference } from "./symbol-references.css";
 import { assert } from "../lib/assert";
-
-function Expandable({
-  summary,
-  children,
-}: {
-  summary: ReactNode;
-  children: ReactNode;
-}) {
-  return (
-    <details open>
-      <summary className={styles.expandableSummary}>
-        <ChevronDown className={styles.expandableChevronClose} />
-        <ChevronRight className={styles.expandableChevronOpen} />
-        {summary}
-      </summary>
-      <div className={styles.expandableContents}>{children}</div>
-    </details>
-  );
-}
-
-function Item({ children }: { children: ReactNode }) {
-  return (
-    <li className={styles.item}>
-      <Minus className={styles.itemIcon} />
-      {children}
-    </li>
-  );
-}
+import { Expandable, Item } from "./expandable";
 
 export function Navigation({ rootSymbolName }: { rootSymbolName: string }) {
   const docContext = useDocsContext();
@@ -59,38 +24,36 @@ export function Navigation({ rootSymbolName }: { rootSymbolName: string }) {
     <Expandable
       summary={<SymbolReference fullName={rootSymbolName} name={name} />}
     >
-      <div>
-        <ul>
-          {groupedExports.map((group, i) => {
-            if (group.kind !== "canonical") {
-              return (
-                <Item key={i}>
-                  <a
-                    className={nonRootSymbolReference}
-                    href={`#${docContext.goodIdentifiers[rootSymbolName]}-re-exports-${i}`}
-                  >
-                    {group.exports.length} Re-exports
-                  </a>
-                </Item>
-              );
-            }
-            const decls = docContext.symbols[group.fullName];
-            if (
-              decls.some((x) => x.kind === "module" || x.kind === "namespace")
-            ) {
-              return <Navigation key={i} rootSymbolName={group.fullName} />;
-            }
+      <ul>
+        {groupedExports.map((group, i) => {
+          if (group.kind !== "canonical") {
             return (
               <Item key={i}>
-                <SymbolReference
-                  fullName={group.fullName}
-                  name={group.exportName}
-                />
+                <a
+                  className={nonRootSymbolReference}
+                  href={`#${docContext.goodIdentifiers[rootSymbolName]}-re-exports-${i}`}
+                >
+                  {group.exports.length} Re-exports
+                </a>
               </Item>
             );
-          })}
-        </ul>
-      </div>
+          }
+          const decls = docContext.symbols[group.fullName];
+          if (
+            decls.some((x) => x.kind === "module" || x.kind === "namespace")
+          ) {
+            return <Navigation key={i} rootSymbolName={group.fullName} />;
+          }
+          return (
+            <Item key={i}>
+              <SymbolReference
+                fullName={group.fullName}
+                name={group.exportName}
+              />
+            </Item>
+          );
+        })}
+      </ul>
     </Expandable>
   );
 }
