@@ -21,13 +21,14 @@ export function Type({ type }: { type: SerializedType }): JSX.Element {
           <Fragment>
             <span className={codeFont}>{"<"}</span>
             {type.typeArguments.map((param, i) => {
+              const Comp = type.typeArguments.length < 3 ? Fragment : Indent;
               return (
-                <Fragment key={i}>
+                <Comp key={i}>
                   <Type type={param} />
                   {i === type.typeArguments.length - 1 ? null : (
                     <Syntax kind="comma">, </Syntax>
                   )}
-                </Fragment>
+                </Comp>
               );
             })}
             <span className={codeFont}>{">"}</span>
@@ -48,7 +49,28 @@ export function Type({ type }: { type: SerializedType }): JSX.Element {
   if (type.kind === "type-parameter") {
     return <Syntax kind="parameter">{type.name}</Syntax>;
   }
-  if (type.kind === "union") {
+  if (type.kind === "union" || type.kind === "intersection") {
+    const seperator = type.kind === "union" ? "|" : "&";
+    if (type.types.length > 4) {
+      return (
+        <Fragment>
+          {type.types.map((innerType, i) => {
+            return (
+              <Indent key={i}>
+                <div style={{ display: "flex" }}>
+                  <span style={{ paddingRight: 8 }}>
+                    <Syntax kind="colon">{`${seperator}`}</Syntax>
+                  </span>
+                  <span>
+                    <Type type={innerType} />
+                  </span>
+                </div>
+              </Indent>
+            );
+          })}
+        </Fragment>
+      );
+    }
     return (
       <Fragment>
         {type.types.map((innerType, i) => {
@@ -56,23 +78,7 @@ export function Type({ type }: { type: SerializedType }): JSX.Element {
             <Fragment key={i}>
               <Type type={innerType} />
               {i !== type.types.length - 1 && (
-                <Syntax kind="colon">{" | "}</Syntax>
-              )}
-            </Fragment>
-          );
-        })}
-      </Fragment>
-    );
-  }
-  if (type.kind === "intersection") {
-    return (
-      <Fragment>
-        {type.types.map((innerType, i) => {
-          return (
-            <Fragment key={i}>
-              <Type type={innerType} />
-              {i !== type.types.length - 1 && (
-                <Syntax kind="colon">{" & "}</Syntax>
+                <Syntax kind="colon">{` ${seperator} `}</Syntax>
               )}
             </Fragment>
           );
@@ -323,8 +329,9 @@ export function TypeParams({ params }: { params: TypeParam[] }) {
     <Fragment>
       <Syntax kind="bracket">{"<"}</Syntax>
       {params.map((param, i) => {
+        const Comp = params.length < 3 ? Fragment : Indent;
         return (
-          <Fragment key={i}>
+          <Comp key={i}>
             <Syntax kind="parameter">{param.name}</Syntax>
             {param.constraint && (
               <Fragment>
@@ -339,7 +346,7 @@ export function TypeParams({ params }: { params: TypeParam[] }) {
               </Fragment>
             )}
             {i === params.length - 1 ? null : <Syntax kind="comma">, </Syntax>}
-          </Fragment>
+          </Comp>
         );
       })}
       <Syntax kind="bracket">{">"}</Syntax>
@@ -352,8 +359,9 @@ export function Params({ params }: { params: Parameter[] }) {
     <Fragment>
       <Syntax kind="bracket">(</Syntax>
       {params.map((param, i) => {
+        const Comp = params.length < 3 ? Fragment : Indent;
         return (
-          <Fragment key={i}>
+          <Comp key={i}>
             {param.kind === "rest" && <Syntax kind="colon">...</Syntax>}
             <Syntax kind="parameter">{param.name}</Syntax>
             <Syntax kind="colon">
@@ -361,7 +369,7 @@ export function Params({ params }: { params: Parameter[] }) {
             </Syntax>
             <Type type={param.type} />
             {i === params.length - 1 ? null : <Syntax kind="comma">, </Syntax>}
-          </Fragment>
+          </Comp>
         );
       })}
       <Syntax kind="bracket">)</Syntax>
