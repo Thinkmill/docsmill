@@ -22,13 +22,15 @@ export async function collectEntrypointsOfPackage(
   const entrypoints = new Map<string, string>();
 
   for (const x of packageJsons) {
+    const resolved = resolveBareSpecifier(
+      x.replace(/\/?package\.json$/, ""),
+      "/index.ts"
+    ).resolvedModule?.resolvedFileName;
+    if (!resolved) continue;
     const entrypoint = path.join(
       pkgName,
       x.replace(pkgPath, "").replace(/\/?package\.json$/, "")
     );
-    const resolved = resolveBareSpecifier(entrypoint, "/index.ts")
-      .resolvedModule?.resolvedFileName;
-    if (!resolved) continue;
     entrypoints.set(entrypoint, resolved);
   }
   return entrypoints;
