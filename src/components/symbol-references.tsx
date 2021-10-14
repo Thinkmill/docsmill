@@ -76,6 +76,20 @@ function getExternalPkgDisplayName(pkg: string) {
   return pkg;
 }
 
+export function getExternalPackageUrl(pkg: string, version: string) {
+  return `/npm/${pkg}@${version}`;
+}
+
+export function getExternalSymbolUrl(external: {
+  pkg: string;
+  version: string;
+  id: string;
+}) {
+  return `${getExternalPackageUrl(external.pkg, external.version)}#${
+    external.id
+  }`;
+}
+
 export function SymbolReference({
   fullName,
   name,
@@ -101,13 +115,13 @@ export function SymbolReference({
       <span className={codeFont}>
         <Syntax kind="keyword">import</Syntax>
         <Syntax kind="bracket">(</Syntax>
-        <Link href={`/npm/${external.pkg}@${external.version}`}>
+        <Link href={getExternalPackageUrl(external.pkg, external.version)}>
           <a className={styles.rootSymbolReference}>
             {JSON.stringify(pkgDisplayName)}
           </a>
         </Link>
         <Syntax kind="bracket">)</Syntax>.
-        <Link href={`/npm/${external.pkg}@${external.version}#${external.id}`}>
+        <Link href={getExternalSymbolUrl(external)}>
           <a className={styles.nonRootSymbolReference}>{name}</a>
         </Link>
       </span>

@@ -17,6 +17,7 @@ import "@algolia/autocomplete-theme-classic";
 import { parseAlgoliaHitHighlight } from "@algolia/autocomplete-preset-algolia";
 import * as styles from "./package-search.css";
 import { useRouter } from "next/router";
+import { getExternalPackageUrl } from "./symbol-references";
 
 const searchClient = algoliasearch(
   NPM_SEARCH_ALGOLIA_APP_ID,
@@ -110,7 +111,7 @@ export function PackageSearch({ autoFocus }: { autoFocus?: boolean }) {
                     });
                   },
                   getItemUrl({ item }) {
-                    return `/npm/${item.name}@${item.tags.latest}`;
+                    return getExternalPackageUrl(item.name, item.tags.latest);
                   },
                   templates: {
                     footer() {

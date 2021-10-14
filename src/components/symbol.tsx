@@ -10,6 +10,8 @@ import {
   SymbolName,
   SymbolReference,
   AddNameToScope,
+  getExternalPackageUrl,
+  getExternalSymbolUrl,
 } from "./symbol-references";
 import { Params, Type, TypeParams } from "./type";
 
@@ -573,7 +575,13 @@ function Exports({ fullName }: { fullName: string }) {
                 {exported.exports.map((exportInfo) => {
                   return (
                     <div key={exportInfo.name}>
-                      <Link href={`/npm/${exported.from}@${exported.version}`}>
+                      <Link
+                        href={getExternalSymbolUrl({
+                          id: exportInfo.id,
+                          pkg: exported.from,
+                          version: exported.version,
+                        })}
+                      >
                         <a
                           className={
                             symbolReferenceStyles.nonRootSymbolReference
@@ -589,7 +597,9 @@ function Exports({ fullName }: { fullName: string }) {
               </Indent>
               <Syntax kind="bracket">{" } "}</Syntax>
               <Syntax kind="keyword">from </Syntax>
-              <Link href={`/npm/${exported.from}@${exported.version}`}>
+              <Link
+                href={getExternalPackageUrl(exported.from, exported.version)}
+              >
                 <a className={symbolReferenceStyles.rootSymbolReference}>
                   {JSON.stringify(exported.from)}
                 </a>

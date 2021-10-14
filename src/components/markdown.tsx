@@ -1,7 +1,7 @@
 import ReactMarkdown, { Options as ReactMarkdownOptions } from "react-markdown";
 import Highlight, { Prism } from "prism-react-renderer";
 import { codeFont, colors } from "../lib/theme.css";
-import { SymbolReference } from "./symbol-references";
+import { getExternalSymbolUrl, SymbolReference } from "./symbol-references";
 import { useDocsContext } from "../lib/DocsContext";
 import remarkGfm from "remark-gfm";
 import * as styles from "./markdown.css";
@@ -129,9 +129,7 @@ const components: ReactMarkdownOptions["components"] = {
       ) {
         return (
           <span className={codeFont}>
-            <Link
-              href={`/npm/${external.pkg}@${external.version}#${external.id}`}
-            >
+            <Link href={getExternalSymbolUrl(external)}>
               <a className={nonRootSymbolReference}>{text}</a>
             </Link>
           </span>
@@ -145,7 +143,7 @@ const components: ReactMarkdownOptions["components"] = {
     const external = externalSymbols[fullName];
     if (external) {
       return (
-        <Link href={`/npm/${external.pkg}@${external.version}#${external.id}`}>
+        <Link href={getExternalSymbolUrl(external)}>
           <a className={styles.a}>{props.children}</a>
         </Link>
       );

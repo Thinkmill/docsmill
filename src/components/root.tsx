@@ -16,6 +16,7 @@ import { themeClass } from "../lib/theme.css";
 import { useRouter } from "next/router";
 import * as styles from "./root.css";
 import { ChevronDown } from "./icons/chevron-down";
+import { getExternalPackageUrl } from "./symbol-references";
 
 function openParentDetails(element: HTMLElement) {
   if (element instanceof HTMLDetailsElement) {
@@ -86,7 +87,9 @@ export function Root(props: import("../extract").DocInfo) {
                     className={styles.versionSelect}
                     onChange={(event) => {
                       const newVersion = event.target.value;
-                      router.push(`/npm/${props.packageName}@${newVersion}`);
+                      router.push(
+                        getExternalPackageUrl(props.packageName, newVersion)
+                      );
                       setVersionState((x) => ({ ...x, current: newVersion }));
                     }}
                     value={versionState.current}
