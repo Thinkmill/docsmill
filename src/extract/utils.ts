@@ -9,6 +9,7 @@ import {
   ObjectMember,
   Parameter,
   SerializedDeclaration,
+  SerializedType,
 } from "../lib/types";
 
 export function getTypeParameters(
@@ -89,9 +90,7 @@ export function getObjectMembers(
         parameters: getParameters(member),
         typeParams: getTypeParameters(member),
         docs: getDocs(member),
-        returnType: member.type
-          ? convertTypeNode(member.type)
-          : { kind: "intrinsic", value: "any" },
+        returnType: getReturnType(member),
       };
     }
     const isCallSignature = ts.isCallSignatureDeclaration(member);
@@ -102,9 +101,7 @@ export function getObjectMembers(
         parameters: getParameters(member),
         typeParams: getTypeParameters(member),
         docs: getDocs(member),
-        returnType: member.type
-          ? convertTypeNode(member.type)
-          : { kind: "intrinsic", value: "any" },
+        returnType: getReturnType(member),
       };
     }
     return { kind: "unknown", content: member.getText() };
@@ -349,4 +346,17 @@ export function getSymbolsForInnerBitsAndGoodIdentifiers(
     goodIdentifiers,
     symbolsForInnerBit: Object.fromEntries(symbolsForInnerBit),
   };
+}
+
+export function getReturnType(node: ts.SignatureDeclaration): SerializedType {
+  if (node.type) {
+    return convertTypeNode(node.type);
+  }
+  const signature = getTypeChecker().getSignatureFromDeclaration(node);
+  assert(
+    signature !== undefined,
+    "expected to always get signature from signature declaration"
+  );
+  const returnType = signature.getReturnType();
+  return convertType(returnType);
 }

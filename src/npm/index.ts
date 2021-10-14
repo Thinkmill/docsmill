@@ -289,12 +289,17 @@ export function getExternalSymbolIdMap(
     const rootSymbols = new Map<ts.Symbol, string>();
     for (const [entrypoint, resolved] of entrypoints) {
       const sourceFile = program.getSourceFile(resolved);
-      assert(sourceFile !== undefined);
-      const sourceFileSymbol = program
-        .getTypeChecker()
-        .getSymbolAtLocation(sourceFile);
-      assert(sourceFileSymbol !== undefined);
-      rootSymbols.set(sourceFileSymbol, entrypoint);
+      if (sourceFile) {
+        assert(
+          sourceFile !== undefined,
+          `expected to be able to get source file for ${resolved}`
+        );
+        const sourceFileSymbol = program
+          .getTypeChecker()
+          .getSymbolAtLocation(sourceFile);
+        assert(sourceFileSymbol !== undefined);
+        rootSymbols.set(sourceFileSymbol, entrypoint);
+      }
     }
     const { goodIdentifiers } = getDocsInfo(
       rootSymbols,

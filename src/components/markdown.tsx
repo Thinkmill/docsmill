@@ -4,8 +4,9 @@ import { codeFont, colors } from "../lib/theme.css";
 import { SymbolReference } from "./symbol-references";
 import { useDocsContext } from "../lib/DocsContext";
 import remarkGfm from "remark-gfm";
-
 import * as styles from "./markdown.css";
+import Link from "next/link";
+import { nonRootSymbolReference } from "./symbol-references.css";
 
 export function Markdown({ content }: { content: string }) {
   return (
@@ -106,21 +107,48 @@ const components: ReactMarkdownOptions["components"] = {
   },
   a(props) {
     let href = ((props.node.properties as any).href as string) || "";
-    const { symbols, goodIdentifiers } = useDocsContext();
+    const { symbols, goodIdentifiers, externalSymbols } = useDocsContext();
     const fullName = href.replace("#symbol-", "");
-
-    if (
-      symbols[fullName] &&
-      props.node.children.length === 1 &&
-      props.node.children[0].type === "text" &&
-      props.node.children[0].value === symbols[fullName][0].name
-    ) {
-      return (
-        <SymbolReference name={symbols[fullName][0].name} fullName={fullName} />
-      );
+    const text =
+      props.node.children.length === 1 && props.node.children[0].type === "text"
+        ? props.node.children[0].value
+        : undefined;
+    if (text) {
+      if (symbols[fullName] && text === symbols[fullName][0].name) {
+        return (
+          <SymbolReference
+            name={symbols[fullName][0].name}
+            fullName={fullName}
+          />
+        );
+      }
+      const external = externalSymbols[fullName];
+      if (
+        external &&
+        text === externalSymbols[fullName].id.match(/\.([^\.]+)$/)?.[1]
+      ) {
+        return (
+          <span className={codeFont}>
+            <Link
+              href={`/npm/${external.pkg}@${external.version}#${external.id}`}
+            >
+              <a className={nonRootSymbolReference}>{text}</a>
+            </Link>
+          </span>
+        );
+      }
     }
+
     if (symbols[fullName]) {
       href = `#${goodIdentifiers[fullName]}`;
+    }
+    const external = externalSymbols[fullName];
+    if (external) {
+      return (
+        <Link href={`/npm/${external.pkg}@${external.version}#${external.id}`}>
+          <a className={styles.a}>{props.children}</a>
+        </Link>
+      );
     }
     return (
       <a className={styles.a} href={href}>

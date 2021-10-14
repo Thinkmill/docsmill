@@ -1,10 +1,6 @@
 import { ts } from "./ts";
 import { collectSymbol, getRootSymbolName, getTypeChecker } from ".";
-import {
-  ClassMember,
-  SerializedDeclaration,
-  SerializedType,
-} from "../lib/types";
+import { ClassMember, SerializedDeclaration } from "../lib/types";
 import { convertTypeNode } from "./convert-node";
 import { convertType } from "./convert-type";
 import {
@@ -16,22 +12,10 @@ import {
   getObjectMembers,
   getAliasedSymbol,
   getSymbolAtLocation,
+  getReturnType,
 } from "./utils";
 import { assert } from "../lib/assert";
 import { getExportedDeclarations } from "./get-exported-declarations";
-
-function getReturnType(node: ts.SignatureDeclaration): SerializedType {
-  if (node.type) {
-    return convertTypeNode(node.type);
-  }
-  const signature = getTypeChecker().getSignatureFromDeclaration(node);
-  assert(
-    signature !== undefined,
-    "expected to always get signature from signature declaration"
-  );
-  const returnType = signature.getReturnType();
-  return convertType(returnType);
-}
 
 export function convertDeclaration(
   compilerNode: ts.Node

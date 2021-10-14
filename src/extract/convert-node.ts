@@ -329,6 +329,7 @@ export function convertTypeNode(compilerNode: ts.TypeNode): SerializedType {
         if (aliasedSymbol) {
           symbol = aliasedSymbol;
         }
+        collectSymbol(symbol);
 
         return {
           kind: "typeof",
@@ -360,6 +361,7 @@ export function convertTypeNode(compilerNode: ts.TypeNode): SerializedType {
       if (aliasedSymbol) {
         symbol = aliasedSymbol;
       }
+      collectSymbol(symbol);
 
       return {
         kind: "typeof",

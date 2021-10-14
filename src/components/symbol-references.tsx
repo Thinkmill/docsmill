@@ -41,7 +41,6 @@ const externalReferences = new Map(
       "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Iteration_protocols#the_iterable_protocol",
     Promise:
       "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise",
-    GraphQLScalarType: "https://graphql.org/graphql-js/type/#graphqlscalartype",
   })
 );
 
@@ -66,6 +65,17 @@ export function AddNameToScope({
   );
 }
 
+function getExternalPkgDisplayName(pkg: string) {
+  if (pkg.startsWith("@types/")) {
+    let withoutTypes = pkg.replace("@types/", "");
+    if (withoutTypes.includes("__")) {
+      return `@${withoutTypes.replace("__", "/")}`;
+    }
+    return withoutTypes;
+  }
+  return pkg;
+}
+
 export function SymbolReference({
   fullName,
   name,
@@ -86,13 +96,7 @@ export function SymbolReference({
     : externalReferences.get(name);
   if (externalSymbols[fullName]) {
     const external = externalSymbols[fullName];
-    let pkgDisplayName = external.pkg;
-    if (pkgDisplayName.startsWith("@types/")) {
-      pkgDisplayName = pkgDisplayName.replace("@types/", "");
-      if (pkgDisplayName.includes("__")) {
-        pkgDisplayName = `@${pkgDisplayName.replace("__", "/")}`;
-      }
-    }
+    const pkgDisplayName = getExternalPkgDisplayName(external.pkg);
     return (
       <span className={codeFont}>
         <Syntax kind="keyword">import</Syntax>
