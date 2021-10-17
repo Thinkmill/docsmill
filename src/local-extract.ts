@@ -29,13 +29,16 @@ export async function getFromLocalPackage(
   pkgPath = path.resolve(pkgPath);
   let project = await createProject({
     tsConfigFilePath,
+    compilerOptions: {
+      resolveJsonModule: true,
+    },
   });
   const compilerOptions = project.compilerOptions.get();
   const fileSystem = project.fileSystem;
   const moduleResolutionCache = ts.createModuleResolutionCache(
     project.fileSystem.getCurrentDirectory(),
     (x) => (ts.sys.useCaseSensitiveFileNames ? x : x.toLowerCase()),
-    project.compilerOptions.get()
+    compilerOptions
   );
 
   const moduleResolutionHost = createModuleResolutionHost(project.fileSystem);
@@ -43,7 +46,7 @@ export async function getFromLocalPackage(
     ts.resolveModuleName(
       moduleName,
       containingFile,
-      { ...compilerOptions, resolveJsonModule: true },
+      compilerOptions,
       moduleResolutionHost,
       moduleResolutionCache
     );
@@ -67,10 +70,13 @@ export async function getFromLocalPackage(
     { version: string; pkgPath: string; entrypoints: Map<string, string> }
   >();
   for (const dep of collectedPackages) {
-    const resolved = resolveModule(
-      dep + "/package.json",
+    let resolved = resolveModule(
+      `@types/${dep}/package.json`,
       pkgPath + "/index.ts"
     );
+    if (!resolved.resolvedModule) {
+      resolved = resolveModule(`${dep}/package.json`, pkgPath + "/index.ts");
+    }
     assert(
       resolved.resolvedModule !== undefined,
       `expected to be able to resolve ${dep}/package.json from ${pkgPath}/index.ts`
@@ -100,7 +106,6 @@ export async function getFromLocalPackage(
     program,
     resolvedDepsWithEntrypoints
   );
-  console.log(externalSymbols);
   for (const [entrypoint, resolved] of entrypoints) {
     const sourceFile = program.getSourceFile(resolved);
     assert(sourceFile !== undefined);

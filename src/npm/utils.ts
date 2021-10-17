@@ -3,6 +3,28 @@ import semver from "semver";
 import path from "path";
 import { PackageMetadata } from "./fetch-package-metadata";
 
+function findPackageJsons(
+  fileSystem: FileSystemHost,
+  dir: string,
+  found: Set<string>
+) {
+  const queue = new Set([dir]);
+  for (const dir of queue) {
+    for (const entry of fileSystem.readDirSync(dir)) {
+      if (entry.endsWith("/node_modules")) {
+        continue;
+      }
+      if (fileSystem.directoryExistsSync(entry)) {
+        queue.add(entry);
+        continue;
+      }
+      if (entry.endsWith("/package.json")) {
+        found.add(entry);
+      }
+    }
+  }
+}
+
 export async function collectEntrypointsOfPackage(
   fileSystem: FileSystemHost,
   resolveBareSpecifier: (
@@ -12,13 +34,8 @@ export async function collectEntrypointsOfPackage(
   pkgName: string,
   pkgPath: string
 ) {
-  const packageJsons = new Set([
-    `${pkgPath}/package.json`,
-    ...(await fileSystem.glob([
-      `${pkgPath}/**/package.json`,
-      `!${pkgPath}/node_modules/**/package.json`,
-    ])),
-  ]);
+  const packageJsons = new Set<string>();
+  findPackageJsons(fileSystem, pkgPath, packageJsons);
   const entrypoints = new Map<string, string>();
 
   for (const x of packageJsons) {
