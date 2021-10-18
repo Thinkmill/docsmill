@@ -49,19 +49,6 @@ function updateOffsets(symbols: Symbols) {
   });
 }
 
-function updateZIndexes(symbols: Symbols) {
-  Object.entries(symbols).forEach(([, symbol]) => {
-    const el = symbol.headingRef.current;
-    if (!el) return;
-    el.style.zIndex = `1`;
-    symbol.parents.forEach((id, i) => {
-      const parentEl = symbols[id]?.headingRef.current;
-      if (!parentEl) return;
-      parentEl.style.zIndex = `${i + 2}`;
-    }, 0);
-  });
-}
-
 export function SymbolExportsManager({ children }: { children: ReactNode }) {
   const symbolsRef = useRef<{ symbols: Symbols }>({
     symbols: {},
@@ -79,11 +66,9 @@ export function SymbolExportsManager({ children }: { children: ReactNode }) {
     register: (symbol) => {
       symbolsRef.current.symbols[symbol.id] = symbol;
       update();
-      updateZIndexes(symbolsRef.current.symbols);
     },
     unregister: (symbol) => {
       delete symbolsRef.current.symbols[symbol.id];
-      updateZIndexes(symbolsRef.current.symbols);
     },
   };
   return (

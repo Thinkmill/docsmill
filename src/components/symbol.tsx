@@ -1,4 +1,4 @@
-import { Fragment, ReactNode } from "react";
+import { Fragment } from "react";
 
 import { useDocsContext } from "../lib/DocsContext";
 import { codeFont } from "../lib/theme.css";
@@ -27,37 +27,6 @@ import { Indent } from "./indent";
 import * as symbolReferenceStyles from "./symbol-references.css";
 import { a } from "./markdown.css";
 import Link from "next/link";
-
-function SymbolAnchor({
-  fullName,
-  children,
-}: {
-  fullName: string;
-  children: ReactNode;
-}) {
-  const { goodIdentifiers, canonicalExportLocations } = useDocsContext();
-  let currentFullName = fullName;
-  let depth = 0;
-  while (canonicalExportLocations[currentFullName] !== undefined) {
-    depth += 1;
-    currentFullName = canonicalExportLocations[currentFullName].parent;
-  }
-
-  return (
-    <span className={styles.symbolAnchorParent}>
-      <span
-        style={{
-          // 54px is the height of the module/namespace sticky heading bits
-          // we want a bit of extra space as well though
-          top: -depth * 54 - 8,
-        }}
-        className={styles.symbolAnchor}
-        id={goodIdentifiers[fullName]}
-      ></span>
-      {children}
-    </span>
-  );
-}
 
 function ExportedFrom({ fullName }: { fullName: string }) {
   const docContext = useDocsContext();
@@ -498,10 +467,11 @@ function Exports({ fullName }: { fullName: string }) {
           const innerBits = symbolsForInnerBit.get(symbol);
           return (
             <div key={i}>
-              <SymbolAnchor fullName={symbol}>
-                <h3 className={styles.symbolHeading}>{exportName}</h3>
-              </SymbolAnchor>
-
+              <span
+                className={styles.symbolAnchor}
+                id={goodIdentifiers[symbol]}
+              />
+              <h3 className={styles.symbolHeading}>{exportName}</h3>
               <RenderRootSymbol fullName={symbol} />
               {!!relatedSymbols?.length && (
                 <details
