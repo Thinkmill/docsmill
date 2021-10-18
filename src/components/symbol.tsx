@@ -450,12 +450,27 @@ function ClassMembers({
 }
 
 function Exports({ fullName }: { fullName: string }) {
-  const { symbols, references, symbolsForInnerBit, goodIdentifiers } =
-    useDocsContext();
+  const {
+    symbols,
+    references,
+    symbolsForInnerBit,
+    goodIdentifiers,
+    canonicalExportLocations,
+  } = useDocsContext();
   const transformedExports = useGroupedExports(fullName);
 
+  let currentFullName = fullName;
+  let depth = 1;
+  while (canonicalExportLocations[currentFullName] !== undefined) {
+    depth += 1;
+    currentFullName = canonicalExportLocations[currentFullName].parent;
+  }
+
   return (
-    <div className={styles.innerExportsContainer}>
+    <div
+      className={styles.innerExportsContainer}
+      style={{ [styles.stickyHeadingVar as any]: `${depth}` }}
+    >
       {transformedExports.map((exported, i) => {
         if (exported.kind === "canonical") {
           const { exportName, fullName: symbol } = exported;
@@ -467,10 +482,12 @@ function Exports({ fullName }: { fullName: string }) {
           const innerBits = symbolsForInnerBit.get(symbol);
           return (
             <div key={i}>
-              <span
-                className={styles.symbolAnchor}
-                id={goodIdentifiers[symbol]}
-              />
+              <span style={{ position: "relative" }}>
+                <span
+                  className={styles.symbolAnchor}
+                  id={goodIdentifiers[symbol]}
+                />
+              </span>
               <h3 className={styles.symbolHeading}>{exportName}</h3>
               <RenderRootSymbol fullName={symbol} />
               {!!relatedSymbols?.length && (

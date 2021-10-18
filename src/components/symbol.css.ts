@@ -1,4 +1,4 @@
-import { createVar, style } from "@vanilla-extract/css";
+import { style } from "@vanilla-extract/css";
 import {
   codeFont,
   codeFontStyleObj,
@@ -41,14 +41,13 @@ export const innerExportsHeadingSticky = style({
   padding: "6px 12px",
 });
 
-const stickyHeadingVar = createVar("sticky-heading");
+export const stickyHeadingVar = "--sticky-heading-njsdnkasdkasd";
 
 export const innerExportsContainer = style({
   borderLeft: `2px solid ${tokens.color.blueGray300}`,
   marginTop: 16,
   marginBottom: 16,
   paddingLeft: 16,
-  [stickyHeadingVar]: `calc(${stickyHeadingVar} + 1)`,
 });
 
 export const referencesContainer = style({
@@ -66,7 +65,7 @@ export const symbolAnchor = style({
   display: "block",
   position: "absolute",
   height: 1,
-  marginTop: `calc(-54px * ${stickyHeadingVar} - 8px)`,
+  top: `calc(-54px * var(${stickyHeadingVar}) - 8px)`,
 });
 
 export const targetBackground = style({
