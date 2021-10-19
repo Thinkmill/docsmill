@@ -3,7 +3,6 @@ import React, { useEffect, useMemo, useState } from "react";
 import { DocsContext } from "../lib/DocsContext";
 
 import { RenderRootSymbol } from "../components/symbol";
-import { SymbolExportsManager } from "../components/symbol-exports";
 import { Navigation } from "../components/navigation";
 import {
   Contents,
@@ -76,54 +75,52 @@ export function Root(props: import("../extract").DocInfo) {
         externalSymbols: props.externalSymbols,
       }}
     >
-      <SymbolExportsManager>
-        <div className={themeClass}>
-          <Header packageName={props.packageName} />
-          <PageContainer>
-            <NavigationContainer>
-              {props.versions && (
-                <span className={styles.versionSelectWrapper}>
-                  <select
-                    className={styles.versionSelect}
-                    onChange={(event) => {
-                      const newVersion = event.target.value;
-                      router.push(
-                        getExternalPackageUrl(props.packageName, newVersion)
-                      );
-                      setVersionState((x) => ({ ...x, current: newVersion }));
-                    }}
-                    value={versionState.current}
-                    disabled={
-                      versionState.current !== versionState.fromCurrentProps
-                    }
-                  >
-                    {props.versions.map((version) => (
-                      <option key={version}>{version}</option>
-                    ))}
-                  </select>
-                  <ChevronDown
-                    height="20px"
-                    className={styles.versionSelectChevron}
-                  />
-                </span>
-              )}
+      <div className={themeClass}>
+        <Header packageName={props.packageName} />
+        <PageContainer>
+          <NavigationContainer>
+            {props.versions && (
+              <span className={styles.versionSelectWrapper}>
+                <select
+                  className={styles.versionSelect}
+                  onChange={(event) => {
+                    const newVersion = event.target.value;
+                    router.push(
+                      getExternalPackageUrl(props.packageName, newVersion)
+                    );
+                    setVersionState((x) => ({ ...x, current: newVersion }));
+                  }}
+                  value={versionState.current}
+                  disabled={
+                    versionState.current !== versionState.fromCurrentProps
+                  }
+                >
+                  {props.versions.map((version) => (
+                    <option key={version}>{version}</option>
+                  ))}
+                </select>
+                <ChevronDown
+                  height="20px"
+                  className={styles.versionSelectChevron}
+                />
+              </span>
+            )}
 
-              {versionState.current !== versionState.fromCurrentProps && (
-                <span aria-label="Loading new version">⏳</span>
-              )}
+            {versionState.current !== versionState.fromCurrentProps && (
+              <span aria-label="Loading new version">⏳</span>
+            )}
 
-              {props.rootSymbols.map((rootSymbol) => (
-                <Navigation key={rootSymbol} rootSymbolName={rootSymbol} />
-              ))}
-            </NavigationContainer>
-            <Contents>
-              {props.rootSymbols.map((rootSymbol) => (
-                <RenderRootSymbol key={rootSymbol} fullName={rootSymbol} />
-              ))}
-            </Contents>
-          </PageContainer>
-        </div>
-      </SymbolExportsManager>
+            {props.rootSymbols.map((rootSymbol) => (
+              <Navigation key={rootSymbol} rootSymbolName={rootSymbol} />
+            ))}
+          </NavigationContainer>
+          <Contents>
+            {props.rootSymbols.map((rootSymbol) => (
+              <RenderRootSymbol key={rootSymbol} fullName={rootSymbol} />
+            ))}
+          </Contents>
+        </PageContainer>
+      </div>
     </DocsContext.Provider>
   );
 }

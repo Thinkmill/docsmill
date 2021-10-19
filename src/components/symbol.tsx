@@ -5,7 +5,6 @@ import { codeFont } from "../lib/theme.css";
 import { useGroupedExports } from "../lib/utils";
 import { assert } from "../lib/assert";
 import { Docs } from "./docs";
-import { SymbolExports, SymbolExportsHeader } from "./symbol-exports";
 import {
   SymbolName,
   SymbolReference,
@@ -111,34 +110,30 @@ function Declaration({
             <Docs content={decl.docs} />
           </Fragment>
         )}
-        <SymbolExports id={goodIdentifiers[fullName]}>
-          <SymbolExportsHeader>
-            <div className={styles.innerExportsHeading}>
-              {isExported ? (
-                <Fragment>
-                  <Syntax kind="keyword">export * as </Syntax>
-                  <SymbolName name={decl.name} fullName={fullName} />
-                  <Syntax kind="keyword"> from</Syntax>
-                </Fragment>
-              ) : (
-                <Fragment>
-                  <Syntax kind="keyword">module </Syntax>
-                  <a
-                    id={goodIdentifiers[fullName]}
-                    className={styles.moduleSpecifierLink}
-                    href={`#${goodIdentifiers[fullName]}`}
-                  >
-                    {JSON.stringify(decl.name)}
-                  </a>
-                </Fragment>
-              )}
-              <Syntax kind="bracket">{" {"}</Syntax>
-            </div>
-          </SymbolExportsHeader>
-          <Exports fullName={fullName} />
-        </SymbolExports>
-
         <div className={styles.innerExportsHeading}>
+          {isExported ? (
+            <Fragment>
+              <Syntax kind="keyword">export * as </Syntax>
+              <SymbolName name={decl.name} fullName={fullName} />
+              <Syntax kind="keyword"> from</Syntax>
+            </Fragment>
+          ) : (
+            <Fragment>
+              <Syntax kind="keyword">module </Syntax>
+              <a
+                id={goodIdentifiers[fullName]}
+                className={styles.moduleSpecifierLink}
+                href={`#${goodIdentifiers[fullName]}`}
+              >
+                {JSON.stringify(decl.name)}
+              </a>
+            </Fragment>
+          )}
+          <Syntax kind="bracket">{" {"}</Syntax>
+        </div>
+        <Exports fullName={fullName} />
+
+        <div className={styles.innerExportsClosing}>
           <Syntax kind="bracket">{"}"}</Syntax>
         </div>
       </div>
@@ -322,20 +317,16 @@ function Declaration({
     return (
       <div>
         <Docs content={decl.docs} />
-        <SymbolExports id={goodIdentifiers[fullName]}>
-          <SymbolExportsHeader>
-            <div className={styles.innerExportsHeading}>
-              <Syntax kind="keyword">
-                {isExported ? "export " : ""}namespace{" "}
-              </Syntax>
-              <SymbolName name={decl.name} fullName={fullName} />
-              <Syntax kind="bracket">{" {"}</Syntax>
-            </div>
-          </SymbolExportsHeader>
-          <Exports fullName={fullName} />
-        </SymbolExports>
-
         <div className={styles.innerExportsHeading}>
+          <Syntax kind="keyword">
+            {isExported ? "export " : ""}namespace{" "}
+          </Syntax>
+          <SymbolName name={decl.name} fullName={fullName} />
+          <Syntax kind="bracket">{" {"}</Syntax>
+        </div>
+        <Exports fullName={fullName} />
+
+        <div className={styles.innerExportsClosing}>
           <Syntax kind="bracket">{"}"}</Syntax>
         </div>
       </div>
