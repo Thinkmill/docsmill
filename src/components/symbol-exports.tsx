@@ -34,12 +34,7 @@ function updateOffsets(symbols: Symbols) {
   Object.entries(symbols).forEach(([, symbol]) => {
     const el = symbol.headingRef.current;
     if (!el) return;
-    const top = symbol.parents.reduce((top, id) => {
-      const parentEl = symbols[id].headingRef.current;
-      if (!parentEl) return top;
-      return top + parentEl.offsetHeight;
-    }, 0);
-    el.style.top = `${top}px`;
+    const top = symbol.parents.length * 54;
     // console.log(`${scrollTop + top} === ${el.offsetTop}`);
     if (el.offsetTop <= scrollTop + top) {
       el.classList.add(styles.innerExportsHeadingSticky);

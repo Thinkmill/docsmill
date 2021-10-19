@@ -1,4 +1,4 @@
-import { style } from "@vanilla-extract/css";
+import { createVar, fallbackVar, style } from "@vanilla-extract/css";
 import {
   codeFont,
   codeFontStyleObj,
@@ -12,10 +12,16 @@ export const moduleHeading = style({
   ...codeFontStyleObj,
 });
 
+const symbolDepthVar = createVar("symbol-depth");
+const intermediateSymbolDepthVar = createVar("intermediate-symbol-depth");
+
 export const rootSymbolContainer = style({
   borderBottom: `1px solid ${tokens.color.gray200}`,
   paddingBottom: 24,
   marginBottom: 16,
+  vars: {
+    [intermediateSymbolDepthVar]: symbolDepthVar,
+  },
 });
 
 export const innerExportsHeading = style([
@@ -24,7 +30,7 @@ export const innerExportsHeading = style([
     fontSize: "1.2rem",
     fontWeight: 500,
     position: "sticky",
-    top: 0,
+    top: `calc(${fallbackVar(symbolDepthVar, "0")} * 54px)`,
     padding: "6px 0px",
     marginLeft: "2px",
     borderBottom: "1px solid transparent",
@@ -41,13 +47,17 @@ export const innerExportsHeadingSticky = style({
   padding: "6px 12px",
 });
 
-export const stickyHeadingVar = "--sticky-heading-njsdnkasdkasd";
-
 export const innerExportsContainer = style({
   borderLeft: `2px solid ${tokens.color.blueGray300}`,
   marginTop: 16,
   marginBottom: 16,
   paddingLeft: 16,
+  vars: {
+    [symbolDepthVar]: `calc(${fallbackVar(
+      intermediateSymbolDepthVar,
+      "0"
+    )} + 1)`,
+  },
 });
 
 export const referencesContainer = style({
@@ -59,13 +69,6 @@ export const referencesContainer = style({
 export const referenceItem = style({
   listStylePosition: "inside",
   listStyleType: "disc",
-});
-
-export const symbolAnchor = style({
-  display: "block",
-  position: "absolute",
-  height: 1,
-  top: `calc(-54px * var(${stickyHeadingVar}) - 8px)`,
 });
 
 export const targetBackground = style({
@@ -84,9 +87,8 @@ export const symbolHeading = style({
   fontSize: "1.6rem",
   marginBottom: 16,
   ...codeFontStyleObj,
-  selectors: {
-    [`${symbolAnchor}:target ~ &`]: {
-      backgroundColor: "#ffff54ba",
-    },
+  scrollMarginTop: `calc(${fallbackVar(symbolDepthVar, "0")} * 54px + 8px)`,
+  ":target": {
+    backgroundColor: "#ffff54ba",
   },
 });
