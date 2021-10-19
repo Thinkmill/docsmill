@@ -316,7 +316,7 @@ export function convertDeclaration(
       exports: collectExportsFromModule(symbol),
     };
   }
-  let docs = getDocs(compilerNode);
+  let docs = getDocs(compilerNode as any);
   const symbol = getSymbolAtLocation(compilerNode);
   assert(symbol !== undefined, "expected symbol to exist");
   console.log(symbol.getName(), ts.SyntaxKind[compilerNode.kind]);

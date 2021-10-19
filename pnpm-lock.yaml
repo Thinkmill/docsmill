@@ -15,6 +15,7 @@ specifiers:
   '@emotion/hash': 0.8.0
   '@monaco-editor/react': 4.3.1
   '@ts-morph/bootstrap': 0.11.0
+  '@ts-morph/common': 0.11.0
   '@types/cssesc': 3.0.0
   '@types/gunzip-maybe': 1.4.0
   '@types/lz-string': 1.3.34
@@ -66,6 +67,7 @@ dependencies:
   '@emotion/hash': 0.8.0
   '@monaco-editor/react': 4.3.1_6d3d0daa55b05704d527adb1cf45674e
   '@ts-morph/bootstrap': 0.11.0
+  '@ts-morph/common': 0.11.0
   '@types/cssesc': 3.0.0
   '@types/gunzip-maybe': 1.4.0
   '@types/lz-string': 1.3.34
