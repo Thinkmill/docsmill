@@ -3,6 +3,7 @@ import { codeFont, tokens } from "../lib/theme.css";
 
 export const a = style({
   color: tokens.color.blue600,
+  textDecoration: "none",
   ":hover": {
     color: tokens.color.blue800,
     textDecoration: "underline",

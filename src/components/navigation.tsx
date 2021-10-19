@@ -24,7 +24,7 @@ export function Navigation({ rootSymbolName }: { rootSymbolName: string }) {
     <Expandable
       summary={<SymbolReference fullName={rootSymbolName} name={name} />}
     >
-      <ul>
+      <ul style={{ padding: 0 }}>
         {groupedExports.map((group, i) => {
           if (group.kind !== "canonical") {
             return (

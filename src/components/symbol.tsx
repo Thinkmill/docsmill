@@ -467,7 +467,7 @@ function Exports({ fullName }: { fullName: string }) {
                   className={innerBits ? undefined : styles.referencesContainer}
                 >
                   <summary>Referenced by</summary>
-                  <ul>
+                  <ul className={styles.referenceList}>
                     {relatedSymbols.map((thing, i) => {
                       return (
                         <li key={i} className={styles.referenceItem}>

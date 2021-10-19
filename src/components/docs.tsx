@@ -18,7 +18,7 @@ export function Docs({ content }: { content: string | undefined }) {
     );
   }
   return (
-    <details className={styles.details}>
+    <details className={styles.docs}>
       <summary className={styles.blockSummary}>
         <Markdown content={first} />
         <div className={styles.expandLinkOpen}>

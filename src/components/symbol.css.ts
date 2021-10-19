@@ -8,7 +8,9 @@ import {
 
 export const moduleHeading = style({
   fontSize: "2rem",
+  fontWeight: "normal",
   marginBottom: 16,
+  marginTop: 0,
   ...codeFontStyleObj,
 });
 
@@ -70,12 +72,17 @@ export const referenceItem = style({
   listStyleType: "disc",
 });
 
+export const referenceList = style({
+  padding: 0,
+});
+
 export const targetBackground = style({
   ":target": { backgroundColor: "#ffff54ba" },
 });
 
 export const moduleSpecifierLink = style({
   color: syntaxColors.string,
+  textDecoration: "none",
   ":hover": { textDecoration: "underline" },
   ":target": { backgroundColor: "#ffff54ba" },
 });
@@ -84,7 +91,9 @@ export const reexportTarget = style([targetBackground, codeFont]);
 
 export const symbolHeading = style({
   fontSize: "1.6rem",
+  fontWeight: "normal",
   marginBottom: 16,
+  marginTop: 0,
   ...codeFontStyleObj,
   scrollMarginTop: `calc(${fallbackVar(
     symbolDepthVar,

@@ -3,6 +3,7 @@ import { codeFont, syntaxColors, codeFontStyleObj } from "../lib/theme.css";
 import { targetBackground } from "./symbol.css";
 
 const baseSymbol = {
+  textDecoration: "none",
   ":hover": { textDecoration: "underline" },
 };
 

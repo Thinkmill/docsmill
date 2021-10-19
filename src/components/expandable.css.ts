@@ -30,6 +30,7 @@ const expandableChevron = style({
   width: 20,
   height: 20,
   color: tokens.color.gray400,
+  verticalAlign: "middle",
 });
 
 export const expandableChevronOpen = style([

@@ -17,23 +17,10 @@ export const blockSummary = style({
   },
 });
 
-export const details = style([
-  docs,
-  {
-    selectors: {
-      "&[open]": {
-        position: "relative",
-        paddingBottom: 32,
-      },
-    },
-  },
-]);
-
 const expandLink = style({
   display: "flex",
   cursor: "pointer",
   margin: "8px 0 16px",
-
   ":hover": {
     textDecoration: "underline",
   },
@@ -55,8 +42,6 @@ export const expandLinkClose = style([
   expandLink,
   {
     color: tokens.color.emerald700,
-    position: "absolute",
-    bottom: -12,
     selectors: {
       ":not(details[open]) > summary > &": {
         display: "none",
