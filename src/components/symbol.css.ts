@@ -26,16 +26,11 @@ export const rootSymbolContainer = style({
   },
 });
 
-const innerExportsCommon = style({
+export const innerExportsCommon = style({
   fontSize: "1.2rem",
   fontWeight: 500,
   padding: "6px 4px",
 });
-
-export const innerExportsClosing = style([
-  innerExportsCommon,
-  { marginTop: -16 },
-]);
 
 export const innerExportsHeading = style([
   codeFont,

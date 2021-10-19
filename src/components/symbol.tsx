@@ -133,7 +133,7 @@ function Declaration({
         </div>
         <Exports fullName={fullName} />
 
-        <div className={styles.innerExportsClosing}>
+        <div className={styles.innerExportsCommon}>
           <Syntax kind="bracket">{"}"}</Syntax>
         </div>
       </div>
@@ -326,7 +326,7 @@ function Declaration({
         </div>
         <Exports fullName={fullName} />
 
-        <div className={styles.innerExportsClosing}>
+        <div className={styles.innerExportsCommon}>
           <Syntax kind="bracket">{"}"}</Syntax>
         </div>
       </div>
