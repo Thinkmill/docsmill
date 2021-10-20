@@ -1,4 +1,4 @@
-import { createTheme, globalStyle, style } from "@vanilla-extract/css";
+import { globalStyle, style } from "@vanilla-extract/css";
 
 export const syntaxColors = {
   parameter: "#111111",
@@ -206,7 +206,7 @@ export const colors = {
   blueGray900: "#0f172a",
 };
 
-export const [themeClass, tokens] = createTheme({
+export const tokens = {
   font: {
     body: `
       -apple-system,
@@ -239,12 +239,7 @@ export const [themeClass, tokens] = createTheme({
   },
   /** Palette thanks to https://yeun.github.io/open-color/ */
   color: colors,
-});
-
-export const rootStyles = style({
-  fontFamily: tokens.font.body,
-  lineHeight: 1.5,
-});
+};
 
 /** Our codeFont stack as a style for easy use */
 
@@ -263,6 +258,8 @@ export const codeFontStyleObj = {
 globalStyle(`body`, {
   margin: 0,
   padding: 0,
+  fontFamily: tokens.font.body,
+  lineHeight: 1.5,
 });
 
 /**
