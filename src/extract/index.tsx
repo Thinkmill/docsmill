@@ -80,6 +80,7 @@ export type DocInfo = {
   externalSymbols: Record<string, { pkg: string; version: string; id: string }>;
   versions?: string[];
   currentVersion: string;
+  locations: Record<string, { file: string; line: number }[]>;
 };
 
 export function getDocsInfo(
@@ -133,6 +134,22 @@ export function getDocsInfo(
           ];
         }
       )
+    ),
+    locations: Object.fromEntries(
+      [...state.publicSymbols].map(([symbol]) => {
+        return [
+          getSymbolIdentifier(symbol),
+          symbol.declarations!.map((decl) => {
+            const sourceFile = decl.getSourceFile();
+            return {
+              file: sourceFile.fileName.replace(pkgDir, ""),
+              line: sourceFile.getLineAndCharacterOfPosition(
+                (decl as any).name?.pos ?? decl.pos
+              ).line,
+            };
+          }),
+        ];
+      })
     ),
   };
 

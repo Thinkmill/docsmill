@@ -26,6 +26,8 @@ import { Indent } from "./indent";
 import * as symbolReferenceStyles from "./symbol-references.css";
 import { a } from "./markdown.css";
 import Link from "next/link";
+import { useRouter } from "next/router";
+import { getPkgWithVersionPortionOfParms } from "../npm/params";
 
 function ExportedFrom({ fullName }: { fullName: string }) {
   const docContext = useDocsContext();
@@ -47,7 +49,8 @@ function ExportedFrom({ fullName }: { fullName: string }) {
 }
 
 export function RenderRootSymbol({ fullName }: { fullName: string }) {
-  const { symbols, canonicalExportLocations } = useDocsContext();
+  const { symbols, canonicalExportLocations, locations } = useDocsContext();
+  const router = useRouter();
   let decls = symbols[fullName];
   let isExported = false;
   if (canonicalExportLocations[fullName]) {
@@ -60,13 +63,22 @@ export function RenderRootSymbol({ fullName }: { fullName: string }) {
   return (
     <div className={styles.rootSymbolContainer}>
       {decls.map((decl, i) => {
+        const location = locations[fullName][i];
         return (
-          <Declaration
-            key={i}
-            fullName={fullName}
-            isExported={isExported}
-            decl={decl}
-          />
+          <div key={i} className={styles.declarationContainer}>
+            <Declaration
+              fullName={fullName}
+              isExported={isExported}
+              decl={decl}
+            />
+            <Link
+              href={`/src/${getPkgWithVersionPortionOfParms(router.query.pkg)}${
+                location.file
+              }#L${location.line + 1}`}
+            >
+              <a>[decl]</a>
+            </Link>
+          </div>
         );
       })}
     </div>

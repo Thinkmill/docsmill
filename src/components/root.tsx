@@ -72,6 +72,7 @@ export function Root(props: import("../extract").DocInfo) {
         goodIdentifiers: props.goodIdentifiers,
         rootSymbols: new Set(props.rootSymbols),
         externalSymbols: props.externalSymbols,
+        locations: props.locations,
       }}
     >
       <Header packageName={props.packageName} />

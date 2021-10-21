@@ -28,6 +28,11 @@ export const rootSymbolContainer = style({
   },
 });
 
+export const declarationContainer = style({
+  display: "flex",
+  justifyContent: "space-between",
+});
+
 export const innerExportsCommon = style({
   fontSize: "1.2rem",
   fontWeight: 500,

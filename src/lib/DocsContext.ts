@@ -17,6 +17,7 @@ export type DocsContextType = {
     SymbolId,
     { pkg: string; version: string; id: string }
   >;
+  locations: Record<SymbolId, { file: string; line: number }[]>;
 };
 
 export const DocsContext = createContext<DocsContextType>(null as any);

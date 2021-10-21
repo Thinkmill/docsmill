@@ -11,6 +11,7 @@ import {
   GetStaticPropsContext,
   GetStaticPropsResult,
 } from "next";
+import { getPkgWithVersionPortionOfParms } from "../../npm/params";
 
 function SrcInner({
   monaco,
@@ -78,23 +79,19 @@ function SrcInner({
           monaco.Uri.file(file.name)
         );
         editorRef.current.setModel(model);
+        if (window.location.hash.startsWith("#L")) {
+          const lineNumber = parseInt(window.location.hash.replace("#L", ""));
+          if (lineNumber) {
+            editorRef.current.revealLineNearTop(lineNumber);
+            editorRef.current.setPosition({ lineNumber, column: 1 });
+            editorRef.current.focus();
+          }
+        }
       }
     }
   }, [monaco, file]);
 
   return <div style={{ height: "100%" }} ref={ref} />;
-}
-
-function getPkgWithVersionPortionOfParms(
-  params: string | string[] | undefined
-) {
-  if (!Array.isArray(params)) {
-    throw new Error("expected params to be array");
-  }
-  if (params[0].startsWith("@")) {
-    return `${params[0]}/${params[1]}`;
-  }
-  return params[0];
 }
 
 function FileStructure({ node }: { node: File | Directory }) {
