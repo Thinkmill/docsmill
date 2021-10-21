@@ -1,3 +1,5 @@
+/** @jsxRuntime automatic */
+/** @jsxImportSource @emotion/react */
 import { Fragment } from "react";
 
 import { useDocsContext } from "../lib/DocsContext";
@@ -49,8 +51,7 @@ function ExportedFrom({ fullName }: { fullName: string }) {
 }
 
 export function RenderRootSymbol({ fullName }: { fullName: string }) {
-  const { symbols, canonicalExportLocations, locations } = useDocsContext();
-  const router = useRouter();
+  const { symbols, canonicalExportLocations } = useDocsContext();
   let decls = symbols[fullName];
   let isExported = false;
   if (canonicalExportLocations[fullName]) {
@@ -61,35 +62,15 @@ export function RenderRootSymbol({ fullName }: { fullName: string }) {
     }));
   }
   return (
-    <div className={styles.rootSymbolContainer}>
+    <div css={styles.rootSymbolContainer}>
       {decls.map((decl, i) => {
-        const location = locations[fullName][i];
         return (
-          <div key={i} className={styles.declarationContainer}>
-            <Declaration
-              fullName={fullName}
-              isExported={isExported}
-              decl={decl}
-            />
-            <div>
-              <Link
-                href={`/src/${getPkgWithVersionPortionOfParms(
-                  router.query.pkg
-                )}${location.file}#L${location.line + 1}`}
-              >
-                <a>[decl]</a>
-              </Link>
-              {location.src && (
-                <Link
-                  href={`/src/${getPkgWithVersionPortionOfParms(
-                    router.query.pkg
-                  )}${location.src.file}#L${location.src.line + 1}`}
-                >
-                  <a>[src]</a>
-                </Link>
-              )}
-            </div>
-          </div>
+          <Declaration
+            key={i}
+            fullName={fullName}
+            isExported={isExported}
+            decl={decl}
+          />
         );
       })}
     </div>
@@ -129,11 +110,11 @@ function Declaration({
           <Docs content={decl.docs} />
         ) : (
           <Fragment>
-            <h2 className={styles.moduleHeading}>{decl.name}</h2>
+            <h2 css={styles.moduleHeading}>{decl.name}</h2>
             <Docs content={decl.docs} />
           </Fragment>
         )}
-        <div className={styles.innerExportsHeading}>
+        <div css={styles.innerExportsHeading}>
           {isExported ? (
             <Fragment>
               <Syntax kind="keyword">export * as </Syntax>
@@ -145,7 +126,7 @@ function Declaration({
               <Syntax kind="keyword">module </Syntax>
               <a
                 id={goodIdentifiers[fullName]}
-                className={styles.moduleSpecifierLink}
+                css={styles.moduleSpecifierLink}
                 href={`#${goodIdentifiers[fullName]}`}
               >
                 {JSON.stringify(decl.name)}
@@ -156,7 +137,7 @@ function Declaration({
         </div>
         <Exports fullName={fullName} />
 
-        <div className={styles.innerExportsCommon}>
+        <div css={styles.innerExportsCommon}>
           <Syntax kind="bracket">{"}"}</Syntax>
         </div>
       </div>
@@ -175,7 +156,7 @@ function Declaration({
           <Syntax kind="colon">: </Syntax>
           <Type type={decl.type} />
           <Syntax kind="bracket">{" = "}</Syntax>
-          <span className={codeFont}>...</span>
+          <span css={codeFont}>...</span>
         </Fragment>
       </div>
     );
@@ -186,7 +167,7 @@ function Declaration({
       <div>
         <Docs content={decl.docs} />
         <SymbolName name={decl.name} fullName={fullName} />
-        <pre className={codeFont}>
+        <pre css={codeFont}>
           <code>{decl.content}</code>
         </pre>
       </div>
@@ -221,7 +202,7 @@ function Declaration({
                 })}
               </Fragment>
             )}
-            <span className={codeFont}> </span>
+            <span css={codeFont}> </span>
             <Type type={{ kind: "object", members: decl.members }} />
           </AddNameToScope>
         </Fragment>
@@ -239,7 +220,7 @@ function Declaration({
             This class has private members, so it it will be compared nominally
             instead of structurally.{" "}
             <a
-              className={a}
+              css={a}
               href="https://www.typescriptlang.org/docs/handbook/type-compatibility.html#private-and-protected-members-in-classes"
             >
               See the TypeScript reference for more details.
@@ -275,7 +256,7 @@ function Declaration({
                 })}
               </Fragment>
             )}
-            <span className={codeFont}> </span>
+            <span css={codeFont}> </span>
             <ClassMembers
               constructors={decl.constructors}
               members={decl.members}
@@ -340,7 +321,7 @@ function Declaration({
     return (
       <div>
         <Docs content={decl.docs} />
-        <div className={styles.innerExportsHeading}>
+        <div css={styles.innerExportsHeading}>
           <Syntax kind="keyword">
             {isExported ? "export " : ""}namespace{" "}
           </Syntax>
@@ -349,7 +330,7 @@ function Declaration({
         </div>
         <Exports fullName={fullName} />
 
-        <div className={styles.innerExportsCommon}>
+        <div css={styles.innerExportsCommon}>
           <Syntax kind="bracket">{"}"}</Syntax>
         </div>
       </div>
@@ -372,7 +353,7 @@ function Declaration({
         <AddNameToScope name={decl.name} fullName={fullName}>
           <SymbolName name={decl.name} fullName={fullName} />
           <TypeParams params={decl.typeParams} />
-          <span className={codeFont}> = </span>
+          <span css={codeFont}> = </span>
           <Type type={decl.type} />
         </AddNameToScope>
       </Fragment>
@@ -392,11 +373,11 @@ function ClassMembers({
   members: ClassMember[];
 }) {
   if (members.length === 0 && constructors.length === 0) {
-    return <span className={codeFont}>{"{}"}</span>;
+    return <span css={codeFont}>{"{}"}</span>;
   }
   return (
     <Fragment>
-      <span className={codeFont}>{"{ "}</span>
+      <span css={codeFont}>{"{ "}</span>
       {constructors.map((constructor, i) => {
         return (
           <Indent key={i}>
@@ -418,58 +399,64 @@ function ClassMembers({
                   {prop.readonly ? "readonly " : ""}
                 </Syntax>
               ) : null}
-              <span className={codeFont}>{prop.name}</span>
+              <span css={codeFont}>{prop.name}</span>
               <Syntax kind="colon">{prop.optional ? "?: " : ": "}</Syntax>
               <Type type={prop.type} />
-              <span className={codeFont}>;</span>
+              <span css={codeFont}>;</span>
             </Indent>
           );
         }
         if (prop.kind === "index") {
           return (
             <Indent key={i}>
-              <span className={codeFont}>
+              <span css={codeFont}>
                 [key<Syntax kind="colon">: </Syntax>
               </span>
               <Type type={prop.key} />
-              <span className={codeFont}>]</span>
+              <span css={codeFont}>]</span>
               <Syntax kind="colon">: </Syntax>
               <Type type={prop.value} />
-              <span className={codeFont}>;</span>
+              <span css={codeFont}>;</span>
             </Indent>
           );
         }
         if (prop.kind === "unknown") {
           return (
             <Indent key={i}>
-              <span className={codeFont}>{prop.content}</span>
+              <span css={codeFont}>{prop.content}</span>
             </Indent>
           );
         }
         return (
           <Indent key={i}>
             <Docs content={prop.docs} />
-            <span className={codeFont}>{prop.name}</span>
+            <span css={codeFont}>{prop.name}</span>
             <TypeParams params={prop.typeParams} />
             <Params params={prop.parameters} />
             <Syntax kind="colon">: </Syntax>
             <Type type={prop.returnType} />
-            <span className={codeFont}>;</span>
+            <span css={codeFont}>;</span>
           </Indent>
         );
       })}
-      <span className={codeFont}>{" }"}</span>
+      <span css={codeFont}>{" }"}</span>
     </Fragment>
   );
 }
 
 function Exports({ fullName }: { fullName: string }) {
-  const { symbols, references, symbolsForInnerBit, goodIdentifiers } =
-    useDocsContext();
+  const {
+    symbols,
+    references,
+    symbolsForInnerBit,
+    goodIdentifiers,
+    locations,
+  } = useDocsContext();
   const transformedExports = useGroupedExports(fullName);
-
+  const router = useRouter();
+  const pkgRefPortion = getPkgWithVersionPortionOfParms(router.query.pkg);
   return (
-    <div className={styles.innerExportsContainer}>
+    <div css={styles.innerExportsContainer}>
       {transformedExports.map((exported, i) => {
         if (exported.kind === "canonical") {
           const { exportName, fullName: symbol } = exported;
@@ -479,21 +466,46 @@ function Exports({ fullName }: { fullName: string }) {
             )
           );
           const innerBits = symbolsForInnerBit.get(symbol);
+          const locationsForSymbol = locations[symbol];
           return (
             <div key={i}>
-              <h3 className={styles.symbolHeading} id={goodIdentifiers[symbol]}>
-                {exportName}
-              </h3>
+              <div css={{ display: "flex", justifyContent: "space-between" }}>
+                <h3 css={styles.symbolHeading} id={goodIdentifiers[symbol]}>
+                  {exportName}
+                </h3>
+                <div>
+                  {locationsForSymbol.map((location, i) => (
+                    <Fragment key={i}>
+                      <Link
+                        href={`/src/${pkgRefPortion}${location.file}#L${
+                          location.line + 1
+                        }`}
+                      >
+                        <a>[decl]</a>
+                      </Link>
+                      {location.src && (
+                        <Link
+                          href={`/src/${pkgRefPortion}${location.src.file}#L${
+                            location.src.line + 1
+                          }`}
+                        >
+                          <a>[src]</a>
+                        </Link>
+                      )}
+                    </Fragment>
+                  ))}
+                </div>
+              </div>
               <RenderRootSymbol fullName={symbol} />
               {!!relatedSymbols?.length && (
                 <details
-                  className={innerBits ? undefined : styles.referencesContainer}
+                  css={innerBits ? undefined : styles.referencesContainer}
                 >
                   <summary>Referenced by</summary>
-                  <ul className={styles.referenceList}>
+                  <ul css={styles.referenceList}>
                     {relatedSymbols.map((thing, i) => {
                       return (
-                        <li key={i} className={styles.referenceItem}>
+                        <li key={i} css={styles.referenceItem}>
                           <SymbolReference
                             key={i}
                             fullName={thing}
@@ -506,7 +518,7 @@ function Exports({ fullName }: { fullName: string }) {
                 </details>
               )}
               {innerBits && (
-                <details className={styles.referencesContainer}>
+                <details css={styles.referencesContainer}>
                   <summary>Unexported symbols referenced here</summary>
                   {innerBits.map((thing) => {
                     return (
@@ -525,7 +537,7 @@ function Exports({ fullName }: { fullName: string }) {
             <div
               key={i}
               id={goodIdentifiers[fullName] + `-re-exports-${i}`}
-              className={styles.reexportTarget}
+              css={styles.reexportTarget}
             >
               <Syntax kind="keyword">export</Syntax>
               <Syntax kind="bracket">{" { "}</Syntax>
@@ -549,7 +561,7 @@ function Exports({ fullName }: { fullName: string }) {
             <div
               key={i}
               id={goodIdentifiers[fullName] + `-re-exports-${i}`}
-              className={styles.reexportTarget}
+              css={styles.reexportTarget}
             >
               <Syntax kind="keyword">export</Syntax>
               <Syntax kind="bracket">{" { "}</Syntax>
@@ -564,11 +576,7 @@ function Exports({ fullName }: { fullName: string }) {
                           version: exported.version,
                         })}
                       >
-                        <a
-                          className={
-                            symbolReferenceStyles.nonRootSymbolReference
-                          }
-                        >
+                        <a css={symbolReferenceStyles.nonRootSymbolReference}>
                           {exportInfo.name}
                         </a>
                       </Link>
@@ -582,7 +590,7 @@ function Exports({ fullName }: { fullName: string }) {
               <Link
                 href={getExternalPackageUrl(exported.from, exported.version)}
               >
-                <a className={symbolReferenceStyles.rootSymbolReference}>
+                <a css={symbolReferenceStyles.rootSymbolReference}>
                   {JSON.stringify(exported.from)}
                 </a>
               </Link>
@@ -593,7 +601,7 @@ function Exports({ fullName }: { fullName: string }) {
           <div
             key={i}
             id={goodIdentifiers[fullName] + `-re-exports-${i}`}
-            className={styles.reexportTarget}
+            css={styles.reexportTarget}
           >
             <Syntax kind="keyword">export</Syntax>
             <Syntax kind="bracket">{" { "}</Syntax>

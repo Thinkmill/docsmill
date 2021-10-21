@@ -1,3 +1,5 @@
+/** @jsxRuntime automatic */
+/** @jsxImportSource @emotion/react */
 import { Fragment } from "react";
 
 import { codeFont } from "../lib/theme.css";
@@ -11,7 +13,7 @@ import { SerializedType, TypeParam, Parameter } from "../lib/types";
 
 export function Type({ type }: { type: SerializedType }): JSX.Element {
   if (type.kind === "intrinsic") {
-    return <span className={styles.intrinsic}>{type.value}</span>;
+    return <span css={styles.intrinsic}>{type.value}</span>;
   }
   if (type.kind === "reference") {
     return (
@@ -19,7 +21,7 @@ export function Type({ type }: { type: SerializedType }): JSX.Element {
         <SymbolReference name={type.name} fullName={type.fullName} />
         {!!type.typeArguments.length && (
           <Fragment>
-            <span className={codeFont}>{"<"}</span>
+            <span css={codeFont}>{"<"}</span>
             {type.typeArguments.map((param, i) => {
               return (
                 <Fragment key={i}>
@@ -30,7 +32,7 @@ export function Type({ type }: { type: SerializedType }): JSX.Element {
                 </Fragment>
               );
             })}
-            <span className={codeFont}>{">"}</span>
+            <span css={codeFont}>{">"}</span>
           </Fragment>
         )}
       </Fragment>
@@ -82,11 +84,11 @@ export function Type({ type }: { type: SerializedType }): JSX.Element {
   }
   if (type.kind === "object") {
     if (type.members.length === 0) {
-      return <span className={codeFont}>{"{}"}</span>;
+      return <span css={codeFont}>{"{}"}</span>;
     }
     return (
       <Fragment>
-        <span className={codeFont}>{"{ "}</span>
+        <span css={codeFont}>{"{ "}</span>
         {type.members.map((prop, i) => {
           if (prop.kind === "prop") {
             return (
@@ -95,10 +97,10 @@ export function Type({ type }: { type: SerializedType }): JSX.Element {
                 {prop.readonly ? (
                   <Syntax kind="keyword">readonly </Syntax>
                 ) : null}
-                <span className={codeFont}>{prop.name}</span>
+                <span css={codeFont}>{prop.name}</span>
                 <Syntax kind="colon">{prop.optional ? "?: " : ": "}</Syntax>
                 <Type type={prop.type} />
-                <span className={codeFont}>;</span>
+                <span css={codeFont}>;</span>
               </Indent>
             );
           }
@@ -108,21 +110,21 @@ export function Type({ type }: { type: SerializedType }): JSX.Element {
                 {prop.readonly ? (
                   <Syntax kind="keyword">readonly </Syntax>
                 ) : null}
-                <span className={codeFont}>
+                <span css={codeFont}>
                   [key<Syntax kind="colon">: </Syntax>
                 </span>
                 <Type type={prop.key} />
-                <span className={codeFont}>]</span>
+                <span css={codeFont}>]</span>
                 <Syntax kind="colon">: </Syntax>
                 <Type type={prop.value} />
-                <span className={codeFont}>;</span>
+                <span css={codeFont}>;</span>
               </Indent>
             );
           }
           if (prop.kind === "unknown") {
             return (
               <Indent key={i}>
-                <span className={codeFont}>{prop.content}</span>
+                <span css={codeFont}>{prop.content}</span>
               </Indent>
             );
           }
@@ -133,17 +135,17 @@ export function Type({ type }: { type: SerializedType }): JSX.Element {
                 <Syntax kind="keyword">new </Syntax>
               )}
               {prop.kind === "method" && (
-                <span className={codeFont}>{prop.name}</span>
+                <span css={codeFont}>{prop.name}</span>
               )}
               <TypeParams params={prop.typeParams} />
               <Params params={prop.parameters} />
               <Syntax kind="colon">: </Syntax>
               <Type type={prop.returnType} />
-              <span className={codeFont}>;</span>
+              <span css={codeFont}>;</span>
             </Indent>
           );
         })}
-        <span className={codeFont}>{" }"}</span>
+        <span css={codeFont}>{" }"}</span>
       </Fragment>
     );
   }
@@ -157,9 +159,7 @@ export function Type({ type }: { type: SerializedType }): JSX.Element {
             <Fragment key={i}>
               {element.kind === "rest" && <Syntax kind="colon">...</Syntax>}
               <Type type={element.type} />
-              {element.kind === "optional" && (
-                <span className={codeFont}>?</span>
-              )}
+              {element.kind === "optional" && <span css={codeFont}>?</span>}
               {i !== type.elements.length - 1 && (
                 <Syntax kind="comma">, </Syntax>
               )}
@@ -221,7 +221,7 @@ export function Type({ type }: { type: SerializedType }): JSX.Element {
   if (type.kind === "mapped") {
     return (
       <Fragment>
-        <span className={codeFont}>{"{ "}</span>
+        <span css={codeFont}>{"{ "}</span>
         <Indent>
           {type.readonly === -1 && <Syntax kind="bracket">-</Syntax>}
           {type.readonly !== 0 && (
@@ -229,7 +229,7 @@ export function Type({ type }: { type: SerializedType }): JSX.Element {
               <Syntax kind="keyword">readonly </Syntax>
             </Fragment>
           )}
-          <span className={codeFont}>
+          <span css={codeFont}>
             [<Syntax kind="parameter">{type.param.name} </Syntax>
             <Syntax kind="keyword">in </Syntax>
           </span>
@@ -245,9 +245,9 @@ export function Type({ type }: { type: SerializedType }): JSX.Element {
           </Syntax>
           <Syntax kind="colon">: </Syntax>
           <Type type={type.type} />
-          <span className={codeFont}>;</span>
+          <span css={codeFont}>;</span>
         </Indent>
-        <span className={codeFont}>{" }"}</span>
+        <span css={codeFont}>{" }"}</span>
       </Fragment>
     );
   }
@@ -281,7 +281,7 @@ export function Type({ type }: { type: SerializedType }): JSX.Element {
     return (
       <Fragment>
         {type.asserts && <Syntax kind="keyword">asserts </Syntax>}
-        <span className={codeFont}>{type.param}</span>
+        <span css={codeFont}>{type.param}</span>
         {type.type && (
           <Fragment>
             <Syntax kind="keyword">{" is "}</Syntax>
@@ -310,11 +310,7 @@ export function Type({ type }: { type: SerializedType }): JSX.Element {
     );
   }
 
-  return (
-    <span className={codeFont} style={{ color: "red" }}>
-      {type.value}
-    </span>
-  );
+  return <span css={[codeFont, { color: "red" }]}>{type.value}</span>;
 }
 
 export function TypeParams({ params }: { params: TypeParam[] }) {

@@ -1,4 +1,4 @@
-import { style } from "@vanilla-extract/css";
+import { css as style } from "@emotion/react";
 import { codeFontStyleObj, syntaxColors } from "../lib/theme.css";
 
 export const syntaxKinds = {

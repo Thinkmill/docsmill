@@ -1,3 +1,5 @@
+/** @jsxRuntime automatic */
+/** @jsxImportSource @emotion/react */
 import {
   createContext,
   useContext,
@@ -27,7 +29,7 @@ export function SymbolName({
   return (
     <a
       id={goodIdentifiers[fullName]}
-      className={styles.symbolName}
+      css={styles.symbolName}
       href={`#${goodIdentifiers[fullName]}`}
     >
       {name}
@@ -112,30 +114,30 @@ export function SymbolReference({
     const external = externalSymbols[fullName];
     const pkgDisplayName = getExternalPkgDisplayName(external.pkg);
     return (
-      <span className={codeFont}>
+      <span css={codeFont}>
         <Syntax kind="keyword">import</Syntax>
         <Syntax kind="bracket">(</Syntax>
         <Link href={getExternalPackageUrl(external.pkg, external.version)}>
-          <a className={styles.rootSymbolReference}>
+          <a css={styles.rootSymbolReference}>
             {JSON.stringify(pkgDisplayName)}
           </a>
         </Link>
         <Syntax kind="bracket">)</Syntax>.
         <Link href={getExternalSymbolUrl(external)}>
-          <a className={styles.nonRootSymbolReference}>{name}</a>
+          <a css={styles.nonRootSymbolReference}>{name}</a>
         </Link>
       </span>
     );
   }
   if (externalReference !== undefined) {
     return (
-      <a className={styles.nonRootSymbolReference} href={externalReference}>
+      <a css={styles.nonRootSymbolReference} href={externalReference}>
         {name}
       </a>
     );
   }
   if (fullName === undefined || !symbols[fullName]) {
-    return <span className={styles.unknownExternalReference}>{name}</span>;
+    return <span css={styles.unknownExternalReference}>{name}</span>;
   }
 
   const decls = symbols[fullName];
@@ -145,8 +147,10 @@ export function SymbolReference({
 
   const isRootSymbol = rootSymbols.has(fullName);
 
-  const props: AnchorHTMLAttributes<HTMLAnchorElement> = {
-    className: isRootSymbol
+  const props: AnchorHTMLAttributes<HTMLAnchorElement> & {
+    css: import("@emotion/react").SerializedStyles;
+  } = {
+    css: isRootSymbol
       ? styles.rootSymbolReference
       : styles.nonRootSymbolReference,
 
@@ -160,7 +164,7 @@ export function SymbolReference({
   let inner = firstDocsBit ? (
     <Tooltip
       tooltip={
-        <span className={styles.tooltipMarkdownContent}>
+        <span css={styles.tooltipMarkdownContent}>
           <Markdown content={firstDocsBit} />
         </span>
       }
@@ -178,7 +182,7 @@ export function SymbolReference({
   ) {
     const canonicalExportLocation = canonicalExportLocations[fullName];
     return (
-      <span className={codeFont}>
+      <span css={codeFont}>
         <Syntax kind="keyword">import</Syntax>
         <Syntax kind="bracket">(</Syntax>
         <SymbolReference

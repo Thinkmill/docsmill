@@ -1,4 +1,4 @@
-import { createVar, fallbackVar, style } from "@vanilla-extract/css";
+import { css as style } from "@emotion/react";
 import {
   codeFont,
   codeFontStyleObj,
@@ -16,21 +16,14 @@ export const moduleHeading = style({
 
 const HEADER_HEIGHT = 42;
 
-const symbolDepthVar = createVar("symbol-depth");
-const intermediateSymbolDepthVar = createVar("intermediate-symbol-depth");
+const symbolDepthVar = `--symbol-depth-l941owae1cj`;
+const intermediateSymbolDepthVar = `--intermediate-symbol-depth-l941owae1cj`;
 
 export const rootSymbolContainer = style({
   borderBottom: `1px solid ${tokens.color.gray200}`,
   paddingBottom: 24,
   marginBottom: 16,
-  vars: {
-    [intermediateSymbolDepthVar]: symbolDepthVar,
-  },
-});
-
-export const declarationContainer = style({
-  display: "flex",
-  justifyContent: "space-between",
+  [intermediateSymbolDepthVar]: `var(${symbolDepthVar})`,
 });
 
 export const innerExportsCommon = style({
@@ -44,10 +37,10 @@ export const innerExportsHeading = style([
   innerExportsCommon,
   {
     position: "sticky",
-    top: `calc(${fallbackVar(symbolDepthVar, "0")} * ${HEADER_HEIGHT}px)`,
+    top: `calc(var(${symbolDepthVar}, 0) * ${HEADER_HEIGHT}px)`,
     background: "rgba(255,255,255,0.8)",
     borderBottom: `2px solid ${tokens.color.blueGray300}`,
-    backdropFilter: "blur( 4px )",
+    backdropFilter: "blur(4px)",
     marginLeft: 2,
   },
 ]);
@@ -58,12 +51,7 @@ export const innerExportsContainer = style({
   marginTop: -2,
   marginBottom: 16,
   paddingLeft: 16,
-  vars: {
-    [symbolDepthVar]: `calc(${fallbackVar(
-      intermediateSymbolDepthVar,
-      "0"
-    )} + 1)`,
-  },
+  [symbolDepthVar]: `calc(var(${intermediateSymbolDepthVar}, 0) + 1)`,
 });
 
 export const referencesContainer = style({
@@ -100,10 +88,7 @@ export const symbolHeading = style({
   marginBottom: 16,
   marginTop: 0,
   ...codeFontStyleObj,
-  scrollMarginTop: `calc(${fallbackVar(
-    symbolDepthVar,
-    "0"
-  )} * ${HEADER_HEIGHT}px + 8px)`,
+  scrollMarginTop: `calc(var(${symbolDepthVar}, 0) * ${HEADER_HEIGHT}px + 8px)`,
   ":target": {
     backgroundColor: "#ffff54ba",
   },

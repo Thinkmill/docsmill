@@ -1,3 +1,6 @@
+/** @jsxRuntime automatic */
+/** @jsxImportSource @emotion/react */
+
 import { syntaxKinds } from "./syntax.css";
 
 export function Syntax({
@@ -7,5 +10,5 @@ export function Syntax({
   children: string | number | (string | number)[];
   kind: keyof typeof syntaxKinds;
 }) {
-  return <span className={syntaxKinds[kind]}>{children}</span>;
+  return <span css={syntaxKinds[kind]}>{children}</span>;
 }

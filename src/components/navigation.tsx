@@ -1,3 +1,5 @@
+/** @jsxRuntime automatic */
+/** @jsxImportSource @emotion/react */
 import { useDocsContext } from "../lib/DocsContext";
 import { SymbolReference } from "./symbol-references";
 import { useGroupedExports } from "../lib/utils";
@@ -24,13 +26,13 @@ export function Navigation({ rootSymbolName }: { rootSymbolName: string }) {
     <Expandable
       summary={<SymbolReference fullName={rootSymbolName} name={name} />}
     >
-      <ul style={{ padding: 0 }}>
+      <ul css={{ padding: 0 }}>
         {groupedExports.map((group, i) => {
           if (group.kind !== "canonical") {
             return (
               <Item key={i}>
                 <a
-                  className={nonRootSymbolReference}
+                  css={nonRootSymbolReference}
                   href={`#${docContext.goodIdentifiers[rootSymbolName]}-re-exports-${i}`}
                 >
                   {group.exports.length} Re-exports

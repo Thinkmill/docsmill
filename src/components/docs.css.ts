@@ -1,4 +1,4 @@
-import { style } from "@vanilla-extract/css";
+import { css as style } from "@emotion/react";
 import { tokens } from "../lib/theme.css";
 
 export const docs = style({
@@ -10,10 +10,8 @@ export const docs = style({
 
 export const blockSummary = style({
   display: "block",
-  selectors: {
-    "&::-webkit-details-marker": {
-      display: "none",
-    },
+  "&::-webkit-details-marker": {
+    display: "none",
   },
 });
 
@@ -30,10 +28,8 @@ export const expandLinkOpen = style([
   expandLink,
   {
     color: tokens.color.emerald500,
-    selectors: {
-      "details[open] > summary > &": {
-        display: "none",
-      },
+    "details[open] > summary > &": {
+      display: "none",
     },
   },
 ]);
@@ -42,10 +38,8 @@ export const expandLinkClose = style([
   expandLink,
   {
     color: tokens.color.emerald700,
-    selectors: {
-      ":not(details[open]) > summary > &": {
-        display: "none",
-      },
+    "*:not(details[open]) > summary > &": {
+      display: "none",
     },
   },
 ]);

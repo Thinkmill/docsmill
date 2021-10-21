@@ -1,4 +1,6 @@
-import React, { useEffect, useMemo, useState } from "react";
+/** @jsxRuntime automatic */
+/** @jsxImportSource @emotion/react */
+import { useEffect, useMemo, useState } from "react";
 
 import { DocsContext } from "../lib/DocsContext";
 
@@ -79,9 +81,9 @@ export function Root(props: import("../extract").DocInfo) {
       <PageContainer>
         <NavigationContainer>
           {props.versions && (
-            <span className={styles.versionSelectWrapper}>
+            <span css={styles.versionSelectWrapper}>
               <select
-                className={styles.versionSelect}
+                css={styles.versionSelect}
                 onChange={(event) => {
                   const newVersion = event.target.value;
                   router.push(
@@ -98,10 +100,7 @@ export function Root(props: import("../extract").DocInfo) {
                   <option key={version}>{version}</option>
                 ))}
               </select>
-              <ChevronDown
-                height="20px"
-                className={styles.versionSelectChevron}
-              />
+              <ChevronDown height="20px" css={styles.versionSelectChevron} />
             </span>
           )}
 

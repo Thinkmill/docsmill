@@ -1,4 +1,4 @@
-import { style } from "@vanilla-extract/css";
+import { css as style } from "@emotion/react";
 import { colors } from "../lib/theme.css";
 
 export const versionSelect = style({

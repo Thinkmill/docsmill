@@ -1,3 +1,5 @@
+/** @jsxRuntime automatic */
+/** @jsxImportSource @emotion/react */
 import ReactMarkdown, { Options as ReactMarkdownOptions } from "react-markdown";
 import Highlight, { Prism } from "prism-react-renderer";
 import { codeFont, colors } from "../lib/theme.css";
@@ -54,10 +56,10 @@ const theme = {
 const components: ReactMarkdownOptions["components"] = {
   code(props) {
     if (props.inline) {
-      return <code className={codeFont}>{props.children}</code>;
+      return <code css={codeFont}>{props.children}</code>;
     }
     return (
-      <pre className={styles.codeblock}>
+      <pre css={styles.codeblock}>
         <Highlight
           Prism={Prism}
           code={props.children.join("").trim()}
@@ -73,7 +75,8 @@ const components: ReactMarkdownOptions["components"] = {
           }) => {
             return (
               <div
-                className={`${className} ${styles.codeblockInner}`}
+                className={className}
+                css={styles.codeblockInner}
                 style={style}
               >
                 {tokens.map((line, i) => {
@@ -128,9 +131,9 @@ const components: ReactMarkdownOptions["components"] = {
         text === externalSymbols[fullName].id.match(/\.([^\.]+)$/)?.[1]
       ) {
         return (
-          <span className={codeFont}>
+          <span css={codeFont}>
             <Link href={getExternalSymbolUrl(external)}>
-              <a className={nonRootSymbolReference}>{text}</a>
+              <a css={nonRootSymbolReference}>{text}</a>
             </Link>
           </span>
         );
@@ -144,12 +147,12 @@ const components: ReactMarkdownOptions["components"] = {
     if (external) {
       return (
         <Link href={getExternalSymbolUrl(external)}>
-          <a className={styles.a}>{props.children}</a>
+          <a css={styles.a}>{props.children}</a>
         </Link>
       );
     }
     return (
-      <a className={styles.a} href={href}>
+      <a css={styles.a} href={href}>
         {props.children}
       </a>
     );

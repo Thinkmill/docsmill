@@ -1,5 +1,6 @@
+import { Global } from "@emotion/react";
 import { AppProps } from "next/app";
-import "../lib/theme.css";
+import { globalStyles } from "../lib/theme.css";
 
 let svg = (
   <svg xmlns="http://www.w3.org/2000/svg" style={{ display: "none" }}>
@@ -18,6 +19,7 @@ function MyApp({ Component, pageProps }: AppProps) {
   return (
     <>
       {svg}
+      <Global styles={globalStyles} />
       <Component {...pageProps} />
     </>
   );

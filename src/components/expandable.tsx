@@ -1,3 +1,5 @@
+/** @jsxRuntime automatic */
+/** @jsxImportSource @emotion/react */
 import { ReactNode } from "react";
 
 import { ChevronDown } from "./icons/chevron-down";
@@ -14,20 +16,20 @@ export function Expandable({
 }) {
   return (
     <details open>
-      <summary className={styles.expandableSummary}>
-        <ChevronDown className={styles.expandableChevronClose} />
-        <ChevronRight className={styles.expandableChevronOpen} />
+      <summary css={styles.expandableSummary}>
+        <ChevronDown css={styles.expandableChevronClose} />
+        <ChevronRight css={styles.expandableChevronOpen} />
         {summary}
       </summary>
-      <div className={styles.expandableContents}>{children}</div>
+      <div css={styles.expandableContents}>{children}</div>
     </details>
   );
 }
 
 export function Item({ children }: { children: ReactNode }) {
   return (
-    <li className={styles.item}>
-      <Minus className={styles.itemIcon} />
+    <li css={styles.item}>
+      <Minus css={styles.itemIcon} />
       {children}
     </li>
   );

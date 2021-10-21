@@ -1,4 +1,4 @@
-import { style } from "@vanilla-extract/css";
+import { css as style } from "@emotion/react";
 import { tokens } from "../lib/theme.css";
 
 export const expandable = style({
@@ -16,10 +16,8 @@ export const expandableSummary = style({
   display: "block",
   fontWeight: "bold",
   marginBottom: 8,
-  selectors: {
-    "&::-webkit-details-marker": {
-      display: "none",
-    },
+  "&::-webkit-details-marker": {
+    display: "none",
   },
 });
 
@@ -37,10 +35,8 @@ export const expandableChevronOpen = style([
   expandableChevron,
   {
     display: "inline",
-    selectors: {
-      "details[open] > summary > &": {
-        display: "none",
-      },
+    "details[open] > summary > &": {
+      display: "none",
     },
   },
 ]);
@@ -49,10 +45,8 @@ export const expandableChevronClose = style([
   expandableChevron,
   {
     display: "none",
-    selectors: {
-      "details[open] > summary > &": {
-        display: "inline",
-      },
+    "details[open] > summary > &": {
+      display: "inline",
     },
   },
 ]);

@@ -1,4 +1,4 @@
-import { globalStyle, style } from "@vanilla-extract/css";
+import { css as style } from "@emotion/react";
 import { codeFont, syntaxColors, codeFontStyleObj } from "../lib/theme.css";
 import { targetBackground } from "./symbol.css";
 
@@ -35,10 +35,11 @@ export const nonRootSymbolReference = style({
   ...baseSymbol,
 });
 
-export const tooltipMarkdownContent = style({});
-
-globalStyle(`${tooltipMarkdownContent} :last-child`, { marginBottom: 0 });
-
-globalStyle(`${tooltipMarkdownContent} *`, {
-  color: "inherit !important",
+export const tooltipMarkdownContent = style({
+  "&:last-child": {
+    marginBottom: 0,
+  },
+  "& *": {
+    color: "inherit !important",
+  },
 });

@@ -1,3 +1,5 @@
+/** @jsxRuntime automatic */
+/** @jsxImportSource @emotion/react */
 import { splitDocs } from "../lib/utils";
 import { Markdown } from "./markdown";
 import { ChevronDoubleDown } from "./icons/chevron-double-down";
@@ -12,21 +14,21 @@ export function Docs({ content }: { content: string | undefined }) {
 
   if (!rest) {
     return (
-      <div className={styles.docs}>
+      <div css={styles.docs}>
         <Markdown content={first} />
       </div>
     );
   }
   return (
-    <details className={styles.docs}>
-      <summary className={styles.blockSummary}>
+    <details css={styles.docs}>
+      <summary css={styles.blockSummary}>
         <Markdown content={first} />
-        <div className={styles.expandLinkOpen}>
-          <ChevronDoubleDown className={styles.expandIcon} />
+        <div css={styles.expandLinkOpen}>
+          <ChevronDoubleDown css={styles.expandIcon} />
           more
         </div>
-        <div className={styles.expandLinkClose}>
-          <ChevronDoubleUp className={styles.expandIcon} />
+        <div css={styles.expandLinkClose}>
+          <ChevronDoubleUp css={styles.expandIcon} />
           less
         </div>
       </summary>

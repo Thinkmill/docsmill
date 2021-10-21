@@ -4,8 +4,5 @@
     "@babel/preset-typescript",
     ["@babel/preset-react", { "runtime": "automatic", "importSource": "react" }]
   ],
-  "plugins": [
-    "@babel/plugin-transform-runtime",
-    "@vanilla-extract/babel-plugin"
-  ]
+  "plugins": ["@babel/plugin-transform-runtime"]
 }

@@ -1,3 +1,5 @@
+/** @jsxRuntime automatic */
+/** @jsxImportSource @emotion/react */
 import { ReactNode } from "react";
 import { usePopperTooltip } from "react-popper-tooltip";
 import * as styles from "./tooltip.css";
@@ -18,10 +20,7 @@ export function Tooltip({ tooltip, children }: TooltipProps) {
     <span>
       {children({ triggerProps: { ref: setTriggerRef } })}
       {visible && (
-        <div
-          ref={setTooltipRef}
-          {...getTooltipProps({ className: styles.tooltip })}
-        >
+        <div ref={setTooltipRef} css={styles.tooltip} {...getTooltipProps()}>
           {tooltip}
         </div>
       )}

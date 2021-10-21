@@ -1,4 +1,4 @@
-import { globalStyle, style } from "@vanilla-extract/css";
+import { css as style } from "@emotion/react";
 
 export const syntaxColors = {
   parameter: "#111111",
@@ -253,41 +253,17 @@ export const codeFontStyleObj = {
   fontVariantLigatures: "none",
 };
 
-/** Thanks for the reset, @tailwindcss (everything below here) */
-
-globalStyle(`body`, {
-  margin: 0,
-  padding: 0,
-  fontFamily: tokens.font.body,
-  lineHeight: 1.5,
-});
-
-/**
- * Prevent padding and border from affecting element width.
- *
- * We used to set this in the html element and inherit from the parent element
- * for everything else. This caused issues in shadow-dom-enhanced elements
- * like <details> where the content is wrapped by a div with box-sizing set
- * to `content-box`.
- *
- * https://github.com/mozdevs/cssremedy/issues/4
- */
-
-globalStyle(
-  `*,
-   ::before,
-   ::after`,
-  { boxSizing: "border-box" }
-);
-
-/**
- * Override legacy focus reset from Normalize with modern Firefox focus styles.
- *
- * This is actually an improvement over the new defaults in Firefox in our
- * testing, as it triggers the better focus styles even for links, which still
- * use a dotted outline in Firefox by default.
- */
-
-globalStyle(`:-moz-focusring`, {
-  outline: "auto",
+export const globalStyles = style({
+  body: {
+    margin: 0,
+    padding: 0,
+    fontFamily: tokens.font.body,
+    lineHeight: 1.5,
+  },
+  "*,::before,::after": {
+    boxSizing: "border-box",
+  },
+  ":-moz-focusring": {
+    outline: "auto",
+  },
 });

@@ -1,3 +1,5 @@
+/** @jsxRuntime automatic */
+/** @jsxImportSource @emotion/react */
 import { BaseItem } from "@algolia/autocomplete-core";
 import {
   autocomplete,
@@ -75,8 +77,8 @@ export function PackageSearch({ autoFocus }: { autoFocus?: boolean }) {
   const router = useRouter();
   const apiRef = useRef<AutocompleteApi<Item> | null>(null);
   return (
-    <div style={{ display: "flex" }}>
-      <span style={{ flex: 1 }}>
+    <div css={{ display: "flex" }}>
+      <span css={{ flex: 1 }}>
         {useMemo(
           () => (
             <Autocomplete<Item>
@@ -124,13 +126,13 @@ export function PackageSearch({ autoFocus }: { autoFocus?: boolean }) {
                         attribute: "name",
                       });
                       return (
-                        <div className={styles.searchItem}>
+                        <div css={styles.searchItem}>
                           <div>
                             <span>
                               {parsedHighlight.map((part, i) => {
                                 return (
                                   <span
-                                    className={
+                                    css={
                                       part.isHighlighted
                                         ? styles.highlightedPart
                                         : undefined
@@ -182,7 +184,7 @@ export function PackageSearch({ autoFocus }: { autoFocus?: boolean }) {
 }
 
 const attribution = (
-  <div className={styles.attribution}>
+  <div css={styles.attribution}>
     <a href="https://www.algolia.com/" title="Search powered by Algolia">
       <svg
         width="130"
