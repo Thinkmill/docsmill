@@ -50,6 +50,7 @@ specifiers:
   semver: 7.3.5
   tar-stream: 2.2.0
   typescript: 4.4.3
+  vlq: 2.0.4
   webpack-bundle-analyzer: ^4.4.2
 
 dependencies:
@@ -102,6 +103,7 @@ dependencies:
   semver: 7.3.5
   tar-stream: 2.2.0
   typescript: 4.4.3
+  vlq: 2.0.4
   webpack-bundle-analyzer: 4.4.2
 
 packages:
@@ -5283,6 +5285,10 @@ packages:
     resolution: {integrity: sha512-MalwfaqwMcUmb2MtHb2hK6YYg3It4j7Hxv8I7FEAtm1h477kZ8hWPcqVpxZAInLIkmh0YbnCpvXwzmnyhdAyhw==}
     dependencies:
       loader-utils: 2.0.0
+    dev: false
+
+  /vlq/2.0.4:
+    resolution: {integrity: sha512-aodjPa2wPQFkra1G8CzJBTHXhgk3EVSwxSWXNPr1fgdFLUb8kvLV1iEb6rFgasIsjP82HWI6dsb5Io26DDnasA==}
     dev: false
 
   /vm-browserify/1.1.2:

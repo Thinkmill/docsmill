@@ -80,7 +80,10 @@ export type DocInfo = {
   externalSymbols: Record<string, { pkg: string; version: string; id: string }>;
   versions?: string[];
   currentVersion: string;
-  locations: Record<string, { file: string; line: number }[]>;
+  locations: Record<
+    string,
+    { file: string; line: number; src?: { file: string; line: number } }[]
+  >;
 };
 
 export function getDocsInfo(
@@ -92,7 +95,11 @@ export function getDocsInfo(
   getExternalReference: (
     symbolId: string
   ) => { pkg: string; version: string; id: string } | undefined = () =>
-    undefined
+    undefined,
+  getSrcMapping: (
+    distFilename: string,
+    line: number
+  ) => { file: string; line: number } | undefined = () => undefined
 ): DocInfo {
   state = getInitialState();
   state.rootSymbols = rootSymbols;
@@ -141,11 +148,15 @@ export function getDocsInfo(
           getSymbolIdentifier(symbol),
           symbol.declarations!.map((decl) => {
             const sourceFile = decl.getSourceFile();
+            const fileName = sourceFile.fileName;
+            const line = sourceFile.getLineAndCharacterOfPosition(
+              (decl as any).name?.pos ?? decl.pos
+            ).line;
+            const src = getSrcMapping(fileName, line);
             return {
-              file: sourceFile.fileName.replace(pkgDir, ""),
-              line: sourceFile.getLineAndCharacterOfPosition(
-                (decl as any).name?.pos ?? decl.pos
-              ).line,
+              file: fileName.replace(pkgDir, ""),
+              line,
+              ...(src ? { src } : {}),
             };
           }),
         ];

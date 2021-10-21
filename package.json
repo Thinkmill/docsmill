@@ -57,6 +57,7 @@
     "semver": "7.3.5",
     "tar-stream": "2.2.0",
     "typescript": "4.4.3",
+    "vlq": "2.0.4",
     "webpack-bundle-analyzer": "^4.4.2"
   },
   "repository": "https://github.com/Thinkmill/graphql-ts/tree/main/site"

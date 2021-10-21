@@ -111,7 +111,7 @@ function FileStructure({ node }: { node: File | Directory }) {
     return (
       <Item>
         <Link
-          href={`/src/${getPkgWithVersionPortionOfParms(router.query.pkg)}/${
+          href={`/src/${getPkgWithVersionPortionOfParms(router.query.pkg)}${
             node.path
           }`}
         >
@@ -147,7 +147,7 @@ export default function Src(props: SrcProps) {
       <div style={{ display: "flex" }}>
         <div style={{ overflow: "auto", height: "100vh" }}>
           {props.meta.files.map((x) => (
-            <FileStructure node={x} />
+            <FileStructure key={x.path} node={x} />
           ))}
         </div>
         <div style={{ flex: 1 }}>
@@ -177,9 +177,13 @@ export async function getStaticProps({
     fetch(`https://unpkg.com/${res.pkg}@${res.version}/?meta`).then((x) =>
       x.json()
     ),
-    fetch(
-      `https://unpkg.com/${res.pkg}@${res.version}/${res.restParams.join("/")}`
-    ).then((x) => x.text()),
+    res.restParams.length === 0
+      ? ""
+      : fetch(
+          `https://unpkg.com/${res.pkg}@${res.version}/${res.restParams.join(
+            "/"
+          )}`
+        ).then((x) => x.text()),
   ]);
   return {
     props: { meta, content, name: res.restParams.join("/") },

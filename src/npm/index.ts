@@ -13,12 +13,16 @@ import { DocInfo, getDocsInfo } from "../extract";
 import { collectEntrypointsOfPackage, resolveToPackageVersion } from "./utils";
 import { getPackageMetadata } from "./fetch-package-metadata";
 import { assert } from "../lib/assert";
+import { decode as decodeVlq } from "vlq";
 
 async function handleTarballStream(tarballStream: NodeJS.ReadableStream) {
   const extract = tarballStream.pipe(gunzip()).pipe(tar.extract());
   const entries = new Map<string, string>();
   extract.on("entry", (headers, stream, next) => {
-    if (headers.type !== "file" || !/\.(json|ts|tsx)$/.test(headers.name)) {
+    if (
+      headers.type !== "file" ||
+      !/\.(json|ts|tsx|d\.ts\.map)$/.test(headers.name)
+    ) {
       stream.resume();
       stream.on("end", next);
       return;
@@ -258,6 +262,89 @@ export async function getPackage(
     }
   }
 
+  const getSourceMap = memoize((distFilename: string) => {
+    let content;
+    try {
+      content = fileSystem.readFileSync(distFilename + ".map", "utf8");
+    } catch (err: any) {
+      if (err.code === "ENOENT") {
+        return undefined;
+      }
+      throw err;
+    }
+    let sourceMapContent:
+      | {
+          sourceRoot: string;
+          sources: [string];
+          mappings: string;
+        }
+      | undefined;
+    try {
+      sourceMapContent = JSON.parse(content);
+    } catch (err) {
+      console.log(
+        "could not parse source file content for ",
+        distFilename + ".map"
+      );
+      return undefined;
+    }
+    sourceMapContent = sourceMapContent!;
+    let srcLocationUrl = new URL(distFilename, "http://example.com");
+    srcLocationUrl = new URL(".", srcLocationUrl);
+    srcLocationUrl = new URL(sourceMapContent.sourceRoot, srcLocationUrl);
+    srcLocationUrl = new URL(sourceMapContent.sources[0], srcLocationUrl);
+    let srcLocationPath = srcLocationUrl.pathname;
+    if (!fileSystem.fileExistsSync(srcLocationUrl.pathname)) {
+      console.log("source file for .d.ts.map not found", srcLocationPath);
+      return undefined;
+    }
+    const vlqs = sourceMapContent.mappings
+      .split(";")
+      .map((line) => line.split(","));
+    const decoded = vlqs.map((line) => line.map(decodeVlq));
+    let sourceFileIndex = 0; // second field
+    let sourceCodeLine = 0; // third field
+    let sourceCodeColumn = 0; // fourth field
+
+    const sourceMap = decoded.map((line) => {
+      let generatedCodeColumn = 0; // first field - reset each time
+
+      return line.map((segment) => {
+        if (segment.some((x) => isNaN(x))) {
+          throw new Error(`nan: ${segment}`);
+        }
+        generatedCodeColumn += segment[0];
+        sourceFileIndex += segment[1];
+        sourceCodeLine += segment[2];
+        sourceCodeColumn += segment[3];
+
+        const result: [
+          file: number,
+          index: number,
+          line: number,
+          column: number
+        ] = [
+          generatedCodeColumn,
+          sourceFileIndex,
+          sourceCodeLine,
+          sourceCodeColumn,
+        ];
+
+        return result;
+      });
+    });
+    return (line: number) => {
+      const srcLine = sourceMap[line]?.[0]?.[2];
+      if (srcLine === undefined) {
+        return undefined;
+      }
+      return {
+        line: srcLine,
+        file: srcLocationPath.replace(`node_modules/${pkgName}/`, ""),
+      };
+    };
+  });
+
   return {
     ...getDocsInfo(
       rootSymbols,
@@ -265,9 +352,28 @@ export async function getPackage(
       pkgName,
       version,
       program,
-      (symbolId) => externalSymbols.get(symbolId)
+      (symbolId) => externalSymbols.get(symbolId),
+      (distFilename, line) => {
+        const map = getSourceMap(distFilename);
+        if (map === undefined) {
+          return undefined;
+        }
+        return map(line);
+      }
     ),
     versions: [...versions].reverse(),
+  };
+}
+
+function memoize<Arg, Return>(fn: (arg: Arg) => Return): (arg: Arg) => Return {
+  const cache = new Map<Arg, Return>();
+  return (arg) => {
+    if (cache.has(arg)) {
+      return cache.get(arg)!;
+    }
+    const ret = fn(arg);
+    cache.set(arg, ret);
+    return ret;
   };
 }
 

@@ -71,13 +71,24 @@ export function RenderRootSymbol({ fullName }: { fullName: string }) {
               isExported={isExported}
               decl={decl}
             />
-            <Link
-              href={`/src/${getPkgWithVersionPortionOfParms(router.query.pkg)}${
-                location.file
-              }#L${location.line + 1}`}
-            >
-              <a>[decl]</a>
-            </Link>
+            <div>
+              <Link
+                href={`/src/${getPkgWithVersionPortionOfParms(
+                  router.query.pkg
+                )}${location.file}#L${location.line + 1}`}
+              >
+                <a>[decl]</a>
+              </Link>
+              {location.src && (
+                <Link
+                  href={`/src/${getPkgWithVersionPortionOfParms(
+                    router.query.pkg
+                  )}${location.src.file}#L${location.src.line + 1}`}
+                >
+                  <a>[src]</a>
+                </Link>
+              )}
+            </div>
           </div>
         );
       })}
