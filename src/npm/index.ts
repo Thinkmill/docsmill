@@ -14,6 +14,7 @@ import { collectEntrypointsOfPackage, resolveToPackageVersion } from "./utils";
 import { getPackageMetadata } from "./fetch-package-metadata";
 import { assert } from "../lib/assert";
 import { decode as decodeVlq } from "vlq";
+import path from "path";
 
 async function handleTarballStream(tarballStream: NodeJS.ReadableStream) {
   const extract = tarballStream.pipe(gunzip()).pipe(tar.extract());
@@ -289,13 +290,14 @@ export async function getPackage(
       return undefined;
     }
     sourceMapContent = sourceMapContent!;
-    let srcLocationUrl = new URL(distFilename, "http://example.com");
-    srcLocationUrl = new URL(".", srcLocationUrl);
-    srcLocationUrl = new URL(sourceMapContent.sourceRoot, srcLocationUrl);
-    srcLocationUrl = new URL(sourceMapContent.sources[0], srcLocationUrl);
-    let srcLocationPath = srcLocationUrl.pathname;
-    if (!fileSystem.fileExistsSync(srcLocationUrl.pathname)) {
-      console.log("source file for .d.ts.map not found", srcLocationPath);
+    const sourceRoot = path.resolve(
+      path.dirname(distFilename),
+      sourceMapContent.sourceRoot
+    );
+    const srcFilename = path.resolve(sourceRoot, sourceMapContent.sources[0]);
+
+    if (!fileSystem.fileExistsSync(srcFilename)) {
+      console.log("source file for .d.ts.map not found", srcFilename);
       return undefined;
     }
     const vlqs = sourceMapContent.mappings
@@ -340,7 +342,7 @@ export async function getPackage(
       }
       return {
         line: srcLine,
-        file: srcLocationPath.replace(`node_modules/${pkgName}/`, ""),
+        file: srcFilename.replace(`node_modules/${pkgName}/`, ""),
       };
     };
   });
