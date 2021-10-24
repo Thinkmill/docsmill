@@ -14,6 +14,7 @@ export const headerHeading = style({
   fontSize: "2rem",
   fontWeight: 400,
   color: tokens.color.gray800,
+  margin: 0,
 });
 
 export const headerSearch = style({

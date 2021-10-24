@@ -1,22 +1,56 @@
-import { createProject, ts } from "@ts-morph/bootstrap";
+import { ts } from "@ts-morph/bootstrap";
 import { assert } from "./lib/assert";
-import path from "path";
 import { getDocsInfo } from "./extract";
 import { collectEntrypointsOfPackage } from "./npm/utils";
-import {
-  collectUnresolvedPackages,
-  createModuleResolutionHost,
-  getExternalSymbolIdMap,
-} from "./npm";
+import { collectUnresolvedPackages, getExternalSymbolIdMap } from "./npm";
+import { getDirectoryPath, resolvePath } from "./extract/path";
+
+const getCanonicalFileName = ts.sys.useCaseSensitiveFileNames
+  ? (x: string) => x
+  : (x: string) => x.toLowerCase();
+
+function getFromTsConfig(tsConfigFilePath: string) {
+  let configFileDiagnostic: ts.Diagnostic | undefined;
+
+  const parsedCommandLine = ts.getParsedCommandLineOfConfigFile(
+    tsConfigFilePath,
+    undefined,
+    {
+      ...ts.sys,
+      onUnRecoverableConfigFileDiagnostic(diagnostic) {
+        configFileDiagnostic = diagnostic;
+      },
+    }
+  );
+
+  if (configFileDiagnostic) {
+    throw new Error(
+      ts.formatDiagnostic(configFileDiagnostic, {
+        getCurrentDirectory: () => ts.sys.getCurrentDirectory(),
+        getNewLine: () => ts.sys.newLine,
+        getCanonicalFileName,
+      })
+    );
+  }
+  assert(
+    parsedCommandLine !== undefined,
+    `could not create ts project from config file at: ${tsConfigFilePath}`
+  );
+  const compilerOptions: ts.CompilerOptions = {
+    ...parsedCommandLine.options,
+    resolveJsonModule: true,
+  };
+  return { compilerOptions, rootNames: parsedCommandLine.fileNames };
+}
 
 export async function getInfo(filename: string) {
-  let project = await createProject({
-    tsConfigFilePath: "./tsconfig.json",
-  });
-  const sourceFile = project.getSourceFileOrThrow(path.resolve(filename));
-  const program = project.createProgram();
+  const { compilerOptions, rootNames } = getFromTsConfig("./tsconfig.json");
+  const program = ts.createProgram({ options: compilerOptions, rootNames });
+  const resolved = resolvePath(process.cwd(), filename);
+  const sourceFile = program.getSourceFile(resolved);
+  assert(sourceFile !== undefined, `could not get source file ${resolved}`);
   const rootSymbol = program.getTypeChecker().getSymbolAtLocation(sourceFile);
-  assert(rootSymbol !== undefined);
+  assert(rootSymbol !== undefined, "could not get symbol for source file");
   const rootSymbols = new Map([[rootSymbol, "test"]]);
   return getDocsInfo(rootSymbols, ".", "test", "0.0.0", program);
 }
@@ -25,23 +59,40 @@ export async function getFromLocalPackage(
   tsConfigFilePath: string,
   pkgPath: string
 ) {
-  tsConfigFilePath = path.resolve(tsConfigFilePath);
-  pkgPath = path.resolve(pkgPath);
-  let project = await createProject({
-    tsConfigFilePath,
-    compilerOptions: {
-      resolveJsonModule: true,
-    },
-  });
-  const compilerOptions = project.compilerOptions.get();
-  const fileSystem = project.fileSystem;
+  tsConfigFilePath = resolvePath(process.cwd(), tsConfigFilePath);
+  pkgPath = resolvePath(process.cwd(), pkgPath);
+
+  const { compilerOptions, rootNames } = getFromTsConfig(tsConfigFilePath);
+
   const moduleResolutionCache = ts.createModuleResolutionCache(
-    project.fileSystem.getCurrentDirectory(),
-    (x) => (ts.sys.useCaseSensitiveFileNames ? x : x.toLowerCase()),
+    ts.sys.getCurrentDirectory(),
+    getCanonicalFileName,
     compilerOptions
   );
 
-  const moduleResolutionHost = createModuleResolutionHost(project.fileSystem);
+  const moduleResolutionHost: ts.ModuleResolutionHost = ts.sys;
+
+  const pkgJson = JSON.parse(
+    moduleResolutionHost.readFile(`${pkgPath}/package.json`)!
+  );
+  const entrypoints = collectEntrypointsOfPackage(
+    pkgJson.name,
+    pkgPath,
+    compilerOptions,
+    moduleResolutionHost,
+    moduleResolutionCache
+  );
+  const collectedPackages = collectUnresolvedPackages(
+    entrypoints,
+    compilerOptions,
+    moduleResolutionHost,
+    moduleResolutionCache
+  );
+
+  const resolvedDepsWithEntrypoints = new Map<
+    string,
+    { version: string; pkgPath: string; entrypoints: Map<string, string> }
+  >();
   const resolveModule = (moduleName: string, containingFile: string) =>
     ts.resolveModuleName(
       moduleName,
@@ -50,25 +101,6 @@ export async function getFromLocalPackage(
       moduleResolutionHost,
       moduleResolutionCache
     );
-  const pkgJson = JSON.parse(
-    await project.fileSystem.readFile(`${pkgPath}/package.json`)
-  );
-  const entrypoints = await collectEntrypointsOfPackage(
-    project.fileSystem,
-    resolveModule,
-    pkgJson.name,
-    pkgPath
-  );
-  const collectedPackages = collectUnresolvedPackages(
-    fileSystem,
-    resolveModule,
-    entrypoints
-  );
-
-  const resolvedDepsWithEntrypoints = new Map<
-    string,
-    { version: string; pkgPath: string; entrypoints: Map<string, string> }
-  >();
   for (const dep of collectedPackages) {
     let resolved = resolveModule(
       `@types/${dep}/package.json`,
@@ -82,14 +114,17 @@ export async function getFromLocalPackage(
       `expected to be able to resolve ${dep}/package.json from ${pkgPath}/index.ts`
     );
     const version = JSON.parse(
-      await fileSystem.readFile(resolved.resolvedModule.resolvedFileName)
+      moduleResolutionHost.readFile(resolved.resolvedModule.resolvedFileName)!
     ).version;
-    const depPkgPath = path.dirname(resolved.resolvedModule.resolvedFileName);
-    const entrypoints = await collectEntrypointsOfPackage(
-      fileSystem,
-      resolveModule,
+    const depPkgPath = getDirectoryPath(
+      resolved.resolvedModule.resolvedFileName
+    );
+    const entrypoints = collectEntrypointsOfPackage(
       dep,
-      depPkgPath
+      depPkgPath,
+      compilerOptions,
+      moduleResolutionHost,
+      moduleResolutionCache
     );
     resolvedDepsWithEntrypoints.set(dep, {
       entrypoints,
@@ -100,7 +135,7 @@ export async function getFromLocalPackage(
 
   const rootSymbols = new Map<ts.Symbol, string>();
 
-  const program = project.createProgram();
+  const program = ts.createProgram({ options: compilerOptions, rootNames });
 
   const externalSymbols = getExternalSymbolIdMap(
     program,

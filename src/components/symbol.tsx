@@ -454,7 +454,9 @@ function Exports({ fullName }: { fullName: string }) {
   } = useDocsContext();
   const transformedExports = useGroupedExports(fullName);
   const router = useRouter();
-  const pkgRefPortion = getPkgWithVersionPortionOfParms(router.query.pkg);
+  const pkgRefPortion = router.query.pkg
+    ? getPkgWithVersionPortionOfParms(router.query.pkg)
+    : "unknown";
   return (
     <div css={styles.innerExportsContainer}>
       {transformedExports.map((exported, i) => {

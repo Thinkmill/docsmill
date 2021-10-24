@@ -1,5 +1,4 @@
 import { ts } from "./ts";
-import path from "path";
 import { findCanonicalExportLocations } from "./exports";
 import {
   getAliasedSymbol,
@@ -9,6 +8,7 @@ import {
 import { SerializedDeclaration } from "../lib/types";
 import { convertDeclaration } from "./convert-declaration";
 import { assert } from "../lib/assert";
+import { combinePaths } from "./path";
 
 function getInitialState() {
   return {
@@ -24,7 +24,9 @@ function getInitialState() {
     >(),
     currentlyVistedSymbol: undefined as ts.Symbol | undefined,
     referencedExternalSymbols: new Set<ts.Symbol>(),
-    pkgDir: "",
+    isExternalSymbol: (_symbol: ts.Symbol): boolean => {
+      return false;
+    },
     program: (): ts.Program => {
       throw new Error("program not set");
     },
@@ -45,13 +47,7 @@ export function collectSymbol(symbol: ts.Symbol) {
   if (!symbol.declarations?.length) {
     return;
   }
-  const decl = symbol.declarations[0];
-  if (
-    !decl.getSourceFile().fileName.includes(state.pkgDir) ||
-    decl
-      .getSourceFile()
-      .fileName.includes(path.join(state.pkgDir, "node_modules"))
-  ) {
+  if (state.isExternalSymbol(symbol)) {
     state.referencedExternalSymbols.add(symbol);
     return;
   }
@@ -104,7 +100,18 @@ export function getDocsInfo(
   state = getInitialState();
   state.rootSymbols = rootSymbols;
   state.symbolsQueue = new Set(rootSymbols.keys());
-  state.pkgDir = pkgDir;
+  const pkgDirNodeModules = combinePaths(pkgDir, "node_modules");
+  state.isExternalSymbol = (symbol: ts.Symbol) => {
+    const decl = symbol.declarations![0];
+    const sourceFile = decl.getSourceFile();
+    if (
+      !sourceFile.fileName.includes(pkgDir) ||
+      sourceFile.fileName.includes(pkgDirNodeModules)
+    ) {
+      return true;
+    }
+    return false;
+  };
   state.program = () => program;
   resolveSymbolQueue();
 

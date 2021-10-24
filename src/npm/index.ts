@@ -14,7 +14,11 @@ import { collectEntrypointsOfPackage, resolveToPackageVersion } from "./utils";
 import { getPackageMetadata } from "./fetch-package-metadata";
 import { assert } from "../lib/assert";
 import { decode as decodeVlq } from "vlq";
-import path from "path";
+import {
+  getBaseFileName,
+  getDirectoryPath,
+  resolvePath,
+} from "../extract/path";
 
 async function handleTarballStream(tarballStream: NodeJS.ReadableStream) {
   const extract = tarballStream.pipe(gunzip()).pipe(tar.extract());
@@ -128,40 +132,31 @@ export async function getPackage(
     pkgSpecifier
   );
 
+  const moduleResolutionHost = createModuleResolutionHost(fileSystem);
+
   const earlyModuleResolutionCache = ts.createModuleResolutionCache(
-    fileSystem.getCurrentDirectory(),
+    moduleResolutionHost.getCurrentDirectory!(),
     (x) => x,
     compilerOptions
   );
 
-  const moduleResolutionHost = createModuleResolutionHost(fileSystem);
-
-  const resolveModule =
-    (cache: ts.ModuleResolutionCache) =>
-    (moduleName: string, containingFile: string) =>
-      ts.resolveModuleName(
-        moduleName,
-        containingFile,
-        compilerOptions,
-        moduleResolutionHost,
-        cache
-      );
-
-  const entrypoints = await collectEntrypointsOfPackage(
-    fileSystem,
-    resolveModule(earlyModuleResolutionCache),
+  const entrypoints = collectEntrypointsOfPackage(
     pkgName,
-    pkgPath
+    pkgPath,
+    compilerOptions,
+    moduleResolutionHost,
+    earlyModuleResolutionCache
   );
 
   const collectedPackages = collectUnresolvedPackages(
-    fileSystem,
-    resolveModule(earlyModuleResolutionCache),
-    entrypoints
+    entrypoints,
+    compilerOptions,
+    moduleResolutionHost,
+    earlyModuleResolutionCache
   );
 
   const pkgJson = JSON.parse(
-    fileSystem.readFileSync(`${pkgPath}/package.json`)
+    moduleResolutionHost.readFile(`${pkgPath}/package.json`)!
   );
 
   const resolvedDepsWithEntrypoints = new Map<
@@ -208,11 +203,12 @@ export async function getPackage(
         (x) => x,
         compilerOptions
       );
-      const entrypoints = await collectEntrypointsOfPackage(
-        fileSystem,
-        resolveModule(moduleResolutionCache),
+      const entrypoints = collectEntrypointsOfPackage(
         dep,
-        pkgPath
+        pkgPath,
+        compilerOptions,
+        moduleResolutionHost,
+        moduleResolutionCache
       );
       resolvedDepsWithEntrypoints.set(dep, { entrypoints, pkgPath, version });
     })
@@ -290,11 +286,11 @@ export async function getPackage(
       return undefined;
     }
     sourceMapContent = sourceMapContent!;
-    const sourceRoot = path.resolve(
-      path.dirname(distFilename),
+    const sourceRoot = resolvePath(
+      getDirectoryPath(distFilename),
       sourceMapContent.sourceRoot
     );
-    const srcFilename = path.resolve(sourceRoot, sourceMapContent.sources[0]);
+    const srcFilename = resolvePath(sourceRoot, sourceMapContent.sources[0]);
 
     if (!fileSystem.fileExistsSync(srcFilename)) {
       console.log("source file for .d.ts.map not found", srcFilename);
@@ -424,17 +420,18 @@ export function getExternalSymbolIdMap(
 }
 
 export function collectUnresolvedPackages(
-  fileSystem: FileSystemHost,
-  resolveModule: (
-    moduleName: string,
-    containingFile: string
-  ) => ts.ResolvedModuleWithFailedLookupLocations,
-  entrypoints: Map<string, string>
+  entrypoints: Map<string, string>,
+  compilerOptions: ts.CompilerOptions,
+  moduleResolutionHost: ts.ModuleResolutionHost,
+  moduleResolutionCache: ts.ModuleResolutionCache
 ) {
   const collectedPackages = new Set<string>();
   const queue = new Set(entrypoints.values());
   for (const filepath of queue) {
-    const content = fileSystem.readFileSync(filepath);
+    const content = moduleResolutionHost.readFile(filepath);
+    if (content === undefined) {
+      throw new Error("expected to be able to read ");
+    }
     const meta = ts.preProcessFile(content);
     for (const reference of meta.typeReferenceDirectives.concat(
       meta.importedFiles
@@ -446,8 +443,14 @@ export function collectUnresolvedPackages(
         }
         continue;
       }
-      const resolved = resolveModule(reference.fileName, filepath)
-        .resolvedModule?.resolvedFileName;
+
+      const resolved = ts.resolveModuleName(
+        reference.fileName,
+        filepath,
+        compilerOptions,
+        moduleResolutionHost,
+        moduleResolutionCache
+      ).resolvedModule?.resolvedFileName;
       if (resolved) {
         queue.add(resolved);
       }
@@ -473,7 +476,10 @@ export function createModuleResolutionHost(
     },
     getCurrentDirectory: () => fileSystem.getCurrentDirectory(),
     getDirectories: (dirName) => {
-      return fileSystem.readDirSync(dirName);
+      return fileSystem
+        .readDirSync(dirName)
+        .filter((x) => fileSystem.directoryExistsSync(x))
+        .map((x) => getBaseFileName(x));
     },
     realpath: (path) => fileSystem.realpathSync(path),
   };

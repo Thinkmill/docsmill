@@ -1,53 +1,54 @@
-import { ts, FileSystemHost } from "@ts-morph/bootstrap";
+import { ts } from "@ts-morph/bootstrap";
 import semver from "semver";
-import path from "path";
 import { PackageMetadata } from "./fetch-package-metadata";
+import { combinePaths } from "../extract/path";
 
 function findPackageJsons(
-  fileSystem: FileSystemHost,
+  host: ts.ModuleResolutionHost,
   dir: string,
   found: Set<string>
 ) {
   const queue = new Set([dir]);
   for (const dir of queue) {
-    for (const entry of fileSystem.readDirSync(dir)) {
-      if (entry.endsWith("/node_modules")) {
+    if (host.fileExists(combinePaths(dir, "package.json"))) {
+      found.add(`${dir}/package.json`);
+    }
+    for (const entry of host.getDirectories!(dir)) {
+      if (entry === "node_modules") {
         continue;
       }
-      if (fileSystem.directoryExistsSync(entry)) {
-        queue.add(entry);
-        continue;
-      }
-      if (entry.endsWith("/package.json")) {
-        found.add(entry);
-      }
+      queue.add(combinePaths(dir, entry));
+      continue;
     }
   }
 }
 
-export async function collectEntrypointsOfPackage(
-  fileSystem: FileSystemHost,
-  resolveBareSpecifier: (
-    moduleName: string,
-    containingFile: string
-  ) => ts.ResolvedModuleWithFailedLookupLocations,
+export function collectEntrypointsOfPackage(
   pkgName: string,
-  pkgPath: string
+  pkgPath: string,
+  compilerOptions: ts.CompilerOptions,
+  host: ts.ModuleResolutionHost,
+  cache: ts.ModuleResolutionCache
 ) {
   const packageJsons = new Set<string>();
-  findPackageJsons(fileSystem, pkgPath, packageJsons);
+  findPackageJsons(host, pkgPath, packageJsons);
   const entrypoints = new Map<string, string>();
-
+  const fileToResolveFrom = combinePaths(
+    host.getCurrentDirectory!(),
+    "index.ts"
+  );
   for (const x of packageJsons) {
-    const resolved = resolveBareSpecifier(
+    const resolved = ts.resolveModuleName(
       x.replace(/\/?package\.json$/, ""),
-      "/index.ts"
+      fileToResolveFrom,
+      compilerOptions,
+      host,
+      cache
     ).resolvedModule?.resolvedFileName;
     if (!resolved) continue;
-    const entrypoint = path.join(
-      pkgName,
-      x.replace(pkgPath, "").replace(/\/?package\.json$/, "")
-    );
+    const entrypoint = `${pkgName}${x
+      .replace(pkgPath, "")
+      .replace(/\/?package\.json$/, "")}`;
     entrypoints.set(entrypoint, resolved);
   }
   return entrypoints;
