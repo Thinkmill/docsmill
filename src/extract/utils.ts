@@ -10,6 +10,7 @@ import {
   Parameter,
   SerializedDeclaration,
   SerializedType,
+  SymbolId,
 } from "../lib/types";
 
 export function getTypeParameters(
@@ -198,11 +199,11 @@ export function getDocs(decl: ts.Node & ts.JSDocContainer) {
   );
 }
 
-export function getSymbolIdentifier(symbol: ts.Symbol) {
+export function getSymbolIdentifier(symbol: ts.Symbol): SymbolId {
   if (!symbol.declarations?.length) {
     const fullName = getTypeChecker().getFullyQualifiedName(symbol);
     if (fullName === "unknown" || fullName === "globalThis") {
-      return fullName;
+      return fullName as SymbolId;
     }
     assert(false, "expected at least one declaration");
   }
@@ -214,7 +215,7 @@ export function getSymbolIdentifier(symbol: ts.Symbol) {
         return `${decl.kind}-${filepath}-${decl.pos}-${decl.end}`;
       })
       .join("-")
-  );
+  ) as SymbolId;
 }
 
 export function getSymbolAtLocation(
@@ -243,14 +244,15 @@ export function getSymbolsForInnerBitsAndGoodIdentifiers(
   accessibleSymbols: Record<string, SerializedDeclaration[]>,
   packageName: string,
   canonicalExportLocations: DocInfo["canonicalExportLocations"],
-  symbolReferences: Record<string, string[]>,
-  _rootSymbols: string[]
+  symbolReferences: Record<SymbolId, SymbolId[]>,
+  _rootSymbols: SymbolId[]
 ) {
   const rootSymbols = new Set(_rootSymbols);
-  const unexportedToExportedRef = new Map<string, string>();
-  const unexportedToUnexportedRef = new Map<string, string>();
+  const unexportedToExportedRef = new Map<SymbolId, SymbolId>();
+  const unexportedToUnexportedRef = new Map<SymbolId, SymbolId>();
 
-  for (const [symbolFullName, symbols] of Object.entries(symbolReferences)) {
+  for (const [_symbolFullName, symbols] of Object.entries(symbolReferences)) {
+    const symbolFullName = _symbolFullName as SymbolId;
     if (
       !canonicalExportLocations[symbolFullName] &&
       accessibleSymbols[symbolFullName] &&
@@ -287,7 +289,7 @@ export function getSymbolsForInnerBitsAndGoodIdentifiers(
       }
     }
   }
-  const symbolsForInnerBit = new Map<string, string[]>();
+  const symbolsForInnerBit = new Map<SymbolId, SymbolId[]>();
 
   for (const [unexported, exported] of unexportedToExportedRef) {
     if (!symbolsForInnerBit.has(exported)) {
@@ -298,7 +300,7 @@ export function getSymbolsForInnerBitsAndGoodIdentifiers(
 
   const goodIdentifiers: Record<string, string> = {};
 
-  const findIdentifier = (symbol: string): string => {
+  const findIdentifier = (symbol: SymbolId): string => {
     if (rootSymbols.has(symbol)) {
       const name = accessibleSymbols[symbol][0].name;
       if (name === packageName) {
@@ -312,7 +314,8 @@ export function getSymbolsForInnerBitsAndGoodIdentifiers(
     return `${findIdentifier(parent)}.${exportName}`;
   };
 
-  for (const [symbolId, [symbol]] of Object.entries(accessibleSymbols)) {
+  for (const [_symbolId, [symbol]] of Object.entries(accessibleSymbols)) {
+    const symbolId = _symbolId as SymbolId;
     if (symbol.kind == "enum-member") continue;
     if (rootSymbols.has(symbolId)) {
       goodIdentifiers[symbolId] = symbol.name;

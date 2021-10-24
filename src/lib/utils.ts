@@ -1,4 +1,4 @@
-import { SerializedDeclaration } from "./types";
+import { SerializedDeclaration, SymbolId } from "./types";
 import { useDocsContext } from "./DocsContext";
 
 type TransformedExport =
@@ -17,16 +17,16 @@ type TransformedExport =
     }
   | {
       kind: "exports";
-      from: string;
+      from: SymbolId;
       exports: {
         sourceName: string;
         localName: string;
-        fullName: string;
+        fullName: SymbolId;
       }[];
     }
-  | { kind: "canonical"; exportName: string; fullName: string };
+  | { kind: "canonical"; exportName: string; fullName: SymbolId };
 
-export function useGroupedExports(fullName: string) {
+export function useGroupedExports(fullName: SymbolId) {
   const { symbols, canonicalExportLocations, externalSymbols } =
     useDocsContext();
   const decls = symbols[fullName].filter(

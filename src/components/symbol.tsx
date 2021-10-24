@@ -21,6 +21,7 @@ import {
   ClassMember,
   Parameter,
   SerializedDeclaration,
+  SymbolId,
   TypeParam,
 } from "../lib/types";
 import { Syntax } from "./syntax";
@@ -31,7 +32,7 @@ import Link from "next/link";
 import { useRouter } from "next/router";
 import { getPkgWithVersionPortionOfParms } from "../npm/params";
 
-function ExportedFrom({ fullName }: { fullName: string }) {
+function ExportedFrom({ fullName }: { fullName: SymbolId }) {
   const docContext = useDocsContext();
   if (docContext.rootSymbols.has(fullName)) {
     return (
@@ -50,7 +51,7 @@ function ExportedFrom({ fullName }: { fullName: string }) {
   );
 }
 
-export function RenderRootSymbol({ fullName }: { fullName: string }) {
+export function RenderRootSymbol({ fullName }: { fullName: SymbolId }) {
   const { symbols, canonicalExportLocations } = useDocsContext();
   let decls = symbols[fullName];
   let isExported = false;
@@ -84,7 +85,7 @@ function Declaration({
 }: {
   decl: SerializedDeclaration;
   isExported: boolean;
-  fullName: string;
+  fullName: SymbolId;
 }) {
   const { goodIdentifiers, symbols } = useDocsContext();
 
@@ -444,7 +445,7 @@ function ClassMembers({
   );
 }
 
-function Exports({ fullName }: { fullName: string }) {
+function Exports({ fullName }: { fullName: SymbolId }) {
   const {
     symbols,
     references,
@@ -547,7 +548,11 @@ function Exports({ fullName }: { fullName: string }) {
                 {exported.exports.map((exportName) => {
                   return (
                     <div key={exportName}>
-                      <SymbolReference fullName="unknown" name={exportName} />,
+                      <SymbolReference
+                        fullName={"unknown" as SymbolId}
+                        name={exportName}
+                      />
+                      ,
                     </div>
                   );
                 })}

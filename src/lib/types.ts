@@ -1,3 +1,7 @@
+import { __String } from "typescript";
+
+export type SymbolId = string & { __symbolIdTag: any };
+
 export type TypeParam = {
   name: string;
   constraint: SerializedType | null;
@@ -23,7 +27,7 @@ export type SerializedDeclaration =
       kind: "module";
       name: string;
       docs: string;
-      exports: Record<string, string | 0>;
+      exports: Record<string, SymbolId | 0>;
     }
   | {
       kind: "variable";
@@ -73,7 +77,7 @@ export type SerializedDeclaration =
       const: boolean;
       name: string;
       docs: string;
-      members: string[];
+      members: SymbolId[];
     }
   | {
       kind: "enum-member";
@@ -85,7 +89,7 @@ export type SerializedDeclaration =
       kind: "namespace";
       name: string;
       docs: string;
-      exports: Record<string, string | 0>;
+      exports: Record<string, SymbolId | 0>;
     };
 
 export type ClassMember =
@@ -163,13 +167,13 @@ export type SerializedType =
   | { kind: "intrinsic"; value: string }
   | {
       kind: "reference";
-      fullName: string;
+      fullName: SymbolId;
       name: string;
       typeArguments: SerializedType[];
     }
   | {
       kind: "typeof";
-      fullName: string;
+      fullName: SymbolId;
       name: string;
     }
   | { kind: "array"; readonly: boolean; inner: SerializedType }

@@ -9,6 +9,7 @@ import remarkGfm from "remark-gfm";
 import * as styles from "./markdown.css";
 import Link from "next/link";
 import { nonRootSymbolReference } from "./symbol-references.css";
+import { SymbolId } from "../lib/types";
 
 export function Markdown({ content }: { content: string }) {
   return (
@@ -111,7 +112,7 @@ const components: ReactMarkdownOptions["components"] = {
   a(props) {
     let href = ((props.node.properties as any).href as string) || "";
     const { symbols, goodIdentifiers, externalSymbols } = useDocsContext();
-    const fullName = href.replace("#symbol-", "");
+    const fullName = href.replace("#symbol-", "") as SymbolId;
     const text =
       props.node.children.length === 1 && props.node.children[0].type === "text"
         ? props.node.children[0].value

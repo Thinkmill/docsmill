@@ -17,6 +17,7 @@ import { useRouter } from "next/router";
 import * as styles from "./root.css";
 import { ChevronDown } from "./icons/chevron-down";
 import { getExternalPackageUrl } from "./symbol-references";
+import { SymbolId } from "../lib/types";
 
 function openParentDetails(element: HTMLElement) {
   if (element instanceof HTMLDetailsElement) {
@@ -70,7 +71,9 @@ export function Root(props: import("../extract").DocInfo) {
             ),
           [props.canonicalExportLocations]
         ),
-        symbolsForInnerBit: new Map(Object.entries(props.symbolsForInnerBit)),
+        symbolsForInnerBit: new Map(
+          Object.entries(props.symbolsForInnerBit) as [SymbolId, SymbolId[]][]
+        ),
         goodIdentifiers: props.goodIdentifiers,
         rootSymbols: new Set(props.rootSymbols),
         externalSymbols: props.externalSymbols,

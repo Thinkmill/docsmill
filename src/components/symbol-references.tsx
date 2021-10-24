@@ -7,7 +7,7 @@ import {
   useMemo,
   AnchorHTMLAttributes,
 } from "react";
-import { SymbolId, useDocsContext } from "../lib/DocsContext";
+import { useDocsContext } from "../lib/DocsContext";
 import { codeFont } from "../lib/theme.css";
 import { splitDocs } from "../lib/utils";
 import { Markdown } from "./markdown";
@@ -15,6 +15,7 @@ import { Syntax } from "./syntax";
 import * as styles from "./symbol-references.css";
 import { Tooltip } from "./tooltip";
 import Link from "next/link";
+import { SymbolId } from "../lib/types";
 
 const NamesInScopeContext = createContext<Map<string, SymbolId>>(new Map());
 
@@ -23,7 +24,7 @@ export function SymbolName({
   name,
 }: {
   name: string;
-  fullName: string;
+  fullName: SymbolId;
 }) {
   const { goodIdentifiers } = useDocsContext();
   return (
@@ -52,7 +53,7 @@ export function AddNameToScope({
   children,
 }: {
   name: string;
-  fullName: string;
+  fullName: SymbolId;
   children: ReactNode;
 }) {
   const namesInScope = useContext(NamesInScopeContext);
@@ -97,7 +98,7 @@ export function SymbolReference({
   name,
 }: {
   name: string;
-  fullName: string;
+  fullName: SymbolId;
 }) {
   const {
     symbols,

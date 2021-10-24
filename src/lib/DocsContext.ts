@@ -1,7 +1,5 @@
 import { createContext, useContext } from "react";
-import { SerializedDeclaration } from "./types";
-
-export type SymbolId = string;
+import { SerializedDeclaration, SymbolId } from "./types";
 
 export type DocsContextType = {
   symbols: Record<SymbolId, SerializedDeclaration[]>;

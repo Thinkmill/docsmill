@@ -1,6 +1,6 @@
 import { ts } from "./ts";
 import { collectSymbol, getRootSymbolName, getTypeChecker } from ".";
-import { ClassMember, SerializedDeclaration } from "../lib/types";
+import { ClassMember, SerializedDeclaration, SymbolId } from "../lib/types";
 import { convertTypeNode } from "./convert-node";
 import { convertType } from "./convert-type";
 import {
@@ -348,7 +348,7 @@ function printPropertyName(propertyName: ts.PropertyName) {
 }
 
 function collectExportsFromModule(symbol: ts.Symbol) {
-  let exports: Record<string, string | 0> = {};
+  let exports: Record<string, SymbolId | 0> = {};
   for (const [exportName, exportedDeclarations] of getExportedDeclarations(
     symbol
   )) {

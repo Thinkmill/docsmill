@@ -5,7 +5,7 @@ import {
   getSymbolIdentifier,
   getSymbolsForInnerBitsAndGoodIdentifiers,
 } from "./utils";
-import { SerializedDeclaration } from "../lib/types";
+import { SerializedDeclaration, SymbolId } from "../lib/types";
 import { convertDeclaration } from "./convert-declaration";
 import { assert } from "../lib/assert";
 import { combinePaths } from "./path";
@@ -65,19 +65,22 @@ export function collectSymbol(symbol: ts.Symbol) {
 
 export type DocInfo = {
   packageName: string;
-  rootSymbols: string[];
-  accessibleSymbols: { [k: string]: SerializedDeclaration[] };
-  symbolReferences: { [k: string]: string[] };
+  rootSymbols: SymbolId[];
+  accessibleSymbols: { [key: SymbolId]: SerializedDeclaration[] };
+  symbolReferences: { [key: SymbolId]: SymbolId[] };
   canonicalExportLocations: {
-    [k: string]: readonly [exportName: string, fileSymbolId: string];
+    [k: SymbolId]: readonly [exportName: string, fileSymbolId: SymbolId];
   };
-  goodIdentifiers: Record<string, string>;
-  symbolsForInnerBit: Record<string, string[]>;
-  externalSymbols: Record<string, { pkg: string; version: string; id: string }>;
+  goodIdentifiers: Record<SymbolId, string>;
+  symbolsForInnerBit: Record<SymbolId, SymbolId[]>;
+  externalSymbols: Record<
+    SymbolId,
+    { pkg: string; version: string; id: string }
+  >;
   versions?: string[];
   currentVersion: string;
   locations: Record<
-    string,
+    SymbolId,
     { file: string; line: number; src?: { file: string; line: number } }[]
   >;
 };
@@ -89,7 +92,7 @@ export function getDocsInfo(
   currentVersion: string,
   program: ts.Program,
   getExternalReference: (
-    symbolId: string
+    symbolId: SymbolId
   ) => { pkg: string; version: string; id: string } | undefined = () =>
     undefined,
   getSrcMapping: (

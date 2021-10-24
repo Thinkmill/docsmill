@@ -19,6 +19,7 @@ import {
   getDirectoryPath,
   resolvePath,
 } from "../extract/path";
+import { SymbolId } from "../lib/types";
 
 async function handleTarballStream(tarballStream: NodeJS.ReadableStream) {
   const extract = tarballStream.pipe(gunzip()).pipe(tar.extract());
@@ -383,7 +384,7 @@ export function getExternalSymbolIdMap(
   >
 ) {
   const externalPackages: Map<
-    string,
+    SymbolId,
     { version: string; pkg: string; id: string }
   > = new Map();
   for (const [
@@ -413,7 +414,11 @@ export function getExternalSymbolIdMap(
       program
     );
     for (const [symbolId, identifier] of Object.entries(goodIdentifiers)) {
-      externalPackages.set(symbolId, { version, pkg: dep, id: identifier });
+      externalPackages.set(symbolId as SymbolId, {
+        version,
+        pkg: dep,
+        id: identifier,
+      });
     }
   }
   return externalPackages;

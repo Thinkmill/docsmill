@@ -6,8 +6,9 @@ import { useGroupedExports } from "../lib/utils";
 import { nonRootSymbolReference } from "./symbol-references.css";
 import { assert } from "../lib/assert";
 import { Expandable, Item } from "./expandable";
+import { SymbolId } from "../lib/types";
 
-export function Navigation({ rootSymbolName }: { rootSymbolName: string }) {
+export function Navigation({ rootSymbolName }: { rootSymbolName: SymbolId }) {
   const docContext = useDocsContext();
   const decls = docContext.symbols[rootSymbolName].filter(
     (x): x is Extract<typeof x, { kind: "module" | "namespace" }> =>

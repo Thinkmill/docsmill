@@ -9,7 +9,7 @@ import {
 } from "./utils";
 import { collectSymbol } from ".";
 import { assert, assertNever } from "../lib/assert";
-import { SerializedType, TupleElement } from "../lib/types";
+import { SerializedType, SymbolId, TupleElement } from "../lib/types";
 
 function getModifierKind(
   modifier:
@@ -60,7 +60,7 @@ function handleReference(
   if (!symbol) {
     return {
       kind: "reference",
-      fullName: "unknown",
+      fullName: "unknown" as SymbolId,
       name: printNode(typeName),
       typeArguments: (typeArguments || []).map((x) => convertTypeNode(x)),
     };
@@ -340,7 +340,7 @@ export function convertTypeNode(compilerNode: ts.TypeNode): SerializedType {
 
       return {
         kind: "typeof",
-        fullName: "unknown",
+        fullName: "unknown" as SymbolId,
         name: compilerNode.qualifier
           ? printEntityName(compilerNode.qualifier)
           : printNode(compilerNode),
@@ -372,7 +372,7 @@ export function convertTypeNode(compilerNode: ts.TypeNode): SerializedType {
 
     return {
       kind: "typeof",
-      fullName: "unknown",
+      fullName: "unknown" as SymbolId,
       name: printEntityName(entityName),
     };
   }
