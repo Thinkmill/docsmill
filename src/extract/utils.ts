@@ -189,7 +189,7 @@ export function getDocsFromJSDocNodes(nodes: ts.JSDoc[]) {
     .join("\n\n");
 }
 
-export function getDocs(decl: ts.Node & ts.JSDocContainer) {
+export function getDocs(decl: ts.HasJSDoc) {
   let nodes = ((decl as any).jsDoc ?? []) as ts.JSDoc[];
   return getDocsFromJSDocNodes(
     nodes.filter(
