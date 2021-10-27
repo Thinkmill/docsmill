@@ -142,16 +142,6 @@ export function getDocsInfo(
         }
       )
     ),
-    canonicalExportLocations: Object.fromEntries(
-      [...findCanonicalExportLocations([...state.rootSymbols.keys()])].map(
-        ([symbol, { exportName, parent }]) => {
-          return [
-            getSymbolIdentifier(symbol),
-            [exportName, getSymbolIdentifier(parent)] as const,
-          ];
-        }
-      )
-    ),
     locations: Object.fromEntries(
       [...state.publicSymbols].map(([symbol]) => {
         return [
@@ -182,17 +172,22 @@ export function getDocsInfo(
       externalSymbols[symbolId] = ref;
     }
   }
+  const canonicalExportLocations = findCanonicalExportLocations(
+    baseInfo.rootSymbols,
+    baseInfo.accessibleSymbols
+  );
 
   return {
     ...baseInfo,
     ...getSymbolsForInnerBitsAndGoodIdentifiers(
       baseInfo.accessibleSymbols,
       baseInfo.packageName,
-      baseInfo.canonicalExportLocations,
+      canonicalExportLocations,
       baseInfo.symbolReferences,
       baseInfo.rootSymbols
     ),
     externalSymbols,
+    canonicalExportLocations,
   };
 }
 

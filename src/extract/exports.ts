@@ -1,83 +1,73 @@
-import { ts } from "./ts";
-import { assert } from "../lib/assert";
-import { getExportedDeclarations } from "./get-exported-declarations";
-import { getSymbolAtLocation } from "./utils";
+import { SerializedDeclaration, SymbolId } from "../lib/types";
 
 type ExportName = string;
 
-function collectImportableSymbolsFromModuledNode(
-  moduleSymbol: ts.Symbol,
-  state: Map<ts.Symbol, Map<ts.Symbol, ExportName>>
+type Symbols = Record<
+  SymbolId,
+  [SerializedDeclaration, ...SerializedDeclaration[]]
+>;
+
+function collectImportableSymbolLocationsFromRootSymbols(
+  rootSymbols: SymbolId[],
+  accessibleSymbols: Symbols
 ) {
-  for (const [exportName, decls] of getExportedDeclarations(moduleSymbol)) {
-    const decl = decls[0];
-    if (!decl) {
-      console.log(
-        `no declarations for export ${exportName} in ${moduleSymbol.getName()}`
-      );
-      continue;
-    }
-    const symbol = getSymbolAtLocation(decl);
-
-    assert(
-      symbol !== undefined,
-      "expected symbol to exist in exported declaration"
-    );
-
-    if (!state.has(symbol)) {
-      state.set(symbol, new Map());
-    }
-    const exportLocations = state.get(symbol)!;
-    exportLocations.set(moduleSymbol, exportName);
-    for (const decl of decls) {
+  const state = new Map<SymbolId, Map<SymbolId, ExportName>>();
+  const queue = new Set(rootSymbols);
+  for (const moduleSymbolId of queue) {
+    const moduleSymbolDecls = accessibleSymbols[moduleSymbolId];
+    for (const moduleSymbolDecl of moduleSymbolDecls) {
       if (
-        ts.isSourceFile(decl) ||
-        (ts.isModuleDeclaration(decl) &&
-          ts.isIdentifier(decl.name) &&
-          decl.body &&
-          ts.isModuleBlock(decl.body))
+        moduleSymbolDecl.kind !== "module" &&
+        moduleSymbolDecl.kind !== "namespace"
       ) {
-        // need to see if this can be circular
-        const symbol = getSymbolAtLocation(decl);
-        assert(
-          symbol !== undefined,
-          "expected symbol to exist in exported declaration"
-        );
-        collectImportableSymbolsFromModuledNode(symbol, state);
+        continue;
+      }
+
+      for (const [exportName, symbolId] of Object.entries(
+        moduleSymbolDecl.exports
+      )) {
+        if (symbolId === 0) continue;
+        const exportedDecls = accessibleSymbols[symbolId];
+        if (!exportedDecls) continue;
+        if (!state.has(symbolId)) {
+          state.set(symbolId, new Map());
+        }
+        const exportLocations = state.get(symbolId)!;
+        exportLocations.set(moduleSymbolId, exportName);
+        queue.add(symbolId);
       }
     }
   }
+  return state;
 }
 
 export function findCanonicalExportLocations(
-  rootSymbols: ts.Symbol[]
-): Map<ts.Symbol, { parent: ts.Symbol; exportName: ExportName }> {
-  const state = new Map<ts.Symbol, Map<ts.Symbol, ExportName>>();
-  for (const rootSymbol of rootSymbols) {
-    collectImportableSymbolsFromModuledNode(rootSymbol, state);
-  }
-  const map = new Map<
-    ts.Symbol,
-    { parent: ts.Symbol; exportName: ExportName }
-  >();
+  rootSymbols: SymbolId[],
+  accessibleSymbols: Symbols
+): Record<SymbolId, [ExportName, SymbolId]> {
+  const state = collectImportableSymbolLocationsFromRootSymbols(
+    rootSymbols,
+    accessibleSymbols
+  );
+
+  const result: Record<SymbolId, [ExportName, SymbolId]> = {};
   for (const [symbol, exportLocations] of state) {
-    let current: [ts.Symbol, string] | undefined;
+    let current: [SymbolId, string] | undefined;
     for (const val of exportLocations) {
       if (!current) {
         current = val;
       }
+      const valDecl = accessibleSymbols[val[0]][0];
+      const currentDecl = accessibleSymbols[current[0]][0];
       if (
-        ts.isSourceFile(val[0].declarations![0]) &&
-        (!ts.isSourceFile(current[0].declarations![0]) ||
-          val[0].declarations![0].fileName.length <
-            current[0].declarations![0].fileName.length)
+        valDecl.kind === "module" &&
+        (currentDecl.kind !== "module" || valDecl.name < currentDecl.name)
       ) {
         current = val;
       }
     }
-    const [parent, exportName] = current!;
-    map.set(symbol, { parent, exportName });
+    result[symbol] = [current![1], current![0]];
   }
 
-  return map;
+  return result;
 }

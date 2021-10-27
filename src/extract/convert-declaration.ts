@@ -15,7 +15,6 @@ import {
   getReturnType,
 } from "./utils";
 import { assert } from "../lib/assert";
-import { getExportedDeclarations } from "./get-exported-declarations";
 
 export function convertDeclaration(
   compilerNode: ts.Node
@@ -349,25 +348,16 @@ function printPropertyName(propertyName: ts.PropertyName) {
 
 function collectExportsFromModule(symbol: ts.Symbol) {
   let exports: Record<string, SymbolId | 0> = {};
-  for (const [exportName, exportedDeclarations] of getExportedDeclarations(
-    symbol
-  )) {
-    const decl = exportedDeclarations[0];
-    if (!decl) {
-      console.log(
-        `no declarations for export ${exportName} in ${symbol.getName()}`
-      );
-      exports[exportName] = 0;
-      continue;
+  const typeChecker = getTypeChecker();
+  const exportSymbols = typeChecker.getExportsOfModule(symbol);
+  for (let exportSymbol of exportSymbols) {
+    const aliasedSymbol = getAliasedSymbol(exportSymbol) || exportSymbol;
+    if (aliasedSymbol.declarations) {
+      collectSymbol(aliasedSymbol);
+      exports[exportSymbol.name] = getSymbolIdentifier(aliasedSymbol);
+    } else {
+      exports[exportSymbol.name] = 0;
     }
-    let innerSymbol = getSymbolAtLocation(decl);
-    assert(
-      innerSymbol !== undefined,
-      "expected symbol to exist for exported declaration"
-    );
-    innerSymbol = getAliasedSymbol(innerSymbol) || innerSymbol;
-    collectSymbol(innerSymbol);
-    exports[exportName] = getSymbolIdentifier(innerSymbol);
   }
   return exports;
 }
