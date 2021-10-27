@@ -4,7 +4,6 @@ import {
   InMemoryFileSystemHost,
   FileSystemHost,
 } from "@ts-morph/bootstrap";
-import fetch from "node-fetch";
 import semver from "semver";
 import tar from "tar-stream";
 import gunzip from "gunzip-maybe";
@@ -68,7 +67,7 @@ async function fetchPackageContent(pkgName: string, pkgVersion: string) {
   const tarballStream = await fetch(getNpmTarballUrl(pkgName, pkgVersion)).then(
     (res) => res.body!
   );
-  return handleTarballStream(tarballStream);
+  return handleTarballStream(tarballStream as unknown as NodeJS.ReadableStream);
 }
 
 async function getTarballAndVersions(pkgName: string, pkgSpecifier: string) {
