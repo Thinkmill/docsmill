@@ -6,7 +6,7 @@ import {
   GetStaticPropsResult,
 } from "next";
 
-import { Root } from "../../components/root";
+// import { Root } from "../../components/root";
 import { useMemo } from "react";
 import { compressToUTF16, decompressFromUTF16 } from "lz-string";
 import { DocInfo } from "../../extract";
@@ -37,7 +37,9 @@ export default function Npm(
     return props.error;
   }
 
-  return <Root {...props.data} />;
+  return <pre>{JSON.stringify(props.data, null, 2)}</pre>;
+
+  // return <Root {...props.data} />;
 }
 
 export function getStaticPaths(): GetStaticPathsResult {
