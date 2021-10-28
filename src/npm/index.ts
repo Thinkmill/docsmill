@@ -1,10 +1,8 @@
-import {
-  createProjectSync,
-  ts,
-  InMemoryFileSystemHost,
-  FileSystemHost,
-} from "@ts-morph/bootstrap";
-import semver from "semver";
+import { ts } from "../extract/ts";
+// @ts-ignore
+import { libFiles as _libFiles } from "@ts-morph/common/dist/data/libFiles";
+
+import isValidSemverVersion from "semver/functions/valid";
 import tar from "tar-stream";
 import gunzip from "gunzip-maybe";
 import getNpmTarballUrl from "get-npm-tarball-url";
@@ -14,11 +12,15 @@ import { getPackageMetadata } from "./fetch-package-metadata";
 import { assert } from "../lib/assert";
 import { decode as decodeVlq } from "vlq";
 import {
+  combinePaths,
   getBaseFileName,
   getDirectoryPath,
+  getPathComponents,
   resolvePath,
 } from "../extract/path";
 import { SymbolId } from "../lib/types";
+
+const libFiles: { fileName: string; text: string }[] = _libFiles;
 
 async function handleTarballStream(tarballStream: NodeJS.ReadableStream) {
   const extract = tarballStream.pipe(gunzip()).pipe(tar.extract());
@@ -72,7 +74,7 @@ async function fetchPackageContent(pkgName: string, pkgVersion: string) {
 
 async function getTarballAndVersions(pkgName: string, pkgSpecifier: string) {
   let pkgPromise = getPackageMetadata(pkgName);
-  if (semver.valid(pkgSpecifier)) {
+  if (isValidSemverVersion(pkgSpecifier)) {
     const packageContentPromise = fetchPackageContent(pkgName, pkgSpecifier);
     const results = await Promise.allSettled([
       pkgPromise,
@@ -83,7 +85,7 @@ async function getTarballAndVersions(pkgName: string, pkgSpecifier: string) {
     }
     if (results[1].status === "fulfilled") {
       return {
-        versions: results[0].value.versions,
+        versions: results[0].value!.versions,
         version: pkgSpecifier,
         content: results[1].value,
       };
@@ -91,13 +93,14 @@ async function getTarballAndVersions(pkgName: string, pkgSpecifier: string) {
     pkgPromise = Promise.resolve(results[0].value);
   }
   const pkg = await pkgPromise;
+  assert(pkg !== undefined);
   const version = resolveToPackageVersion(pkg, pkgSpecifier);
   const content = await fetchPackageContent(pkgName, version);
   return { content, version, versions: pkg.versions };
 }
 
 async function addPackageToNodeModules(
-  fileSystem: FileSystemHost,
+  host: ts.CompilerHost,
   pkgName: string,
   pkgSpecifier: string
 ) {
@@ -109,16 +112,133 @@ async function addPackageToNodeModules(
   const pkgPath = `/node_modules/${pkgName}`;
   for (let [filepath, fileContent] of content) {
     filepath = `${pkgPath}${filepath}`;
-    fileSystem.writeFileSync(filepath, fileContent);
+    host.writeFile(filepath, fileContent, false);
   }
   return { pkgPath, version, versions };
+}
+
+const libFileCache = new Map<string, ts.SourceFile>();
+
+(ts as any).readJson = (
+  path: string,
+  host: { readFile(fileName: string): string | undefined }
+) => {
+  try {
+    const jsonText = host.readFile(path);
+    if (!jsonText) return {};
+    return JSON.parse(jsonText);
+  } catch (e) {
+    // gracefully handle if readFile fails or returns not JSON
+    return {};
+  }
+};
+
+function getCompilerHost(): ts.CompilerHost & {
+  directories: Map<string, Map<string, string>>;
+} {
+  const directories = new Map<string, Map<string, string>>();
+
+  const readFile = (filename: string) => {
+    const dirPath = getDirectoryPath(filename);
+    const dir = directories.get(dirPath);
+    if (!dir) {
+      return undefined;
+    }
+    const baseName = getBaseFileName(filename);
+    return dir.get(baseName);
+  };
+  const sourceFiles = new Map<string, ts.SourceFile>();
+  let host: ts.CompilerHost & {
+    directories: Map<string, Map<string, string>>;
+  } = {
+    directories,
+    fileExists: (filename: string) => {
+      return readFile(filename) !== undefined;
+    },
+    readFile,
+    getCurrentDirectory() {
+      return "/";
+    },
+    getDirectories(path: string) {
+      let dirs: string[] = [];
+      for (const [dir] of directories) {
+        const dirPath = getDirectoryPath(dir);
+        if (dirPath === path) {
+          dirs.push(getBaseFileName(dir));
+        }
+      }
+      return dirs;
+    },
+    directoryExists(dirname: string) {
+      return directories.has(dirname);
+    },
+    getCanonicalFileName(x) {
+      return x;
+    },
+    getNewLine() {
+      return "\n";
+    },
+    writeFile(filename, data: string) {
+      const dirPath = getDirectoryPath(filename);
+      const components = getPathComponents(filename);
+      const baseName = components.pop()!;
+      while (components.length) {
+        const end = components.pop()!;
+        const joined = combinePaths(
+          ...(components as [string, ...string[]]),
+          end
+        );
+        if (directories.has(joined)) {
+          break;
+        }
+        directories.set(joined, new Map());
+      }
+      const dir = directories.get(dirPath)!;
+      dir.set(baseName, data);
+    },
+    getDefaultLibFileName: (x) =>
+      `/node_modules/typescript/lib/${ts.getDefaultLibFileName(x)}`,
+    getDefaultLibLocation: () => "/node_modules/typescript/lib",
+    getSourceFile(filename, languageVersion) {
+      const cachedSourceFile = sourceFiles.get(filename);
+      if (cachedSourceFile !== undefined) {
+        return cachedSourceFile;
+      }
+      const cachedLibSourceFile = libFileCache.get(filename);
+      if (cachedLibSourceFile !== undefined) {
+        return cachedLibSourceFile;
+      }
+      const content = readFile(filename);
+      if (content === undefined) {
+        return undefined;
+      }
+      const sourceFile = ts.createSourceFile(
+        filename,
+        content,
+        languageVersion
+      );
+      if (filename.startsWith("/node_modules/typescript/lib/")) {
+        libFileCache.set(filename, sourceFile);
+      } else {
+        sourceFiles.set(filename, sourceFile);
+      }
+      return sourceFile;
+    },
+    useCaseSensitiveFileNames() {
+      return true;
+    },
+  };
+  for (const { fileName, text } of libFiles) {
+    host.writeFile(`/node_modules/typescript/lib/${fileName}`, text, false);
+  }
+  return host;
 }
 
 export async function getPackage(
   pkgName: string,
   pkgSpecifier: string
 ): Promise<DocInfo> {
-  const fileSystem = new InMemoryFileSystemHost();
+  // const fileSystem = new InMemoryFileSystemHost();
 
   const compilerOptions: ts.CompilerOptions = {
     noEmit: true,
@@ -126,13 +246,15 @@ export async function getPackage(
     moduleResolution: ts.ModuleResolutionKind.NodeJs,
   };
 
+  const compilerHost = getCompilerHost();
+
   const { versions, version, pkgPath } = await addPackageToNodeModules(
-    fileSystem,
+    compilerHost,
     pkgName,
     pkgSpecifier
   );
 
-  const moduleResolutionHost = createModuleResolutionHost(fileSystem);
+  const moduleResolutionHost: ts.ModuleResolutionHost = compilerHost;
 
   const earlyModuleResolutionCache = ts.createModuleResolutionCache(
     moduleResolutionHost.getCurrentDirectory!(),
@@ -193,13 +315,13 @@ export async function getPackage(
       }
       if (typeof specifier !== "string") return;
       const { version, pkgPath } = await addPackageToNodeModules(
-        fileSystem,
+        compilerHost,
         dep,
         specifier
       );
 
       const moduleResolutionCache = ts.createModuleResolutionCache(
-        fileSystem.getCurrentDirectory(),
+        compilerHost.getCurrentDirectory(),
         (x) => x,
         compilerOptions
       );
@@ -214,19 +336,15 @@ export async function getPackage(
     })
   );
 
-  let project = createProjectSync({
-    compilerOptions,
-    fileSystem,
-  });
-
-  const program = project.createProgram({
+  const program = ts.createProgram({
     rootNames: [
       ...entrypoints.values(),
       ...[...resolvedDepsWithEntrypoints].flatMap(([_, { entrypoints }]) => [
         ...entrypoints.values(),
       ]),
     ],
-    options: project.compilerOptions.get(),
+    options: compilerOptions,
+    host: compilerHost,
   });
 
   const externalSymbols = getExternalSymbolIdMap(
@@ -236,7 +354,9 @@ export async function getPackage(
 
   const rootSymbols = new Map<ts.Symbol, string>();
 
-  for (const module of program.getTypeChecker().getAmbientModules()) {
+  const typeChecker = program.getTypeChecker();
+
+  for (const module of typeChecker.getAmbientModules()) {
     const decl = module.declarations?.[0];
     assert(
       decl !== undefined && ts.isModuleDeclaration(decl),
@@ -251,24 +371,18 @@ export async function getPackage(
   for (const [entrypoint, resolved] of entrypoints) {
     const sourceFile = program.getSourceFile(resolved);
     assert(sourceFile !== undefined);
-    const sourceFileSymbol = program
-      .getTypeChecker()
-      .getSymbolAtLocation(sourceFile);
+    const sourceFileSymbol = typeChecker.getSymbolAtLocation(sourceFile);
     if (sourceFileSymbol) {
       rootSymbols.set(sourceFileSymbol, entrypoint);
     }
   }
 
   const getSourceMap = memoize((distFilename: string) => {
-    let content;
-    try {
-      content = fileSystem.readFileSync(distFilename + ".map", "utf8");
-    } catch (err: any) {
-      if (err.code === "ENOENT") {
-        return undefined;
-      }
-      throw err;
+    let content = compilerHost.readFile(distFilename + ".map");
+    if (content === undefined) {
+      return undefined;
     }
+
     let sourceMapContent:
       | {
           sourceRoot: string;
@@ -292,7 +406,7 @@ export async function getPackage(
     );
     const srcFilename = resolvePath(sourceRoot, sourceMapContent.sources[0]);
 
-    if (!fileSystem.fileExistsSync(srcFilename)) {
+    if (!compilerHost.fileExists(srcFilename)) {
       console.log("source file for .d.ts.map not found", srcFilename);
       return undefined;
     }
@@ -461,30 +575,4 @@ export function collectUnresolvedPackages(
     }
   }
   return collectedPackages;
-}
-
-export function createModuleResolutionHost(
-  fileSystem: FileSystemHost
-): ts.ModuleResolutionHost {
-  return {
-    directoryExists: (dirName) => fileSystem.directoryExistsSync(dirName),
-    fileExists: (fileName) => fileSystem.fileExistsSync(fileName),
-    readFile: (fileName) => {
-      try {
-        return fileSystem.readFileSync(fileName);
-      } catch (err) {
-        // this is what the compiler api does
-        if (err && (err as any).code === "ENOENT") return undefined;
-        throw err;
-      }
-    },
-    getCurrentDirectory: () => fileSystem.getCurrentDirectory(),
-    getDirectories: (dirName) => {
-      return fileSystem
-        .readDirSync(dirName)
-        .filter((x) => fileSystem.directoryExistsSync(x))
-        .map((x) => getBaseFileName(x));
-    },
-    realpath: (path) => fileSystem.realpathSync(path),
-  };
 }

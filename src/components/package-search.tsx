@@ -213,3 +213,5 @@ const attribution = (
     </a>
   </div>
 );
+
+export default PackageSearch;

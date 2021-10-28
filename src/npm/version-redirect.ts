@@ -1,5 +1,5 @@
 import { GetStaticPropsResult } from "next";
-import semver from "semver";
+import isValidSemverVersion from "semver/functions/valid";
 import { getPackageMetadata } from "./fetch-package-metadata";
 import { resolveToPackageVersion } from "./utils";
 
@@ -27,8 +27,11 @@ export async function redirectToPkgVersion(
   }
   const [, pkgName, specifier] = pkgWithVersion.match(/^(@?[^@]+)(?:@(.+))?/)!;
 
-  if (!specifier || !semver.parse(specifier)) {
+  if (!specifier || !isValidSemverVersion(specifier)) {
     const pkg = await getPackageMetadata(pkgName);
+    if (pkg === undefined) {
+      return { kind: "handled", result: { notFound: true } };
+    }
     const version = resolveToPackageVersion(pkg, specifier);
     return {
       kind: "handled",

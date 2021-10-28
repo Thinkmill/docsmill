@@ -1,5 +1,6 @@
-import { ts } from "@ts-morph/bootstrap";
-import semver from "semver";
+import { ts } from "../extract/ts";
+import isRangeValid from "semver/ranges/valid";
+import maxSatisfyingVersion from "semver/ranges/max-satisfying";
 import { PackageMetadata } from "./fetch-package-metadata";
 import { combinePaths } from "../extract/path";
 
@@ -10,8 +11,9 @@ function findPackageJsons(
 ) {
   const queue = new Set([dir]);
   for (const dir of queue) {
-    if (host.fileExists(combinePaths(dir, "package.json"))) {
-      found.add(`${dir}/package.json`);
+    const combined = combinePaths(dir, "package.json");
+    if (host.fileExists(combined)) {
+      found.add(combined);
     }
     for (const entry of host.getDirectories!(dir)) {
       if (entry === "node_modules") {
@@ -62,8 +64,8 @@ export function resolveToPackageVersion(
     if (Object.prototype.hasOwnProperty.call(pkg.tags, specifier)) {
       return pkg.tags[specifier];
     }
-    if (semver.validRange(specifier)) {
-      const version = semver.maxSatisfying(pkg.versions, specifier);
+    if (isRangeValid(specifier)) {
+      const version = maxSatisfyingVersion(pkg.versions, specifier);
       if (version) {
         return version;
       }

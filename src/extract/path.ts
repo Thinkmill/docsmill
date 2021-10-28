@@ -297,7 +297,7 @@ function lastOrUndefined<T>(array: readonly T[]): T | undefined {
  * getPathComponents("file:///") === ["file:///"]
  * getPathComponents("file://") === ["file://"]
  */
-function getPathComponents(path: string, currentDirectory = "") {
+export function getPathComponents(path: string, currentDirectory = "") {
   path = combinePaths(currentDirectory, path);
   return pathComponents(path, getRootLength(path));
 }
@@ -325,7 +325,7 @@ function getPathFromPathComponents(pathComponents: readonly string[]) {
 /**
  * Normalize path separators, converting `\` into `/`.
  */
-function normalizeSlashes(path: string): string {
+export function normalizeSlashes(path: string): string {
   const index = path.indexOf("\\");
   if (index === -1) {
     return path;

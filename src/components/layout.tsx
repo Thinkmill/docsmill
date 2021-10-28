@@ -3,7 +3,9 @@
 import { ReactNode } from "react";
 
 import * as styles from "./layout.css";
-import { PackageSearch } from "./package-search";
+import dynamic from "next/dynamic";
+
+const PackageSearch = dynamic(import("./package-search"), { ssr: false });
 
 export function Header({ packageName }: { packageName: string }) {
   return (

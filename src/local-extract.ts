@@ -1,4 +1,4 @@
-import { ts } from "@ts-morph/bootstrap";
+import { ts } from "./extract/ts";
 import { assert } from "./lib/assert";
 import { getDocsInfo } from "./extract";
 import { collectEntrypointsOfPackage } from "./npm/utils";

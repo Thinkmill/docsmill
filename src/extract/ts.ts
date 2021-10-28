@@ -1,1 +1,3 @@
-export { ts } from "@ts-morph/bootstrap";
+import ts from "typescript";
+
+export { ts };
