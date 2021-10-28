@@ -15,7 +15,6 @@ import {
   NPM_SEARCH_ALGOLIA_APP_ID,
   NPM_SEARCH_ALGOLIA_INDEX,
 } from "../lib/constants";
-import "@algolia/autocomplete-theme-classic";
 import { parseAlgoliaHitHighlight } from "@algolia/autocomplete-preset-algolia";
 import * as styles from "./package-search.css";
 import { useRouter } from "next/router";

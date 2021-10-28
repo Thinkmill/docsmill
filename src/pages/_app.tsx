@@ -1,6 +1,7 @@
 import { Global } from "@emotion/react";
 import { AppProps } from "next/app";
 import { globalStyles } from "../lib/theme.css";
+import "@algolia/autocomplete-theme-classic";
 
 let svg = (
   <svg xmlns="http://www.w3.org/2000/svg" style={{ display: "none" }}>
