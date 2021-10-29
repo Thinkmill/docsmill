@@ -25,6 +25,20 @@ function findPackageJsons(
   }
 }
 
+export function memoize<Arg, Return>(
+  fn: (arg: Arg) => Return
+): (arg: Arg) => Return {
+  const cache = new Map<Arg, Return>();
+  return (arg) => {
+    if (cache.has(arg)) {
+      return cache.get(arg)!;
+    }
+    const ret = fn(arg);
+    cache.set(arg, ret);
+    return ret;
+  };
+}
+
 export function collectEntrypointsOfPackage(
   pkgName: string,
   pkgPath: string,

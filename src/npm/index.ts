@@ -6,18 +6,18 @@ import isValidSemverVersion from "semver/functions/valid";
 import tar from "tar-stream";
 import gunzip from "gunzip-maybe";
 import getNpmTarballUrl from "get-npm-tarball-url";
-import { DocInfo, getDocsInfo, getDocsInfoForDep } from "../extract";
+import { DocInfo, getDocsInfo } from "../extract";
 import { collectEntrypointsOfPackage, resolveToPackageVersion } from "./utils";
 import { getPackageMetadata } from "./fetch-package-metadata";
 import { assert } from "../lib/assert";
-import { decode as decodeVlq } from "vlq";
 import {
   combinePaths,
   getBaseFileName,
   getDirectoryPath,
   getPathComponents,
-  resolvePath,
 } from "../extract/path";
+import { getSourceMapHandler } from "./source-map";
+import { getExternalReferenceHandler } from "./external-reference";
 
 const libFiles: { fileName: string; text: string }[] = _libFiles;
 
@@ -371,116 +371,6 @@ export async function getPackage(
     }
   }
 
-  const getSourceMap = memoize((distFilename: string) => {
-    let content = compilerHost.readFile(distFilename + ".map");
-    if (content === undefined) {
-      return undefined;
-    }
-
-    let sourceMapContent:
-      | {
-          sourceRoot: string;
-          sources: [string];
-          mappings: string;
-        }
-      | undefined;
-    try {
-      sourceMapContent = JSON.parse(content);
-    } catch (err) {
-      console.log(
-        "could not parse source file content for ",
-        distFilename + ".map"
-      );
-      return undefined;
-    }
-    sourceMapContent = sourceMapContent!;
-    const sourceRoot = resolvePath(
-      getDirectoryPath(distFilename),
-      sourceMapContent.sourceRoot
-    );
-    const srcFilename = resolvePath(sourceRoot, sourceMapContent.sources[0]);
-
-    if (!compilerHost.fileExists(srcFilename)) {
-      console.log("source file for .d.ts.map not found", srcFilename);
-      return undefined;
-    }
-    const vlqs = sourceMapContent.mappings
-      .split(";")
-      .map((line) => line.split(","));
-    const decoded = vlqs.map((line) => line.map(decodeVlq));
-    let sourceFileIndex = 0; // second field
-    let sourceCodeLine = 0; // third field
-    let sourceCodeColumn = 0; // fourth field
-
-    const sourceMap = decoded.map((line) => {
-      let generatedCodeColumn = 0; // first field - reset each time
-
-      return line.map((segment) => {
-        if (segment.some((x) => isNaN(x))) {
-          throw new Error(`nan: ${segment}`);
-        }
-        generatedCodeColumn += segment[0];
-        sourceFileIndex += segment[1];
-        sourceCodeLine += segment[2];
-        sourceCodeColumn += segment[3];
-
-        const result: [
-          file: number,
-          index: number,
-          line: number,
-          column: number
-        ] = [
-          generatedCodeColumn,
-          sourceFileIndex,
-          sourceCodeLine,
-          sourceCodeColumn,
-        ];
-
-        return result;
-      });
-    });
-    return (line: number) => {
-      const srcLine = sourceMap[line]?.[0]?.[2];
-      if (srcLine === undefined) {
-        return undefined;
-      }
-      return {
-        line: srcLine,
-        file: srcFilename.replace(`node_modules/${pkgName}/`, ""),
-      };
-    };
-  });
-
-  const getFastDocInfo = memoize((pkgName: string) => {
-    const { entrypoints, pkgPath, version } =
-      resolvedDepsWithEntrypoints.get(pkgName)!;
-    const rootSymbols = new Map<ts.Symbol, string>();
-    for (const [entrypoint, resolved] of entrypoints) {
-      const sourceFile = program.getSourceFile(resolved);
-      if (sourceFile) {
-        assert(
-          sourceFile !== undefined,
-          `expected to be able to get source file for ${resolved}`
-        );
-        const sourceFileSymbol = program
-          .getTypeChecker()
-          .getSymbolAtLocation(sourceFile);
-        assert(sourceFileSymbol !== undefined);
-        rootSymbols.set(sourceFileSymbol, entrypoint);
-      }
-    }
-    return {
-      info: getDocsInfoForDep(rootSymbols, pkgPath, pkgName, program),
-      rootSymbols,
-      pkgPath,
-      version,
-    };
-  });
-  const getCompleteDocInfo = memoize((pkgName: string) => {
-    const { rootSymbols, pkgPath, version } = getFastDocInfo(pkgName);
-    return getDocsInfo(rootSymbols, pkgPath, pkgName, version, program);
-  });
-
   return {
     ...getDocsInfo(
       rootSymbols,
@@ -488,67 +378,10 @@ export async function getPackage(
       pkgName,
       version,
       program,
-      (symbol, symbolId) => {
-        const decl = symbol.declarations![0];
-        const sourceFile = decl.getSourceFile();
-        const match = sourceFile.fileName.match(
-          /\/node_modules\/(@[^/]+\/[^/]+|[^/]+)/
-        );
-        if (match) {
-          const pkgName = match[1];
-          if (resolvedDepsWithEntrypoints.has(pkgName)) {
-            const fastDocInfo = getFastDocInfo(pkgName);
-            const identifierFromFast =
-              fastDocInfo.info.goodIdentifiers[symbolId];
-            if (identifierFromFast !== undefined) {
-              return {
-                id: identifierFromFast,
-                pkg: pkgName,
-                version: fastDocInfo.version,
-              };
-            }
-            const docInfo = getCompleteDocInfo(pkgName);
-            const identifierFromComplete = docInfo.goodIdentifiers[symbolId];
-            if (identifierFromComplete !== undefined) {
-              console.log(
-                `deopted to get complete doc info for dep: ${pkgName} and found location: ${identifierFromComplete}`
-              );
-              return {
-                id: identifierFromComplete,
-                pkg: pkgName,
-                version: fastDocInfo.version,
-              };
-            } else {
-              console.log(
-                `deopted to get complete doc info for dep: ${pkgName} but could not find location for symbol: ${symbol.getName()}\n${
-                  sourceFile.fileName
-                }`
-              );
-            }
-          }
-        }
-      },
-      (distFilename, line) => {
-        const map = getSourceMap(distFilename);
-        if (map === undefined) {
-          return undefined;
-        }
-        return map(line);
-      }
+      getExternalReferenceHandler(program, resolvedDepsWithEntrypoints),
+      getSourceMapHandler(compilerHost, pkgName)
     ),
     versions: [...versions].reverse(),
-  };
-}
-
-function memoize<Arg, Return>(fn: (arg: Arg) => Return): (arg: Arg) => Return {
-  const cache = new Map<Arg, Return>();
-  return (arg) => {
-    if (cache.has(arg)) {
-      return cache.get(arg)!;
-    }
-    const ret = fn(arg);
-    cache.set(arg, ret);
-    return ret;
   };
 }
 
