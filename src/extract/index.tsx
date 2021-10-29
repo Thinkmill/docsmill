@@ -3,8 +3,12 @@ import { findCanonicalExportLocations } from "./exports";
 import { getSymbolIdentifier } from "./core/utils";
 import { SerializedDeclaration, SymbolId } from "../lib/types";
 import { combinePaths } from "./path";
-import { getSymbolsForInnerBitsAndGoodIdentifiers } from "./symbols-for-inner-bit";
-import { getCoreDocsInfo } from "./core";
+import { getSymbolsForInnerBit } from "./symbols-for-inner-bit";
+import {
+  getCoreDocsInfo,
+  getCoreDocsInfoWithoutSimpleDeclarations,
+} from "./core";
+import { getGoodIdentifiers } from "./good-identifiers";
 
 export type DocInfo = {
   packageName: string;
@@ -50,6 +54,7 @@ export function getDocsInfo(
   currentVersion: string,
   program: ts.Program,
   getExternalReference: (
+    symbol: ts.Symbol,
     symbolId: SymbolId
   ) => { pkg: string; version: string; id: string } | undefined = () =>
     undefined,
@@ -106,7 +111,7 @@ export function getDocsInfo(
   const serializedExternalSymbols: DocInfo["externalSymbols"] = {};
   for (const x of externalSymbols) {
     const symbolId = getSymbolIdentifier(x);
-    const ref = getExternalReference(symbolId);
+    const ref = getExternalReference(x, symbolId);
     if (ref) {
       serializedExternalSymbols[symbolId] = ref;
     }
@@ -116,16 +121,60 @@ export function getDocsInfo(
     baseInfo.accessibleSymbols
   );
 
+  const innerBit = getSymbolsForInnerBit(
+    baseInfo.accessibleSymbols,
+    canonicalExportLocations,
+    baseInfo.symbolReferences,
+    baseInfo.rootSymbols
+  );
+
   return {
     ...baseInfo,
-    ...getSymbolsForInnerBitsAndGoodIdentifiers(
+    symbolsForInnerBit: innerBit.symbolsForInnerBit,
+    goodIdentifiers: getGoodIdentifiers(
       baseInfo.accessibleSymbols,
-      baseInfo.packageName,
+      packageName,
       canonicalExportLocations,
-      baseInfo.symbolReferences,
+      innerBit,
       baseInfo.rootSymbols
     ),
     externalSymbols: serializedExternalSymbols,
     canonicalExportLocations,
   };
+}
+
+export type DepDocInfo = { goodIdentifiers: Record<SymbolId, string> };
+
+export function getDocsInfoForDep(
+  rootSymbols: Map<ts.Symbol, string>,
+  pkgDir: string,
+  packageName: string,
+  program: ts.Program
+): DepDocInfo {
+  const coreDocsInfo = getCoreDocsInfoWithoutSimpleDeclarations(
+    rootSymbols,
+    program,
+    getIsExternalSymbolForPkg(pkgDir)
+  );
+  const rootSymbolIds = [...rootSymbols.keys()].map((x) =>
+    getSymbolIdentifier(x)
+  );
+  const accessibleSymbols = Object.fromEntries(
+    [...coreDocsInfo.accessibleSymbols].map(([symbol, rootThing]) => [
+      getSymbolIdentifier(symbol),
+      rootThing,
+    ])
+  );
+  const canonicalExportLocations = findCanonicalExportLocations(
+    rootSymbolIds,
+    accessibleSymbols
+  );
+  const goodIdentifiers = getGoodIdentifiers(
+    accessibleSymbols,
+    packageName,
+    canonicalExportLocations,
+    { symbolsForInnerBit: {}, unexportedToExportedRef: new Map() },
+    rootSymbolIds
+  );
+  return { goodIdentifiers };
 }

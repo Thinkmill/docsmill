@@ -95,3 +95,44 @@ export function getCoreDocsInfo(
     externalSymbols: state.referencedExternalSymbols,
   };
 }
+
+/**
+ * This skips serializing declarations which can't themselves export things
+ * so it will only serialize modules and namespaces, other declarations will be
+ * kind: 'unknown'
+ */
+export function getCoreDocsInfoWithoutSimpleDeclarations(
+  rootSymbols: Map<ts.Symbol, string>,
+  program: ts.Program,
+  isExternalSymbol: (symbol: ts.Symbol) => boolean
+): CoreDocInfo {
+  state = getInitialState();
+  state.rootSymbols = rootSymbols;
+  state.symbolsQueue = new Set(rootSymbols.keys());
+  state.isExternalSymbol = isExternalSymbol;
+  state.program = program;
+  for (const symbol of state.symbolsQueue) {
+    state.currentlyVistedSymbol = symbol;
+    const decls = symbol.declarations;
+    assert(
+      decls !== undefined && decls.length >= 1,
+      "symbols in symbol queue must have at least one declaration"
+    );
+
+    state.accessibleSymbols.set(
+      symbol,
+      decls.map((decl) => {
+        if (ts.isSourceFile(decl) || ts.isModuleDeclaration(decl)) {
+          return convertDeclaration(decl);
+        } else {
+          return { kind: "unknown", name: "", content: "", docs: "" };
+        }
+      }) as [SerializedDeclaration, ...SerializedDeclaration[]]
+    );
+  }
+  return {
+    accessibleSymbols: state.accessibleSymbols,
+    symbolReferences: state.symbolsToSymbolsWhichReferenceTheSymbol,
+    externalSymbols: state.referencedExternalSymbols,
+  };
+}

@@ -1,16 +1,16 @@
-import assert from "assert";
 import { SerializedDeclaration, SymbolId } from "../lib/types";
 
-export function getSymbolsForInnerBitsAndGoodIdentifiers(
+export function getSymbolsForInnerBit(
   accessibleSymbols: Record<string, SerializedDeclaration[]>,
-  packageName: string,
   canonicalExportLocations: {
     [key: SymbolId]: readonly [exportName: string, fileSymbolId: SymbolId];
   },
   symbolReferences: Record<SymbolId, SymbolId[]>,
   _rootSymbols: SymbolId[]
-) {
-  const rootSymbols = new Set(_rootSymbols);
+): {
+  unexportedToExportedRef: Map<SymbolId, SymbolId>;
+  symbolsForInnerBit: Record<SymbolId, SymbolId[]>;
+} {
   const unexportedToExportedRef = new Map<SymbolId, SymbolId>();
   const unexportedToUnexportedRef = new Map<SymbolId, SymbolId>();
 
@@ -52,64 +52,12 @@ export function getSymbolsForInnerBitsAndGoodIdentifiers(
       }
     }
   }
-  const symbolsForInnerBit = new Map<SymbolId, SymbolId[]>();
-
+  const symbolsForInnerBit: Record<SymbolId, SymbolId[]> = {};
   for (const [unexported, exported] of unexportedToExportedRef) {
-    if (!symbolsForInnerBit.has(exported)) {
-      symbolsForInnerBit.set(exported, []);
+    if (symbolsForInnerBit[exported] === undefined) {
+      symbolsForInnerBit[exported] = [];
     }
-    symbolsForInnerBit.get(exported)!.push(unexported);
+    symbolsForInnerBit[exported].push(unexported);
   }
-
-  const goodIdentifiers: Record<string, string> = {};
-
-  const findIdentifier = (symbol: SymbolId): string => {
-    if (rootSymbols.has(symbol)) {
-      const name = accessibleSymbols[symbol][0].name;
-      if (name === packageName) {
-        return "/";
-      }
-      return name.replace(packageName, "");
-    }
-    const canon = canonicalExportLocations[symbol];
-    assert(!!canon);
-    const [exportName, parent] = canon;
-    return `${findIdentifier(parent)}.${exportName}`;
-  };
-
-  for (const [_symbolId, [symbol]] of Object.entries(accessibleSymbols)) {
-    const symbolId = _symbolId as SymbolId;
-    if (symbol.kind == "enum-member") continue;
-    if (rootSymbols.has(symbolId)) {
-      goodIdentifiers[symbolId] = symbol.name;
-    } else if (canonicalExportLocations[symbolId]) {
-      goodIdentifiers[symbolId] = findIdentifier(symbolId);
-    } else {
-      const exportedSymbol = unexportedToExportedRef.get(symbolId)!;
-      assert(exportedSymbol !== undefined);
-      const symbolsShownInUnexportedBit =
-        symbolsForInnerBit.get(exportedSymbol)!;
-      const innerThings = symbolsShownInUnexportedBit.filter(
-        (x) => accessibleSymbols[x][0].name === symbol.name
-      );
-      const identifier = `${findIdentifier(exportedSymbol)}.${symbol.name}`;
-      if (innerThings.length === 1) {
-        goodIdentifiers[symbolId] = identifier;
-      } else {
-        const index = innerThings.indexOf(symbolId);
-        goodIdentifiers[symbolId] = `${identifier}-${index}`;
-      }
-    }
-    if (symbol.kind === "enum") {
-      for (const childSymbolId of symbol.members) {
-        goodIdentifiers[
-          childSymbolId
-        ] = `${goodIdentifiers[symbolId]}.${accessibleSymbols[childSymbolId][0].name}`;
-      }
-    }
-  }
-  return {
-    goodIdentifiers,
-    symbolsForInnerBit: Object.fromEntries(symbolsForInnerBit),
-  };
+  return { unexportedToExportedRef, symbolsForInnerBit };
 }

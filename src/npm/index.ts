@@ -6,7 +6,7 @@ import isValidSemverVersion from "semver/functions/valid";
 import tar from "tar-stream";
 import gunzip from "gunzip-maybe";
 import getNpmTarballUrl from "get-npm-tarball-url";
-import { DocInfo, getDocsInfo } from "../extract";
+import { DocInfo, getDocsInfo, getDocsInfoForDep } from "../extract";
 import { collectEntrypointsOfPackage, resolveToPackageVersion } from "./utils";
 import { getPackageMetadata } from "./fetch-package-metadata";
 import { assert } from "../lib/assert";
@@ -18,7 +18,6 @@ import {
   getPathComponents,
   resolvePath,
 } from "../extract/path";
-import { SymbolId } from "../lib/types";
 
 const libFiles: { fileName: string; text: string }[] = _libFiles;
 
@@ -347,11 +346,6 @@ export async function getPackage(
     host: compilerHost,
   });
 
-  const externalSymbols = getExternalSymbolIdMap(
-    program,
-    resolvedDepsWithEntrypoints
-  );
-
   const rootSymbols = new Map<ts.Symbol, string>();
 
   const typeChecker = program.getTypeChecker();
@@ -457,6 +451,36 @@ export async function getPackage(
     };
   });
 
+  const getFastDocInfo = memoize((pkgName: string) => {
+    const { entrypoints, pkgPath, version } =
+      resolvedDepsWithEntrypoints.get(pkgName)!;
+    const rootSymbols = new Map<ts.Symbol, string>();
+    for (const [entrypoint, resolved] of entrypoints) {
+      const sourceFile = program.getSourceFile(resolved);
+      if (sourceFile) {
+        assert(
+          sourceFile !== undefined,
+          `expected to be able to get source file for ${resolved}`
+        );
+        const sourceFileSymbol = program
+          .getTypeChecker()
+          .getSymbolAtLocation(sourceFile);
+        assert(sourceFileSymbol !== undefined);
+        rootSymbols.set(sourceFileSymbol, entrypoint);
+      }
+    }
+    return {
+      info: getDocsInfoForDep(rootSymbols, pkgPath, pkgName, program),
+      rootSymbols,
+      pkgPath,
+      version,
+    };
+  });
+  const getCompleteDocInfo = memoize((pkgName: string) => {
+    const { rootSymbols, pkgPath, version } = getFastDocInfo(pkgName);
+    return getDocsInfo(rootSymbols, pkgPath, pkgName, version, program);
+  });
+
   return {
     ...getDocsInfo(
       rootSymbols,
@@ -464,7 +488,46 @@ export async function getPackage(
       pkgName,
       version,
       program,
-      (symbolId) => externalSymbols.get(symbolId),
+      (symbol, symbolId) => {
+        const decl = symbol.declarations![0];
+        const sourceFile = decl.getSourceFile();
+        const match = sourceFile.fileName.match(
+          /\/node_modules\/(@[^/]+\/[^/]+|[^/]+)/
+        );
+        if (match) {
+          const pkgName = match[1];
+          if (resolvedDepsWithEntrypoints.has(pkgName)) {
+            const fastDocInfo = getFastDocInfo(pkgName);
+            const identifierFromFast =
+              fastDocInfo.info.goodIdentifiers[symbolId];
+            if (identifierFromFast !== undefined) {
+              return {
+                id: identifierFromFast,
+                pkg: pkgName,
+                version: fastDocInfo.version,
+              };
+            }
+            const docInfo = getCompleteDocInfo(pkgName);
+            const identifierFromComplete = docInfo.goodIdentifiers[symbolId];
+            if (identifierFromComplete !== undefined) {
+              console.log(
+                `deopted to get complete doc info for dep: ${pkgName} and found location: ${identifierFromComplete}`
+              );
+              return {
+                id: identifierFromComplete,
+                pkg: pkgName,
+                version: fastDocInfo.version,
+              };
+            } else {
+              console.log(
+                `deopted to get complete doc info for dep: ${pkgName} but could not find location for symbol: ${symbol.getName()}\n${
+                  sourceFile.fileName
+                }`
+              );
+            }
+          }
+        }
+      },
       (distFilename, line) => {
         const map = getSourceMap(distFilename);
         if (map === undefined) {
@@ -487,54 +550,6 @@ function memoize<Arg, Return>(fn: (arg: Arg) => Return): (arg: Arg) => Return {
     cache.set(arg, ret);
     return ret;
   };
-}
-
-export function getExternalSymbolIdMap(
-  program: ts.Program,
-  resolvedDepsWithEntrypoints: Map<
-    string,
-    { version: string; pkgPath: string; entrypoints: Map<string, string> }
-  >
-) {
-  const externalPackages: Map<
-    SymbolId,
-    { version: string; pkg: string; id: string }
-  > = new Map();
-  for (const [
-    dep,
-    { version, pkgPath, entrypoints },
-  ] of resolvedDepsWithEntrypoints) {
-    const rootSymbols = new Map<ts.Symbol, string>();
-    for (const [entrypoint, resolved] of entrypoints) {
-      const sourceFile = program.getSourceFile(resolved);
-      if (sourceFile) {
-        assert(
-          sourceFile !== undefined,
-          `expected to be able to get source file for ${resolved}`
-        );
-        const sourceFileSymbol = program
-          .getTypeChecker()
-          .getSymbolAtLocation(sourceFile);
-        assert(sourceFileSymbol !== undefined);
-        rootSymbols.set(sourceFileSymbol, entrypoint);
-      }
-    }
-    const { goodIdentifiers } = getDocsInfo(
-      rootSymbols,
-      pkgPath,
-      dep,
-      version,
-      program
-    );
-    for (const [symbolId, identifier] of Object.entries(goodIdentifiers)) {
-      externalPackages.set(symbolId as SymbolId, {
-        version,
-        pkg: dep,
-        id: identifier,
-      });
-    }
-  }
-  return externalPackages;
 }
 
 export function collectUnresolvedPackages(

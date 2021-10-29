@@ -2,8 +2,9 @@ import { ts } from "./extract/ts";
 import { assert } from "./lib/assert";
 import { getDocsInfo } from "./extract";
 import { collectEntrypointsOfPackage } from "./npm/utils";
-import { collectUnresolvedPackages, getExternalSymbolIdMap } from "./npm";
+import { collectUnresolvedPackages } from "./npm";
 import { getDirectoryPath, resolvePath } from "./extract/path";
+import { SymbolId } from "./lib/types";
 
 const getCanonicalFileName = ts.sys.useCaseSensitiveFileNames
   ? (x: string) => x
@@ -157,6 +158,54 @@ export async function getFromLocalPackage(
     pkgJson.name,
     pkgJson.version,
     program,
-    (x) => externalSymbols.get(x)
+    (_, symbolId) => externalSymbols.get(symbolId)
   );
+}
+
+export function getExternalSymbolIdMap(
+  program: ts.Program,
+  resolvedDepsWithEntrypoints: Map<
+    string,
+    { version: string; pkgPath: string; entrypoints: Map<string, string> }
+  >
+) {
+  const externalPackages: Map<
+    SymbolId,
+    { version: string; pkg: string; id: string }
+  > = new Map();
+  for (const [
+    dep,
+    { version, pkgPath, entrypoints },
+  ] of resolvedDepsWithEntrypoints) {
+    const rootSymbols = new Map<ts.Symbol, string>();
+    for (const [entrypoint, resolved] of entrypoints) {
+      const sourceFile = program.getSourceFile(resolved);
+      if (sourceFile) {
+        assert(
+          sourceFile !== undefined,
+          `expected to be able to get source file for ${resolved}`
+        );
+        const sourceFileSymbol = program
+          .getTypeChecker()
+          .getSymbolAtLocation(sourceFile);
+        assert(sourceFileSymbol !== undefined);
+        rootSymbols.set(sourceFileSymbol, entrypoint);
+      }
+    }
+    const { goodIdentifiers } = getDocsInfo(
+      rootSymbols,
+      pkgPath,
+      dep,
+      version,
+      program
+    );
+    for (const [symbolId, identifier] of Object.entries(goodIdentifiers)) {
+      externalPackages.set(symbolId as SymbolId, {
+        version,
+        pkg: dep,
+        id: identifier,
+      });
+    }
+  }
+  return externalPackages;
 }
