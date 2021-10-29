@@ -1,6 +1,6 @@
-import { ts } from "./ts";
+import { ts } from "../ts";
 import { collectSymbol, getRootSymbolName, getTypeChecker } from ".";
-import { ClassMember, SerializedDeclaration, SymbolId } from "../lib/types";
+import { ClassMember, SerializedDeclaration, SymbolId } from "../../lib/types";
 import { convertTypeNode } from "./convert-node";
 import { convertType } from "./convert-type";
 import {
@@ -14,7 +14,7 @@ import {
   getSymbolAtLocation,
   getReturnType,
 } from "./utils";
-import { assert } from "../lib/assert";
+import { assert } from "../../lib/assert";
 
 export function convertDeclaration(
   compilerNode: ts.Node

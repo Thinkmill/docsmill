@@ -1,4 +1,4 @@
-import { ts } from "./ts";
+import { ts } from "../ts";
 import {
   getSymbolIdentifier,
   getTypeParameters,
@@ -8,8 +8,8 @@ import {
   getSymbolAtLocation,
 } from "./utils";
 import { collectSymbol } from ".";
-import { assert, assertNever } from "../lib/assert";
-import { SerializedType, SymbolId, TupleElement } from "../lib/types";
+import { assert, assertNever } from "../../lib/assert";
+import { SerializedType, SymbolId, TupleElement } from "../../lib/types";
 
 function getModifierKind(
   modifier:

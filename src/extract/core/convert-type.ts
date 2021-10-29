@@ -1,7 +1,7 @@
-import { ts } from "./ts";
+import { ts } from "../ts";
 import { getTypeChecker } from ".";
-import { assert } from "../lib/assert";
-import { SerializedType } from "../lib/types";
+import { assert } from "../../lib/assert";
+import { SerializedType } from "../../lib/types";
 import { convertTypeNode } from "./convert-node";
 
 export function convertType(type: ts.Type): SerializedType {
