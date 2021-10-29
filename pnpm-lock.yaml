@@ -11,7 +11,6 @@ specifiers:
   '@monaco-editor/react': 4.3.1
   '@ts-morph/bootstrap': 0.11.0
   '@ts-morph/common': 0.11.0
-  '@types/gunzip-maybe': 1.4.0
   '@types/lz-string': 1.3.34
   '@types/node': 16.9.0
   '@types/react': ^17.0.14
@@ -20,7 +19,6 @@ specifiers:
   '@types/tar-stream': 2.2.1
   algoliasearch: 4.10.5
   get-npm-tarball-url: 2.0.2
-  gunzip-maybe: 1.4.2
   lz-string: 1.4.4
   monaco-editor: 0.28.1
   next: ^11.1.2
@@ -48,7 +46,6 @@ dependencies:
   '@monaco-editor/react': 4.3.1_6d3d0daa55b05704d527adb1cf45674e
   '@ts-morph/bootstrap': 0.11.0
   '@ts-morph/common': 0.11.0
-  '@types/gunzip-maybe': 1.4.0
   '@types/lz-string': 1.3.34
   '@types/node': 16.9.0
   '@types/react': 17.0.20
@@ -57,7 +54,6 @@ dependencies:
   '@types/tar-stream': 2.2.1
   algoliasearch: 4.10.5
   get-npm-tarball-url: 2.0.2
-  gunzip-maybe: 1.4.2
   lz-string: 1.4.4
   monaco-editor: 0.28.1
   next: 11.1.2_bd7797d63db473de6e2318609a63c933
@@ -503,12 +499,6 @@ packages:
       '@types/ms': 0.7.31
     dev: false
 
-  /@types/gunzip-maybe/1.4.0:
-    resolution: {integrity: sha512-dFP9GrYAR9KhsjTkWJ8q8Gsfql75YIKcg9DuQOj/IrlPzR7W+1zX+cclw1McV82UXAQ+Lpufvgk3e9bC8+HzgA==}
-    dependencies:
-      '@types/node': 16.9.0
-    dev: false
-
   /@types/hast/2.3.4:
     resolution: {integrity: sha512-wLEm0QvaoawEDoTRwzTXp4b4jpwiJDvR5KMnFnVodm3scufTlBOWRD6N1OBf9TZMhjlNsSfcO5V+7AF4+Vy+9g==}
     dependencies:
@@ -773,12 +763,6 @@ packages:
       safe-buffer: 5.2.1
     dev: false
 
-  /browserify-zlib/0.1.4:
-    resolution: {integrity: sha1-uzX4pRn2AOD6a4SFJByXnQFB+y0=}
-    dependencies:
-      pako: 0.2.9
-    dev: false
-
   /browserify-zlib/0.2.0:
     resolution: {integrity: sha512-Z942RysHXmJrhqk88FmKBVq/v5tqmSkDz7p54G/MGyjMnCFFnC79XWNbg+Vta8W6Wb2qtSZTSxIGkJrRpCFEiA==}
     dependencies:
@@ -795,10 +779,6 @@ packages:
       electron-to-chromium: 1.3.833
       escalade: 3.1.1
       node-releases: 1.1.75
-    dev: false
-
-  /buffer-from/1.1.2:
-    resolution: {integrity: sha512-E+XQCRwSbaaiChtv6k6Dwgc+bx+Bs6vuKJHHl5kox/BaKbhiXzqQOwK4cO22yElGp2OCmjwVhT3HmxgyPGnJfQ==}
     dev: false
 
   /buffer-xor/1.0.3:
@@ -1111,15 +1091,6 @@ packages:
     resolution: {integrity: sha512-jtD6YG370ZCIi/9GTaJKQxWTZD045+4R4hTk/x1UyoqadyJ9x9CgSi1RlVDQF8U2sxLLSnFkCaMihqljHIWgMg==}
     dev: false
 
-  /duplexify/3.7.1:
-    resolution: {integrity: sha512-07z8uv2wMyS51kKhD1KsdXJg5WQ6t93RneqRxUHnskXVtlYYkLqM0gqStQZ3pj073g687jPCHrqNfCzawLYh5g==}
-    dependencies:
-      end-of-stream: 1.4.4
-      inherits: 2.0.4
-      readable-stream: 2.3.7
-      stream-shift: 1.0.1
-    dev: false
-
   /electron-to-chromium/1.3.833:
     resolution: {integrity: sha512-h+9aVaUHjyunLqtCjJF2jrJ73tYcJqo2cCGKtVAXH9WmnBsb8hiChRQ0P1uXjdxR6Wcfxibephy41c1YlZA/pA==}
     dev: false
@@ -1331,18 +1302,6 @@ packages:
     resolution: {integrity: sha512-qkIilPUYcNhJpd33n0GBXTB1MMPp14TxEsEs0pTrsSVucApsYzW5V+Q8Qxhik6KU3evy+qkAAowTByymK0avdg==}
     dev: false
 
-  /gunzip-maybe/1.4.2:
-    resolution: {integrity: sha512-4haO1M4mLO91PW57BMsDFf75UmwoRX0GkdD+Faw+Lr+r/OZrOCS0pIBwOL1xCKQqnQzbNFGgK2V2CpBUPeFNTw==}
-    hasBin: true
-    dependencies:
-      browserify-zlib: 0.1.4
-      is-deflate: 1.0.0
-      is-gzip: 1.0.0
-      peek-stream: 1.1.3
-      pumpify: 1.5.1
-      through2: 2.0.5
-    dev: false
-
   /gzip-size/6.0.0:
     resolution: {integrity: sha512-ax7ZYomf6jqPTQ4+XCpUGyXKHk5WweS+e05MBO4/y3WJ5RkmPXNKvX+bx1behVILVwr6JSQvZAku021CHPXG3Q==}
     engines: {node: '>=10'}
@@ -1545,10 +1504,6 @@ packages:
     resolution: {integrity: sha512-QfrfjQV0LjoWQ1K1XSoEZkTAzSa14RKVMa5zg3SdAfzEmQzRM4+tbSFWb78creCeA9rNBzaZal92opi1TwPWZw==}
     dev: false
 
-  /is-deflate/1.0.0:
-    resolution: {integrity: sha1-yGKQHDwWH7CdrHzcfnhPgOmPLxQ=}
-    dev: false
-
   /is-extglob/2.1.1:
     resolution: {integrity: sha1-qIwCU1eR8C7TfHahueqXc8gz+MI=}
     engines: {node: '>=0.10.0'}
@@ -1566,11 +1521,6 @@ packages:
     engines: {node: '>=0.10.0'}
     dependencies:
       is-extglob: 2.1.1
-    dev: false
-
-  /is-gzip/1.0.0:
-    resolution: {integrity: sha1-bKiwe5nHeZgCWQDlVc7Y7YCHmoM=}
-    engines: {node: '>=0.10.0'}
     dev: false
 
   /is-hexadecimal/2.0.0:
@@ -2338,10 +2288,6 @@ packages:
     engines: {node: '>=6'}
     dev: false
 
-  /pako/0.2.9:
-    resolution: {integrity: sha1-8/dSL073gjSNqBYbrZ7P1Rv4OnU=}
-    dev: false
-
   /pako/1.0.11:
     resolution: {integrity: sha512-4hLB8Py4zZce5s4yd9XzopqwVv/yGNhV1Bl8NTmCq1763HeK2+EwVTv+leGeL13Dnh2wfbqowVPXCIO0z4taYw==}
     dev: false
@@ -2389,14 +2335,6 @@ packages:
       ripemd160: 2.0.2
       safe-buffer: 5.2.1
       sha.js: 2.4.11
-    dev: false
-
-  /peek-stream/1.1.3:
-    resolution: {integrity: sha512-FhJ+YbOSBb9/rIl2ZeE/QHEsWn7PqNYt8ARAY3kIgNGOk13g9FGyIY6JIl/xB/3TFRVoTv5as0l11weORrTekA==}
-    dependencies:
-      buffer-from: 1.1.2
-      duplexify: 3.7.1
-      through2: 2.0.5
     dev: false
 
   /picomatch/2.3.0:
@@ -2481,21 +2419,6 @@ packages:
       parse-asn1: 5.1.6
       randombytes: 2.1.0
       safe-buffer: 5.2.1
-    dev: false
-
-  /pump/2.0.1:
-    resolution: {integrity: sha512-ruPMNRkN3MHP1cWJc9OWr+T/xDP0jhXYCLfJcBuX54hhfIBnaQmAUMfDcG4DM5UMWByBbJY69QSphm3jtDKIkA==}
-    dependencies:
-      end-of-stream: 1.4.4
-      once: 1.4.0
-    dev: false
-
-  /pumpify/1.5.1:
-    resolution: {integrity: sha512-oClZI37HvuUJJxSKKrC17bZ9Cu0ZYhEAGPsPUy9KlMUmv9dKX2o77RUmq7f3XjIxbwyGwYzbzQ1L2Ks8sIradQ==}
-    dependencies:
-      duplexify: 3.7.1
-      inherits: 2.0.4
-      pump: 2.0.1
     dev: false
 
   /punycode/1.3.2:
@@ -2870,10 +2793,6 @@ packages:
       debug: 2.6.9
     dev: false
 
-  /stream-shift/1.0.1:
-    resolution: {integrity: sha512-AiisoFqQ0vbGcZgQPY1cdP2I76glaVA/RauYR4G4thNFgkTqr90yXTo4LYX60Jl+sIlPNHHdGSwo01AvbKUSVQ==}
-    dev: false
-
   /string-hash/1.1.3:
     resolution: {integrity: sha1-6Kr8CsGFW0Zmkp7X3RJ1311sgRs=}
     dev: false
@@ -2984,13 +2903,6 @@ packages:
       fs-constants: 1.0.0
       inherits: 2.0.4
       readable-stream: 3.6.0
-    dev: false
-
-  /through2/2.0.5:
-    resolution: {integrity: sha512-/mrRod8xqpA+IHSLyGCQ2s8SPHiCDEeQJSep1jqLYeEUClOFG2Qsh+4FU6G9VeqpZnGW/Su8LQGc4YKni5rYSQ==}
-    dependencies:
-      readable-stream: 2.3.7
-      xtend: 4.0.2
     dev: false
 
   /timers-browserify/2.0.12:

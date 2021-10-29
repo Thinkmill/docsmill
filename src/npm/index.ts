@@ -4,7 +4,6 @@ import { libFiles as _libFiles } from "@ts-morph/common/dist/data/libFiles";
 
 import isValidSemverVersion from "semver/functions/valid";
 import tar from "tar-stream";
-import gunzip from "gunzip-maybe";
 import getNpmTarballUrl from "get-npm-tarball-url";
 import { DocInfo, getDocsInfo } from "../extract";
 import { collectEntrypointsOfPackage, resolveToPackageVersion } from "./utils";
@@ -16,13 +15,14 @@ import {
   getDirectoryPath,
   getPathComponents,
 } from "../extract/path";
+import { createGunzip } from "zlib";
 import { getSourceMapHandler } from "./source-map";
 import { getExternalReferenceHandler } from "./external-reference";
 
 const libFiles: { fileName: string; text: string }[] = _libFiles;
 
 async function handleTarballStream(tarballStream: NodeJS.ReadableStream) {
-  const extract = tarballStream.pipe(gunzip()).pipe(tar.extract());
+  const extract = tarballStream.pipe(createGunzip()).pipe(tar.extract());
   const entries = new Map<string, string>();
   extract.on("entry", (headers, stream, next) => {
     if (
