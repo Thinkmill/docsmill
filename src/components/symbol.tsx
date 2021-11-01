@@ -22,7 +22,6 @@ import {
   Parameter,
   SerializedDeclaration,
   SymbolId,
-  TypeParam,
 } from "../lib/types";
 import { Syntax } from "./syntax";
 import { Indent } from "./indent";
@@ -369,7 +368,6 @@ function ClassMembers({
   constructors: {
     parameters: Parameter[];
     docs: string;
-    typeParams: TypeParam[];
   }[];
   members: ClassMember[];
 }) {
@@ -384,7 +382,6 @@ function ClassMembers({
           <Indent key={i}>
             <Docs content={constructor.docs} />
             <Syntax kind="keyword">constructor</Syntax>
-            <TypeParams params={constructor.typeParams} />
             <Params params={constructor.parameters} />
           </Indent>
         );

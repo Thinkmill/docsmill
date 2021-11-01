@@ -68,7 +68,6 @@ export type SerializedDeclaration =
       constructors: {
         parameters: Parameter[];
         docs: string;
-        typeParams: TypeParam[];
       }[];
       members: ClassMember[];
     }

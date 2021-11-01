@@ -218,7 +218,6 @@ export function convertDeclaration(
           {
             docs: getDocs(x),
             parameters: getParameters(x),
-            typeParams: getTypeParameters(x),
           },
         ];
       }),

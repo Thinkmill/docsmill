@@ -132,7 +132,7 @@ const libFileCache = new Map<string, ts.SourceFile>();
   }
 };
 
-function getCompilerHost(): ts.CompilerHost & {
+export function getCompilerHost(): ts.CompilerHost & {
   directories: Map<string, Map<string, string>>;
 } {
   const directories = new Map<string, Map<string, string>>();
