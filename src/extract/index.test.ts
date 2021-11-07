@@ -9,6 +9,8 @@ import {
 import { getCoreDocsInfo } from "./core";
 import { getSymbolIdentifier } from "./core/utils";
 import { ts } from "./ts";
+import path from "path";
+import { memoize } from "../npm/utils";
 
 function getPrinted(filename: string) {
   const program = ts.createProgram({ options: {}, rootNames: [filename] });
@@ -21,40 +23,62 @@ function getPrinted(filename: string) {
     const sourceFile = symbol.declarations![0].getSourceFile();
     return sourceFile.fileName !== filename;
   });
+  const accessibleSymbolIds = new Set<string>();
+  for (const symbol of info.accessibleSymbols.keys()) {
+    accessibleSymbolIds.add(getSymbolIdentifier(symbol));
+  }
+
+  let id = 0;
+  const getSymbolIndex = memoize((symbolId: SymbolId) => {
+    if (accessibleSymbolIds.has(symbolId)) {
+      return id++;
+    }
+    return symbolId;
+  });
 
   let result = "";
   for (const [symbol, decls] of info.accessibleSymbols) {
     result += "\n\n";
-    result += `${getSymbolIdentifier(symbol)}: ${symbol.name}`;
+    result += `${getSymbolIndex(getSymbolIdentifier(symbol))}`;
+    if (decls[0].kind !== "module") {
+      result += `: ${symbol.name}`;
+    }
     for (const decl of decls) {
       if (decl.kind === "namespace") {
         result += `\nnamespace ${decl.name} {
-        export {
-        ${Object.entries(decl.exports)
-          .map(([exportName, exportSymbolId]) => {
-            return `  ${exportSymbolId} as ${exportName} }`;
-          })
-          .join(",\n")}\n}\n}\n`;
+  export {
+${Object.entries(decl.exports)
+  .map(([exportName, exportSymbolId]) => {
+    return `    ${
+      exportSymbolId === 0 ? "not found" : getSymbolIndex(exportSymbolId)
+    } as ${exportName}`;
+  })
+  .join(",\n")}\n  }\n}`;
       } else if (decl.kind === "enum" || decl.kind === "enum-member") {
         throw new Error("unhandled");
       } else if (decl.kind === "module") {
-        result += `\nmodule ${JSON.stringify(decl.name)} {
-          export {
-          ${Object.entries(decl.exports)
-            .map(([exportName, exportSymbolId]) => {
-              return `  ${exportSymbolId} as ${exportName} }`;
-            })
-            .join(",\n")}\n}\n}\n`;
+        result += `\nmodule ${JSON.stringify(
+          decl.name.startsWith("/")
+            ? decl.name.replace(path.resolve(__dirname, "../.."), "")
+            : decl.name
+        )} {
+  export {
+${Object.entries(decl.exports)
+  .map(([exportName, exportSymbolId]) => {
+    return `    ${
+      exportSymbolId === 0 ? "not found" : getSymbolIndex(exportSymbolId)
+    } as ${exportName}`;
+  })
+  .join(",\n")}\n  }\n}`;
       } else {
         result += `\n${printBasicDeclaration(decl, (symbolId, name) => {
           return `${name}(${symbolId})`;
-        })}\n`;
+        })}`;
       }
     }
-    result += "\n\n";
   }
 
-  return result;
+  return result.trim();
 }
 
 function printBasicDeclaration(
@@ -84,36 +108,39 @@ function printBasicDeclaration(
             `  constructor${printParameters(x.parameters, printReference)}\n`
         )
         .join("\n") +
-      decl.members.map((member): string => {
-        if (member.kind === "index") {
-          return `  ${
-            member.static ? "static " : ""
-          }[key: ${printSerializedType(
-            member.key,
-            printReference
-          )}]: ${printSerializedType(member.value, printReference)}\n`;
-        }
-        if (member.kind === "method") {
-          return `  ${member.static ? "static " : ""}${member.name}${
-            member.optional ? "?" : ""
-          }${printTypeParams(
-            member.typeParams,
-            printReference
-          )}${printParameters(
-            member.parameters,
-            printReference
-          )}: ${printSerializedType(member.returnType, printReference)}`;
-        }
-        if (member.kind === "prop") {
-          return `  ${member.static ? "static " : ""}${member.name}${
-            member.optional ? "?" : ""
-          }: ${printSerializedType(member.type, printReference)}`;
-        }
-        if (member.kind === "unknown") {
-          return `  RAW ${member.content}`;
-        }
-        assertNever(member);
-      })
+      decl.members
+        .map((member): string => {
+          if (member.kind === "index") {
+            return `  ${
+              member.static ? "static " : ""
+            }[key: ${printSerializedType(
+              member.key,
+              printReference
+            )}]: ${printSerializedType(member.value, printReference)};`;
+          }
+          if (member.kind === "method") {
+            return `  ${member.static ? "static " : ""}${member.name}${
+              member.optional ? "?" : ""
+            }${printTypeParams(
+              member.typeParams,
+              printReference
+            )}${printParameters(
+              member.parameters,
+              printReference
+            )}: ${printSerializedType(member.returnType, printReference)};`;
+          }
+          if (member.kind === "prop") {
+            return `  ${member.static ? "static " : ""}${member.name}${
+              member.optional ? "?" : ""
+            }: ${printSerializedType(member.type, printReference)};`;
+          }
+          if (member.kind === "unknown") {
+            return `  RAW ${member.content}`;
+          }
+          assertNever(member);
+        })
+        .join("\n") +
+      "\n}"
     );
   }
   if (decl.kind === "function") {
@@ -364,5 +391,63 @@ function printTypeParams(
 }
 
 test("basic", () => {
-  expect(getPrinted(require.resolve("./fixtures/basic.ts")));
+  expect(getPrinted(require.resolve("./fixtures/basic.ts")))
+    .toMatchInlineSnapshot(`
+    "0
+    module \\"test\\" {
+      export {
+        1 as something
+      }
+    }
+
+    1: something
+    const something: true = ...
+    type something = string"
+  `);
+});
+
+test("class and namespace", () => {
+  expect(getPrinted(require.resolve("./fixtures/class-and-namespace.ts")))
+    .toMatchInlineSnapshot(`
+    "0
+    module \\"test\\" {
+      export {
+        1 as Blah
+      }
+    }
+
+    1: Blah
+    class Blah {
+      blah(): void;
+      static staticBlah(): void;
+    }
+    namespace Blah {
+      export {
+        2 as X
+      }
+    }
+    namespace Blah {
+      export {
+        3 as Y,
+        4 as a,
+        5 as b,
+        6 as c
+      }
+    }
+
+    2: X
+    type X = true
+
+    3: Y
+    type Y = true
+
+    4: a
+    const a: \\"something\\" = ...
+
+    5: b
+    const b: boolean = ...
+
+    6: c
+    const c: boolean = ..."
+  `);
 });

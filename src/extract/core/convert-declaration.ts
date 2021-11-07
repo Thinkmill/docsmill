@@ -95,7 +95,18 @@ export function convertDeclaration(
     const symbol = getSymbolAtLocation(compilerNode);
 
     assert(symbol !== undefined, "expected symbol to exist");
-
+    let exports: Record<string, SymbolId | 0> = {};
+    const typeChecker = getTypeChecker();
+    const exportSymbols = typeChecker.getExportsOfModule(symbol);
+    for (let exportSymbol of exportSymbols) {
+      const aliasedSymbol = getAliasedSymbol(exportSymbol) || exportSymbol;
+      if (aliasedSymbol.declarations) {
+        collectSymbol(aliasedSymbol);
+        exports[exportSymbol.name] = getSymbolIdentifier(aliasedSymbol);
+      } else {
+        exports[exportSymbol.name] = 0;
+      }
+    }
     return {
       kind: "module",
       name:
@@ -104,7 +115,16 @@ export function convertDeclaration(
           ? (compilerNode.name as ts.StringLiteral).text
           : compilerNode.fileName),
       docs: getDocsFromJSDocNodes(jsDocs),
-      exports: collectExportsFromModule(symbol),
+      exports,
+    };
+  }
+  if (ts.isBindingElement(compilerNode) && ts.isIdentifier(compilerNode.name)) {
+    return {
+      kind: "variable",
+      name: compilerNode.name.text,
+      docs: "",
+      variableKind: "const",
+      type: convertType(getTypeChecker().getTypeAtLocation(compilerNode)),
     };
   }
   if (ts.isVariableDeclaration(compilerNode)) {
@@ -307,11 +327,30 @@ export function convertDeclaration(
   ) {
     const symbol = getSymbolAtLocation(compilerNode);
     assert(symbol !== undefined, "expected module declaration to have symbol");
+    const exports: Record<string, 0 | SymbolId> = {};
+    if (symbol.exports) {
+      for (const [name, _exportedSymbol] of symbol.exports as Map<
+        string,
+        ts.Symbol
+      >) {
+        const exportedSymbol: ts.Symbol = _exportedSymbol;
+        if (
+          exportedSymbol.declarations?.[0] &&
+          exportedSymbol.declarations[0].pos >= compilerNode.body.pos &&
+          exportedSymbol.declarations[0].end <= compilerNode.body.end
+        ) {
+          const aliasedSymbol =
+            getAliasedSymbol(exportedSymbol) || exportedSymbol;
+          collectSymbol(aliasedSymbol);
+          exports[name] = getSymbolIdentifier(aliasedSymbol);
+        }
+      }
+    }
     return {
       kind: "namespace",
-      name: symbol.getName(),
+      name: compilerNode.name.text,
       docs: getDocs(compilerNode),
-      exports: collectExportsFromModule(symbol),
+      exports,
     };
   }
   let docs = getDocs(compilerNode as any);
@@ -343,22 +382,6 @@ function printPropertyName(propertyName: ts.PropertyName) {
     return JSON.stringify(propertyName.text);
   }
   return propertyName.getText();
-}
-
-function collectExportsFromModule(symbol: ts.Symbol) {
-  let exports: Record<string, SymbolId | 0> = {};
-  const typeChecker = getTypeChecker();
-  const exportSymbols = typeChecker.getExportsOfModule(symbol);
-  for (let exportSymbol of exportSymbols) {
-    const aliasedSymbol = getAliasedSymbol(exportSymbol) || exportSymbol;
-    if (aliasedSymbol.declarations) {
-      collectSymbol(aliasedSymbol);
-      exports[exportSymbol.name] = getSymbolIdentifier(aliasedSymbol);
-    } else {
-      exports[exportSymbol.name] = 0;
-    }
-  }
-  return exports;
 }
 
 function getJsDocsFromSourceFile(decl: ts.Node) {
