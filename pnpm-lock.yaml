@@ -24,7 +24,6 @@ specifiers:
   '@types/tar-stream': 2.2.1
   algoliasearch: 4.10.5
   babel-jest: ^27.3.1
-  get-npm-tarball-url: 2.0.2
   jest: ^27.3.1
   lz-string: 1.4.4
   monaco-editor: 0.28.1
@@ -66,7 +65,6 @@ dependencies:
   '@types/tar-stream': 2.2.1
   algoliasearch: 4.10.5
   babel-jest: 27.3.1_@babel+core@7.16.0
-  get-npm-tarball-url: 2.0.2
   jest: 27.3.1
   lz-string: 1.4.4
   monaco-editor: 0.28.1
@@ -3375,13 +3373,6 @@ packages:
       has-symbols: 1.0.2
     dev: false
 
-  /get-npm-tarball-url/2.0.2:
-    resolution: {integrity: sha512-2dPhgT0K4pVyciTqdS0gr9nEwyCQwt9ql1/t5MCUMvcjWjAysjGJgT7Sx4n6oq3tFBjBN238mxX4RfTjT3838Q==}
-    engines: {node: '>=4'}
-    dependencies:
-      normalize-registry-url: 1.0.0
-    dev: false
-
   /get-orientation/1.1.2:
     resolution: {integrity: sha512-/pViTfifW+gBbh/RnlFYHINvELT9Znt+SYyDKAUL6uV6By019AK/s+i9XP4jSwq7lwP38Fd8HVeTxym3+hkwmQ==}
     dependencies:
@@ -5054,10 +5045,6 @@ packages:
   /normalize-path/3.0.0:
     resolution: {integrity: sha512-6eZs5Ls3WtCisHWp9S2GUy8dqkpGi4BVSz3GaqiE6ezub0512ESztXUwUB6C6IKbQkY2Pnb/mD4WYojCRwcwLA==}
     engines: {node: '>=0.10.0'}
-    dev: false
-
-  /normalize-registry-url/1.0.0:
-    resolution: {integrity: sha512-0v6T4851b72ykk5zEtFoN4QX/Fqyk7pouIj9xZyAvAe9jlDhAwT4z6FlwsoQCHjeuK2EGUoAwy/F4y4B1uZq9A==}
     dev: false
 
   /npm-run-path/4.0.1:

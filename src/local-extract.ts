@@ -71,7 +71,9 @@ export async function getFromLocalPackage(
     compilerOptions
   );
 
-  const moduleResolutionHost: ts.ModuleResolutionHost = ts.sys;
+  const compilerHost: ts.CompilerHost = ts.createCompilerHost(compilerOptions);
+
+  const moduleResolutionHost: ts.ModuleResolutionHost = compilerHost;
 
   const pkgJson = JSON.parse(
     moduleResolutionHost.readFile(`${pkgPath}/package.json`)!
@@ -86,7 +88,7 @@ export async function getFromLocalPackage(
   const collectedPackages = collectUnresolvedPackages(
     entrypoints,
     compilerOptions,
-    moduleResolutionHost,
+    compilerHost,
     moduleResolutionCache
   );
 
@@ -136,7 +138,11 @@ export async function getFromLocalPackage(
 
   const rootSymbols = new Map<ts.Symbol, string>();
 
-  const program = ts.createProgram({ options: compilerOptions, rootNames });
+  const program = ts.createProgram({
+    options: compilerOptions,
+    rootNames,
+    host: compilerHost,
+  });
 
   const externalSymbols = getExternalSymbolIdMap(
     program,

@@ -4,7 +4,6 @@ import { libFiles as _libFiles } from "@ts-morph/common/dist/data/libFiles";
 
 import isValidSemverVersion from "semver/functions/valid";
 import tar from "tar-stream";
-import getNpmTarballUrl from "get-npm-tarball-url";
 import { DocInfo, getDocsInfo } from "../extract";
 import { collectEntrypointsOfPackage, resolveToPackageVersion } from "./utils";
 import { getPackageMetadata } from "./fetch-package-metadata";
@@ -18,6 +17,28 @@ import {
 import { createGunzip } from "zlib";
 import { getSourceMapHandler } from "./source-map";
 import { getExternalReferenceHandler } from "./external-reference";
+import { collectImports } from "./collect-imports";
+
+// https://github.com/pnpm/get-npm-tarball-url
+function getNpmTarballUrl(pkgName: string, pkgVersion: string): string {
+  const scopelessName = getScopelessName(pkgName);
+  return `https://registry.npmjs.org/${pkgName}/-/${scopelessName}-${removeBuildMetadataFromVersion(
+    pkgVersion
+  )}.tgz`;
+}
+
+function removeBuildMetadataFromVersion(version: string) {
+  const plusPos = version.indexOf("+");
+  if (plusPos === -1) return version;
+  return version.substring(0, plusPos);
+}
+
+function getScopelessName(name: string) {
+  if (name[0] !== "@") {
+    return name;
+  }
+  return name.split("/")[1];
+}
 
 const libFiles: { fileName: string; text: string }[] = _libFiles;
 
@@ -272,7 +293,7 @@ export async function getPackage(
   const collectedPackages = collectUnresolvedPackages(
     entrypoints,
     compilerOptions,
-    moduleResolutionHost,
+    compilerHost,
     earlyModuleResolutionCache
   );
 
@@ -388,22 +409,30 @@ export async function getPackage(
 export function collectUnresolvedPackages(
   entrypoints: Map<string, string>,
   compilerOptions: ts.CompilerOptions,
-  moduleResolutionHost: ts.ModuleResolutionHost,
+  host: ts.CompilerHost,
   moduleResolutionCache: ts.ModuleResolutionCache
 ) {
   const collectedPackages = new Set<string>();
   const queue = new Set(entrypoints.values());
   for (const filepath of queue) {
-    const content = moduleResolutionHost.readFile(filepath);
-    if (content === undefined) {
-      throw new Error("expected to be able to read ");
+    const sourceFile = host.getSourceFile(filepath, ts.ScriptTarget.ESNext);
+    assert(
+      sourceFile !== undefined,
+      `expected to be able to read file at ${filepath}`
+    );
+
+    const references = [];
+    for (const x of sourceFile.typeReferenceDirectives) {
+      references.push(x.fileName);
     }
-    const meta = ts.preProcessFile(content);
-    for (const reference of meta.typeReferenceDirectives.concat(
-      meta.importedFiles
-    )) {
-      if (!reference.fileName.startsWith(".")) {
-        const match = /^(@[^/]+\/[^\/]+|[^/]+)/.exec(reference.fileName);
+    const imports = collectImports(sourceFile);
+    for (const imported of imports) {
+      references.push(imported.text);
+    }
+
+    for (const reference of references) {
+      if (!reference.startsWith(".")) {
+        const match = /^(@[^/]+\/[^\/]+|[^/]+)/.exec(reference);
         if (match) {
           collectedPackages.add(match[0]);
         }
@@ -411,10 +440,10 @@ export function collectUnresolvedPackages(
       }
 
       const resolved = ts.resolveModuleName(
-        reference.fileName,
+        reference,
         filepath,
         compilerOptions,
-        moduleResolutionHost,
+        host,
         moduleResolutionCache
       ).resolvedModule?.resolvedFileName;
       if (resolved) {
