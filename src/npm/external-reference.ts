@@ -1,6 +1,6 @@
-import assert from "assert";
 import ts from "typescript";
 import { getDocsInfoForDep, getDocsInfo } from "../extract";
+import { assert } from "../lib/assert";
 import { SymbolId } from "../lib/types";
 import { memoize } from "./utils";
 
