@@ -41,22 +41,34 @@ export function Navigation({ rootSymbolName }: { rootSymbolName: SymbolId }) {
               </Item>
             );
           }
-          const decls = docContext.symbols[group.fullName];
-          if (
-            decls.some((x) => x.kind === "module" || x.kind === "namespace")
-          ) {
-            return <Navigation key={i} rootSymbolName={group.fullName} />;
-          }
           return (
-            <Item key={i}>
-              <SymbolReference
-                fullName={group.fullName}
-                name={group.exportName}
-              />
-            </Item>
+            <NavigationItem
+              key={i}
+              name={group.exportName}
+              symbolId={group.fullName}
+            />
           );
         })}
       </ul>
     </Expandable>
+  );
+}
+
+export function NavigationItem({
+  symbolId,
+  name,
+}: {
+  symbolId: SymbolId;
+  name: string;
+}) {
+  const docContext = useDocsContext();
+  const decls = docContext.symbols[symbolId];
+  if (decls.some((x) => x.kind === "module" || x.kind === "namespace")) {
+    return <Navigation rootSymbolName={symbolId} />;
+  }
+  return (
+    <Item>
+      <SymbolReference fullName={symbolId} name={name} />
+    </Item>
   );
 }

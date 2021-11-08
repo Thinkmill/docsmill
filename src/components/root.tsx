@@ -5,7 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { DocsContext } from "../lib/DocsContext";
 
 import { RenderRootSymbol } from "../components/symbol";
-import { Navigation } from "../components/navigation";
+import { NavigationItem } from "../components/navigation";
 import {
   Contents,
   Header,
@@ -111,9 +111,15 @@ export function Root(props: import("../extract").DocInfo) {
             <span aria-label="Loading new version">⏳</span>
           )}
 
-          {props.rootSymbols.map((rootSymbol) => (
-            <Navigation key={rootSymbol} rootSymbolName={rootSymbol} />
-          ))}
+          <ul css={{ margin: 0, padding: 0 }}>
+            {props.rootSymbols.map((rootSymbol) => (
+              <NavigationItem
+                key={rootSymbol}
+                symbolId={rootSymbol}
+                name={props.accessibleSymbols[rootSymbol][0].name}
+              />
+            ))}
+          </ul>
         </NavigationContainer>
         <Contents>
           {props.rootSymbols.map((rootSymbol) => (

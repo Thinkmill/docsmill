@@ -201,7 +201,11 @@ export function getDocs(decl: ts.HasJSDoc) {
 export function getSymbolIdentifier(symbol: ts.Symbol): SymbolId {
   if (!symbol.declarations?.length) {
     const fullName = getTypeChecker().getFullyQualifiedName(symbol);
-    if (fullName === "unknown" || fullName === "globalThis") {
+    if (
+      fullName === "unknown" ||
+      fullName === "globalThis" ||
+      fullName === "undefined"
+    ) {
       return fullName as SymbolId;
     }
     assert(false, "expected at least one declaration");

@@ -104,7 +104,6 @@ export function SymbolReference({
     symbols,
     canonicalExportLocations,
     goodIdentifiers,
-    rootSymbols,
     externalSymbols,
   } = useDocsContext();
   const namesInScope = useContext(NamesInScopeContext);
@@ -146,17 +145,17 @@ export function SymbolReference({
     decls.find((x) => !!x.docs.length)?.docs || ""
   ).first;
 
-  const isRootSymbol = rootSymbols.has(fullName);
+  const isModuleSymbol = decls.some((x) => x.kind === "module");
 
   const props: AnchorHTMLAttributes<HTMLAnchorElement> & {
     css: import("@emotion/react").SerializedStyles;
   } = {
-    css: isRootSymbol
+    css: isModuleSymbol
       ? styles.rootSymbolReference
       : styles.nonRootSymbolReference,
 
     href: `#${goodIdentifiers[fullName]}`,
-    children: isRootSymbol ? JSON.stringify(name) : name,
+    children: isModuleSymbol ? JSON.stringify(name) : name,
   };
   if (symbols[fullName][0].kind === "unknown") {
     props.style = { color: "red" };

@@ -570,9 +570,9 @@ function Exports({ fullName }: { fullName: SymbolId }) {
               <Syntax kind="keyword">export</Syntax>
               <Syntax kind="bracket">{" { "}</Syntax>
               <Indent>
-                {exported.exports.map((exportInfo) => {
+                {exported.exports.map((exportInfo, i) => {
                   return (
-                    <div key={exportInfo.name}>
+                    <div key={i}>
                       <Link
                         href={getExternalSymbolUrl({
                           id: exportInfo.id,

@@ -10,7 +10,7 @@ const getCanonicalFileName = ts.sys.useCaseSensitiveFileNames
   ? (x: string) => x
   : (x: string) => x.toLowerCase();
 
-function getFromTsConfig(tsConfigFilePath: string) {
+export function getFromTsConfig(tsConfigFilePath: string) {
   let configFileDiagnostic: ts.Diagnostic | undefined;
 
   const parsedCommandLine = ts.getParsedCommandLineOfConfigFile(
@@ -44,7 +44,7 @@ function getFromTsConfig(tsConfigFilePath: string) {
   return { compilerOptions, rootNames: parsedCommandLine.fileNames };
 }
 
-export async function getInfo(filename: string) {
+export function getInfo(filename: string) {
   const { compilerOptions, rootNames } = getFromTsConfig("./tsconfig.json");
   const program = ts.createProgram({ options: compilerOptions, rootNames });
   const resolved = resolvePath(process.cwd(), filename);
