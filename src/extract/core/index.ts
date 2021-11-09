@@ -66,7 +66,8 @@ export type CoreDocInfo = {
 export function getCoreDocsInfo(
   rootSymbols: Map<ts.Symbol, string>,
   program: ts.Program,
-  isExternalSymbol: (symbol: ts.Symbol) => boolean
+  isExternalSymbol: (symbol: ts.Symbol) => boolean,
+  shouldIncludeDecl: (node: ts.Node) => boolean
 ): CoreDocInfo {
   state = getInitialState();
   state.rootSymbols = rootSymbols;
@@ -81,12 +82,21 @@ export function getCoreDocsInfo(
       "symbols in symbol queue must have at least one declaration"
     );
 
+    const filteredDecls = decls
+      .filter((decl) => shouldIncludeDecl(decl))
+      .map((decl) => convertDeclaration(decl));
+    if (filteredDecls.length === 0) {
+      assert(
+        false,
+        `at least one decl must not be filtered out but all of the decls were filtered out:\n${decls
+          .map((x) => `${x.getSourceFile().fileName}\n${x.getText()}`)
+          .join("\n")}`
+      );
+    }
+
     state.accessibleSymbols.set(
       symbol,
-      decls.map((decl) => convertDeclaration(decl)) as [
-        SerializedDeclaration,
-        ...SerializedDeclaration[]
-      ]
+      filteredDecls as [SerializedDeclaration, ...SerializedDeclaration[]]
     );
   }
   return {

@@ -12,29 +12,36 @@ export function getSymbolsForInnerBit(
   unexportedToExportedRef: Map<SymbolId, SymbolId>;
   symbolsForInnerBit: Record<SymbolId, SymbolId[]>;
 } {
+  const rootSymbols = new Set(_rootSymbols);
   const unexportedToExportedRef = new Map<SymbolId, SymbolId>();
   const unexportedToUnexportedRef = new Map<SymbolId, SymbolId>();
 
-  for (const [symbolFullName, symbols] of objectEntriesAssumeNoExcessProps(
+  for (const [symbolId, symbols] of objectEntriesAssumeNoExcessProps(
     symbolReferences
   )) {
     if (
-      !canonicalExportLocations[symbolFullName] &&
-      accessibleSymbols[symbolFullName] &&
-      accessibleSymbols[symbolFullName][0].kind !== "enum-member"
+      !canonicalExportLocations[symbolId] &&
+      !rootSymbols.has(symbolId) &&
+      accessibleSymbols[symbolId] &&
+      accessibleSymbols[symbolId][0].kind !== "enum-member"
     ) {
       const firstExportedSymbol = symbols.find(
         (x) => canonicalExportLocations[x] !== undefined
       );
       if (firstExportedSymbol) {
-        unexportedToExportedRef.set(symbolFullName, firstExportedSymbol);
+        unexportedToExportedRef.set(symbolId, firstExportedSymbol);
       } else {
-        unexportedToUnexportedRef.set(symbolFullName, symbols[0]);
+        unexportedToUnexportedRef.set(symbolId, symbols[0]);
       }
     }
   }
 
+  let i = 0;
   while (unexportedToUnexportedRef.size) {
+    if (i > 5000) {
+      debugger;
+    }
+    i++;
     for (const [
       unexportedSymbol,
       unexportedReferencedLocation,

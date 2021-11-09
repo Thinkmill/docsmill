@@ -47,6 +47,20 @@ export function getIsExternalSymbolForPkg(pkgDir: string) {
   };
 }
 
+export function getShouldIncludeDeclForPkg(pkgDir: string) {
+  const pkgDirNodeModules = combinePaths(pkgDir, "node_modules");
+  return (node: ts.Node) => {
+    const sourceFile = node.getSourceFile();
+    if (
+      !sourceFile.fileName.includes(pkgDir) ||
+      sourceFile.fileName.includes(pkgDirNodeModules)
+    ) {
+      return false;
+    }
+    return true;
+  };
+}
+
 export function getDocsInfo(
   rootSymbols: Map<ts.Symbol, string>,
   pkgDir: string,
@@ -64,7 +78,12 @@ export function getDocsInfo(
   ) => { file: string; line: number } | undefined = () => undefined
 ): DocInfo {
   const { accessibleSymbols, externalSymbols, symbolReferences } =
-    getCoreDocsInfo(rootSymbols, program, getIsExternalSymbolForPkg(pkgDir));
+    getCoreDocsInfo(
+      rootSymbols,
+      program,
+      getIsExternalSymbolForPkg(pkgDir),
+      getShouldIncludeDeclForPkg(pkgDir)
+    );
 
   const baseInfo = {
     packageName,

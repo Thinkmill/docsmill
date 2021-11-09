@@ -404,7 +404,7 @@ export function convertTypeNode(compilerNode: ts.TypeNode): SerializedType {
     };
   }
 
-  debugger;
+  // debugger;
 
   return {
     kind: "raw",

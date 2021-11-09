@@ -11,6 +11,7 @@ import { getSymbolIdentifier } from "./core/utils";
 import { ts } from "./ts";
 import path from "path";
 import { memoize } from "../npm/utils";
+import { objectEntriesAssumeNoExcessProps } from "../lib/utils";
 
 function getPrinted(filename: string) {
   const program = ts.createProgram({ options: {}, rootNames: [filename] });
@@ -19,10 +20,18 @@ function getPrinted(filename: string) {
   const rootSymbol = program.getTypeChecker().getSymbolAtLocation(sourceFile);
   assert(rootSymbol !== undefined, "could not get symbol for source file");
   const rootSymbols = new Map([[rootSymbol, "test"]]);
-  const info = getCoreDocsInfo(rootSymbols, program, (symbol) => {
-    const sourceFile = symbol.declarations![0].getSourceFile();
-    return sourceFile.fileName !== filename;
-  });
+  const info = getCoreDocsInfo(
+    rootSymbols,
+    program,
+    (symbol) => {
+      const sourceFile = symbol.declarations![0].getSourceFile();
+      return sourceFile.fileName !== filename;
+    },
+    (node) => {
+      const sourceFile = node.getSourceFile();
+      return sourceFile.fileName === filename;
+    }
+  );
   const accessibleSymbolIds = new Set<string>();
   for (const symbol of info.accessibleSymbols.keys()) {
     accessibleSymbolIds.add(getSymbolIdentifier(symbol));
@@ -47,7 +56,7 @@ function getPrinted(filename: string) {
       if (decl.kind === "namespace") {
         result += `\nnamespace ${decl.name} {
   export {
-${Object.entries(decl.exports)
+${objectEntriesAssumeNoExcessProps(decl.exports)
   .map(([exportName, exportSymbolId]) => {
     return `    ${
       exportSymbolId === 0 ? "not found" : getSymbolIndex(exportSymbolId)
@@ -63,7 +72,7 @@ ${Object.entries(decl.exports)
             : decl.name
         )} {
   export {
-${Object.entries(decl.exports)
+${objectEntriesAssumeNoExcessProps(decl.exports)
   .map(([exportName, exportSymbolId]) => {
     return `    ${
       exportSymbolId === 0 ? "not found" : getSymbolIndex(exportSymbolId)
