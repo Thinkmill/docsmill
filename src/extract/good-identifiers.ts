@@ -1,8 +1,9 @@
 import { assert } from "../lib/assert";
 import { SerializedDeclaration, SymbolId } from "../lib/types";
+import { objectEntriesAssumeNoExcessProps } from "../lib/utils";
 
 export function getGoodIdentifiers(
-  accessibleSymbols: Record<string, SerializedDeclaration[]>,
+  accessibleSymbols: Record<SymbolId, SerializedDeclaration[]>,
   packageName: string,
   canonicalExportLocations: {
     [key: SymbolId]: readonly [exportName: string, fileSymbolId: SymbolId];
@@ -34,8 +35,9 @@ export function getGoodIdentifiers(
     return `${findIdentifier(parent)}.${exportName}`;
   };
 
-  for (const [_symbolId, [symbol]] of Object.entries(accessibleSymbols)) {
-    const symbolId = _symbolId as SymbolId;
+  for (const [symbolId, [symbol]] of objectEntriesAssumeNoExcessProps(
+    accessibleSymbols
+  )) {
     if (symbol.kind == "enum-member") continue;
     if (rootSymbols.has(symbolId)) {
       goodIdentifiers[symbolId] = symbol.name;

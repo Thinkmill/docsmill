@@ -17,7 +17,7 @@ import { useRouter } from "next/router";
 import * as styles from "./root.css";
 import { ChevronDown } from "./icons/chevron-down";
 import { getExternalPackageUrl } from "./symbol-references";
-import { SymbolId } from "../lib/types";
+import { objectEntriesAssumeNoExcessProps } from "../lib/utils";
 
 function openParentDetails(element: HTMLElement) {
   if (element instanceof HTMLDetailsElement) {
@@ -64,7 +64,9 @@ export function Root(props: import("../extract").DocInfo) {
         canonicalExportLocations: useMemo(
           () =>
             Object.fromEntries(
-              Object.entries(props.canonicalExportLocations).map(
+              objectEntriesAssumeNoExcessProps(
+                props.canonicalExportLocations
+              ).map(
                 ([key, [exportName, parent]]) =>
                   [key, { exportName, parent }] as const
               )
@@ -72,7 +74,7 @@ export function Root(props: import("../extract").DocInfo) {
           [props.canonicalExportLocations]
         ),
         symbolsForInnerBit: new Map(
-          Object.entries(props.symbolsForInnerBit) as [SymbolId, SymbolId[]][]
+          objectEntriesAssumeNoExcessProps(props.symbolsForInnerBit)
         ),
         goodIdentifiers: props.goodIdentifiers,
         rootSymbols: new Set(props.rootSymbols),

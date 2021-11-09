@@ -1,4 +1,5 @@
 import { SerializedDeclaration, SymbolId } from "../lib/types";
+import { objectEntriesAssumeNoExcessProps } from "../lib/utils";
 
 export function getSymbolsForInnerBit(
   accessibleSymbols: Record<string, SerializedDeclaration[]>,
@@ -14,8 +15,9 @@ export function getSymbolsForInnerBit(
   const unexportedToExportedRef = new Map<SymbolId, SymbolId>();
   const unexportedToUnexportedRef = new Map<SymbolId, SymbolId>();
 
-  for (const [_symbolFullName, symbols] of Object.entries(symbolReferences)) {
-    const symbolFullName = _symbolFullName as SymbolId;
+  for (const [symbolFullName, symbols] of objectEntriesAssumeNoExcessProps(
+    symbolReferences
+  )) {
     if (
       !canonicalExportLocations[symbolFullName] &&
       accessibleSymbols[symbolFullName] &&

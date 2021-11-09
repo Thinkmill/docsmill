@@ -5,6 +5,7 @@ import { collectEntrypointsOfPackage } from "./npm/utils";
 import { collectUnresolvedPackages } from "./npm";
 import { getDirectoryPath, resolvePath } from "./extract/path";
 import { SymbolId } from "./lib/types";
+import { objectEntriesAssumeNoExcessProps } from "./lib/utils";
 
 const getCanonicalFileName = ts.sys.useCaseSensitiveFileNames
   ? (x: string) => x
@@ -205,8 +206,10 @@ export function getExternalSymbolIdMap(
       version,
       program
     );
-    for (const [symbolId, identifier] of Object.entries(goodIdentifiers)) {
-      externalPackages.set(symbolId as SymbolId, {
+    for (const [symbolId, identifier] of objectEntriesAssumeNoExcessProps(
+      goodIdentifiers
+    )) {
+      externalPackages.set(symbolId, {
         version,
         pkg: dep,
         id: identifier,

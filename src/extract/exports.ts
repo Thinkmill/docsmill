@@ -1,4 +1,5 @@
 import { SerializedDeclaration, SymbolId } from "../lib/types";
+import { objectEntriesAssumeNoExcessProps } from "../lib/utils";
 
 type ExportName = string;
 
@@ -23,7 +24,7 @@ function collectImportableSymbolLocationsFromRootSymbols(
         continue;
       }
 
-      for (const [exportName, symbolId] of Object.entries(
+      for (const [exportName, symbolId] of objectEntriesAssumeNoExcessProps(
         moduleSymbolDecl.exports
       )) {
         if (symbolId === 0) continue;
