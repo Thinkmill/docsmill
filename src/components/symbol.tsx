@@ -50,29 +50,109 @@ function ExportedFrom({ fullName }: { fullName: SymbolId }) {
   );
 }
 
-export function RenderRootSymbol({ fullName }: { fullName: SymbolId }) {
-  const { symbols, canonicalExportLocations } = useDocsContext();
-  let decls = symbols[fullName];
+export function RenderRootSymbol({ symbol }: { symbol: SymbolId }) {
+  const {
+    symbols,
+    canonicalExportLocations,
+    references,
+    symbolsForInnerBit,
+    locations,
+    goodIdentifiers,
+  } = useDocsContext();
+  let decls = symbols[symbol];
   let isExported = false;
-  if (canonicalExportLocations[fullName]) {
+  if (canonicalExportLocations[symbol]) {
     isExported = true;
-    decls = decls.map((decl) => ({
-      ...decl,
-      name: canonicalExportLocations[fullName].exportName,
-    }));
+    const { exportName } = canonicalExportLocations[symbol];
+    decls = decls.map((decl) => ({ ...decl, name: exportName }));
   }
+  const relatedSymbols = (references[symbol] || []).filter((thing) =>
+    symbols[thing].some((x) => x.kind !== "module" && x.kind !== "namespace")
+  );
+  const innerBits = symbolsForInnerBit.get(symbol);
+  const locationsForSymbol = locations[symbol];
+  const router = useRouter();
+  const pkgRefPortion = router.query.pkg
+    ? getPkgWithVersionPortionOfParms(router.query.pkg)
+    : undefined;
+
   return (
-    <div css={styles.rootSymbolContainer}>
-      {decls.map((decl, i) => {
-        return (
-          <Declaration
-            key={i}
-            fullName={fullName}
-            isExported={isExported}
-            decl={decl}
-          />
-        );
-      })}
+    <div>
+      <div css={{ display: "flex", justifyContent: "space-between" }}>
+        {decls[0].kind === "module" ? (
+          <h2 css={styles.moduleHeading}>{decls[0].name}</h2>
+        ) : (
+          <h3 css={styles.symbolHeading} id={goodIdentifiers[symbol]}>
+            {decls[0].name}
+          </h3>
+        )}
+        {pkgRefPortion !== undefined && (
+          <div>
+            {locationsForSymbol.map((location, i) => (
+              <Fragment key={i}>
+                <Link
+                  href={`/src/${pkgRefPortion}${location.file}#L${
+                    location.line + 1
+                  }`}
+                >
+                  <a>[decl]</a>
+                </Link>
+                {location.src && (
+                  <Link
+                    href={`/src/${pkgRefPortion}${location.src.file}#L${
+                      location.src.line + 1
+                    }`}
+                  >
+                    <a>[src]</a>
+                  </Link>
+                )}
+              </Fragment>
+            ))}
+          </div>
+        )}
+      </div>
+      <div css={styles.rootSymbolContainer}>
+        {decls.map((decl, i) => {
+          return (
+            <Declaration
+              key={i}
+              fullName={symbol}
+              isExported={isExported}
+              decl={decl}
+            />
+          );
+        })}
+      </div>
+      {!!relatedSymbols?.length && (
+        <details css={innerBits ? undefined : styles.referencesContainer}>
+          <summary>Referenced by</summary>
+          <ul css={styles.referenceList}>
+            {relatedSymbols.map((thing, i) => {
+              return (
+                <li key={i} css={styles.referenceItem}>
+                  <SymbolReference
+                    key={i}
+                    fullName={thing}
+                    name={symbols[thing][0].name}
+                  />
+                </li>
+              );
+            })}
+          </ul>
+        </details>
+      )}
+      {innerBits && (
+        <details css={styles.referencesContainer}>
+          <summary>Unexported symbols referenced here</summary>
+          {innerBits.map((thing) => {
+            return (
+              <div key={thing}>
+                <RenderRootSymbol symbol={thing} />
+              </div>
+            );
+          })}
+        </details>
+      )}
     </div>
   );
 }
@@ -106,14 +186,7 @@ function Declaration({
   if (decl.kind === "module") {
     return (
       <div>
-        {isExported ? (
-          <Docs content={decl.docs} />
-        ) : (
-          <Fragment>
-            <h2 css={styles.moduleHeading}>{decl.name}</h2>
-            <Docs content={decl.docs} />
-          </Fragment>
-        )}
+        <Docs content={decl.docs} />
         <div css={styles.innerExportsHeading}>
           {isExported ? (
             <Fragment>
@@ -443,94 +516,13 @@ function ClassMembers({
 }
 
 function Exports({ fullName }: { fullName: SymbolId }) {
-  const {
-    symbols,
-    references,
-    symbolsForInnerBit,
-    goodIdentifiers,
-    locations,
-  } = useDocsContext();
+  const { goodIdentifiers } = useDocsContext();
   const transformedExports = useGroupedExports(fullName);
-  const router = useRouter();
-  const pkgRefPortion = router.query.pkg
-    ? getPkgWithVersionPortionOfParms(router.query.pkg)
-    : "unknown";
   return (
     <div css={styles.innerExportsContainer}>
       {transformedExports.map((exported, i) => {
         if (exported.kind === "canonical") {
-          const { exportName, fullName: symbol } = exported;
-          const relatedSymbols = (references[symbol] || []).filter((thing) =>
-            symbols[thing].some(
-              (x) => x.kind !== "module" && x.kind !== "namespace"
-            )
-          );
-          const innerBits = symbolsForInnerBit.get(symbol);
-          const locationsForSymbol = locations[symbol];
-          return (
-            <div key={i}>
-              <div css={{ display: "flex", justifyContent: "space-between" }}>
-                <h3 css={styles.symbolHeading} id={goodIdentifiers[symbol]}>
-                  {exportName}
-                </h3>
-                <div>
-                  {locationsForSymbol.map((location, i) => (
-                    <Fragment key={i}>
-                      <Link
-                        href={`/src/${pkgRefPortion}${location.file}#L${
-                          location.line + 1
-                        }`}
-                      >
-                        <a>[decl]</a>
-                      </Link>
-                      {location.src && (
-                        <Link
-                          href={`/src/${pkgRefPortion}${location.src.file}#L${
-                            location.src.line + 1
-                          }`}
-                        >
-                          <a>[src]</a>
-                        </Link>
-                      )}
-                    </Fragment>
-                  ))}
-                </div>
-              </div>
-              <RenderRootSymbol fullName={symbol} />
-              {!!relatedSymbols?.length && (
-                <details
-                  css={innerBits ? undefined : styles.referencesContainer}
-                >
-                  <summary>Referenced by</summary>
-                  <ul css={styles.referenceList}>
-                    {relatedSymbols.map((thing, i) => {
-                      return (
-                        <li key={i} css={styles.referenceItem}>
-                          <SymbolReference
-                            key={i}
-                            fullName={thing}
-                            name={symbols[thing][0].name}
-                          />
-                        </li>
-                      );
-                    })}
-                  </ul>
-                </details>
-              )}
-              {innerBits && (
-                <details css={styles.referencesContainer}>
-                  <summary>Unexported symbols referenced here</summary>
-                  {innerBits.map((thing) => {
-                    return (
-                      <div key={thing}>
-                        <RenderRootSymbol fullName={thing} />
-                      </div>
-                    );
-                  })}
-                </details>
-              )}
-            </div>
-          );
+          return <RenderRootSymbol key={i} symbol={exported.fullName} />;
         }
         if (exported.kind === "unknown-exports") {
           return (

@@ -125,7 +125,7 @@ export function Root(props: import("../extract").DocInfo) {
         </NavigationContainer>
         <Contents>
           {props.rootSymbols.map((rootSymbol) => (
-            <RenderRootSymbol key={rootSymbol} fullName={rootSymbol} />
+            <RenderRootSymbol key={rootSymbol} symbol={rootSymbol} />
           ))}
         </Contents>
       </PageContainer>
