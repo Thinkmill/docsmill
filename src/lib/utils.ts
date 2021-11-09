@@ -1,6 +1,10 @@
 import { SerializedDeclaration, SymbolId } from "./types";
 import { useDocsContext } from "./DocsContext";
 
+export const objectEntriesAssumeNoExcessProps: <T>(
+  o: T
+) => { [Key in keyof T]: [Key, T[Key]] }[keyof T][] = Object.entries;
+
 type TransformedExport =
   | {
       kind: "external-exports";
@@ -36,7 +40,7 @@ export function useGroupedExports(fullName: SymbolId) {
   const transformedExports: TransformedExport[] = [];
 
   for (const rootThing of decls) {
-    for (const [exportName, exportedSymbol] of Object.entries(
+    for (const [exportName, exportedSymbol] of objectEntriesAssumeNoExcessProps(
       rootThing.exports
     )) {
       const _prev = transformedExports[transformedExports.length - 1];
@@ -115,9 +119,9 @@ export function useGroupedExports(fullName: SymbolId) {
           { kind: "module" }
         >;
         if (prevSymbol) {
-          const potentialExport = Object.entries(prevSymbol.exports).find(
-            ([, symbolId]) => symbolId === exportedSymbol
-          );
+          const potentialExport = objectEntriesAssumeNoExcessProps(
+            prevSymbol.exports
+          ).find(([, symbolId]) => symbolId === exportedSymbol);
           if (potentialExport) {
             prev.exports.push({
               localName: exportName,
