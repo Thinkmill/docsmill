@@ -99,7 +99,7 @@ export function convertDeclaration(
     const typeChecker = getTypeChecker();
     const exportSymbols = typeChecker.getExportsOfModule(symbol);
     for (let exportSymbol of exportSymbols) {
-      const aliasedSymbol = getAliasedSymbol(exportSymbol) || exportSymbol;
+      const aliasedSymbol = getAliasedSymbol(exportSymbol);
       if (aliasedSymbol.declarations) {
         collectSymbol(aliasedSymbol);
         exports[exportSymbol.name] = getSymbolIdentifier(aliasedSymbol);
@@ -339,8 +339,7 @@ export function convertDeclaration(
           exportedSymbol.declarations[0].pos >= compilerNode.body.pos &&
           exportedSymbol.declarations[0].end <= compilerNode.body.end
         ) {
-          const aliasedSymbol =
-            getAliasedSymbol(exportedSymbol) || exportedSymbol;
+          const aliasedSymbol = getAliasedSymbol(exportedSymbol);
           collectSymbol(aliasedSymbol);
           exports[name] = getSymbolIdentifier(aliasedSymbol);
         }

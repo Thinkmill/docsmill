@@ -143,7 +143,7 @@ function getJsDocCommentTextMarkdown(
       if (ts.isJSDocLink(x) && x.name) {
         const symbol = getSymbolAtLocation(x.name);
         if (symbol) {
-          const finalSymbol = getAliasedSymbol(symbol) || symbol;
+          const finalSymbol = getAliasedSymbol(symbol);
 
           return `[${
             x.text || finalSymbol.getName()
@@ -162,11 +162,14 @@ function getJsDocCommentTextMarkdown(
     .join("");
 }
 
-export function getAliasedSymbol(symbol: ts.Symbol): ts.Symbol | undefined {
-  if (!(symbol.flags & ts.SymbolFlags.Alias)) {
-    return undefined;
+export function getAliasedSymbol(symbol: ts.Symbol): ts.Symbol {
+  if ((symbol as any).mergeId !== undefined) {
+    return getAliasedSymbol((getTypeChecker() as any).getMergedSymbol(symbol));
   }
-  return getTypeChecker().getAliasedSymbol(symbol);
+  if (symbol.flags & ts.SymbolFlags.Alias) {
+    return getAliasedSymbol(getTypeChecker().getAliasedSymbol(symbol));
+  }
+  return symbol;
 }
 
 export function getDocsFromJSDocNodes(nodes: ts.JSDoc[]) {

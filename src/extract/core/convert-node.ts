@@ -73,10 +73,7 @@ function handleReference(
     };
   }
 
-  const aliasedSymbol = getAliasedSymbol(symbol);
-  if (aliasedSymbol) {
-    symbol = aliasedSymbol;
-  }
+  symbol = getAliasedSymbol(symbol);
 
   if (symbol.getName() === "Array") {
     assert(typeArguments !== undefined && typeArguments.length === 1);
@@ -325,10 +322,7 @@ export function convertTypeNode(compilerNode: ts.TypeNode): SerializedType {
       let node = compilerNode.qualifier || compilerNode;
       let symbol = getSymbolAtLocation(node);
       if (symbol) {
-        const aliasedSymbol = getAliasedSymbol(symbol);
-        if (aliasedSymbol) {
-          symbol = aliasedSymbol;
-        }
+        symbol = getAliasedSymbol(symbol);
         collectSymbol(symbol);
 
         return {
@@ -357,10 +351,8 @@ export function convertTypeNode(compilerNode: ts.TypeNode): SerializedType {
     const entityName = compilerNode.exprName;
     let symbol = getSymbolAtLocation(entityName);
     if (symbol) {
-      const aliasedSymbol = getAliasedSymbol(symbol);
-      if (aliasedSymbol) {
-        symbol = aliasedSymbol;
-      }
+      symbol = getAliasedSymbol(symbol);
+
       collectSymbol(symbol);
 
       return {
