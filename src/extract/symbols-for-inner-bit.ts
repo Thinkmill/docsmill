@@ -36,12 +36,7 @@ export function getSymbolsForInnerBit(
     }
   }
 
-  let i = 0;
   while (unexportedToUnexportedRef.size) {
-    if (i > 5000) {
-      debugger;
-    }
-    i++;
     for (const [
       unexportedSymbol,
       unexportedReferencedLocation,
