@@ -91,9 +91,13 @@ export function Root(props: import("../extract").DocInfo) {
                 css={styles.versionSelect}
                 onChange={(event) => {
                   const newVersion = event.target.value;
-                  router.push(
-                    getExternalPackageUrl(props.packageName, newVersion)
-                  );
+                  router.push({
+                    pathname: getExternalPackageUrl(
+                      props.packageName,
+                      newVersion
+                    ),
+                    hash: window.location.hash,
+                  });
                   setVersionState((x) => ({ ...x, current: newVersion }));
                 }}
                 value={versionState.current}
