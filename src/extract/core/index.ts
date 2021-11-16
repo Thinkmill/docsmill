@@ -6,16 +6,7 @@ import { getSymbolIdentifier } from "./utils";
 
 function getInitialState() {
   return {
-    symbolsQueue: new Set<ts.Symbol>(),
-    symbolsToSymbolsWhichReferenceTheSymbol: new Map<
-      ts.Symbol,
-      Set<ts.Symbol>
-    >(),
-    currentlyVistedSymbol: undefined as ts.Symbol | undefined,
-    referencedExternalSymbols: new Set<ts.Symbol>(),
-    isExternalSymbol: (_symbol: ts.Symbol): boolean => {
-      return false;
-    },
+    referenceSymbol: undefined! as (symbol: ts.Symbol) => void,
     program: undefined! as ts.Program,
   };
 }
@@ -28,31 +19,37 @@ let state = getInitialState();
 
 export function referenceSymbol(symbol: ts.Symbol) {
   assert(
-    !(symbol.flags & ts.SymbolFlags.Alias) &&
+    (symbol.flags & ts.SymbolFlags.AliasExcludes) === 0 &&
       (symbol as any).mergeId === undefined,
     "alias symbols cannot be passed to referenceSymbol"
   );
-  collectSymbol(symbol);
+  state.referenceSymbol(symbol);
   return getSymbolIdentifier(symbol);
 }
 
-function collectSymbol(symbol: ts.Symbol) {
+function collectSymbol(
+  symbol: ts.Symbol,
+  isExternalSymbol: (symbol: ts.Symbol) => boolean,
+  referencedExternalSymbols: Set<ts.Symbol>,
+  currentlyVistedSymbol: ts.Symbol | undefined,
+  symbolReferences: Map<ts.Symbol, Set<ts.Symbol>>,
+  symbolsQueue: Set<ts.Symbol>
+) {
   if (!symbol.declarations?.length) {
     return;
   }
-  if (state.isExternalSymbol(symbol)) {
-    state.referencedExternalSymbols.add(symbol);
+  if (isExternalSymbol(symbol)) {
+    referencedExternalSymbols.add(symbol);
     return;
   }
-  if (state.currentlyVistedSymbol && symbol !== state.currentlyVistedSymbol) {
-    if (!state.symbolsToSymbolsWhichReferenceTheSymbol.has(symbol)) {
-      state.symbolsToSymbolsWhichReferenceTheSymbol.set(symbol, new Set());
+  if (currentlyVistedSymbol !== undefined && symbol !== currentlyVistedSymbol) {
+    if (!symbolReferences.has(symbol)) {
+      symbolReferences.set(symbol, new Set());
     }
-    const symbolsThatReferenceTheThing =
-      state.symbolsToSymbolsWhichReferenceTheSymbol.get(symbol)!;
-    symbolsThatReferenceTheThing.add(state.currentlyVistedSymbol);
+    const symbolsThatReferenceTheThing = symbolReferences.get(symbol)!;
+    symbolsThatReferenceTheThing.add(currentlyVistedSymbol);
   }
-  state.symbolsQueue.add(symbol);
+  symbolsQueue.add(symbol);
 }
 
 export type CoreDocInfo = {
@@ -71,15 +68,27 @@ export function getCoreDocsInfo(
   shouldIncludeDecl: (node: ts.Node) => boolean
 ): CoreDocInfo {
   state = getInitialState();
-  state.symbolsQueue = new Set(rootSymbols.keys());
-  state.isExternalSymbol = isExternalSymbol;
+  const symbolsQueue = new Set<ts.Symbol>(rootSymbols.keys());
+  const symbolReferences = new Map<ts.Symbol, Set<ts.Symbol>>();
+  const externalSymbols = new Set<ts.Symbol>();
+  let currentlyVistedSymbol: ts.Symbol | undefined;
+
+  state.referenceSymbol = (symbol) =>
+    collectSymbol(
+      symbol,
+      isExternalSymbol,
+      externalSymbols,
+      currentlyVistedSymbol,
+      symbolReferences,
+      symbolsQueue
+    );
   state.program = program;
   const accessibleSymbols = new Map<
     ts.Symbol,
     [SerializedDeclaration, ...SerializedDeclaration[]]
   >();
-  for (const symbol of state.symbolsQueue) {
-    state.currentlyVistedSymbol = symbol;
+  for (const symbol of symbolsQueue) {
+    currentlyVistedSymbol = symbol;
     const decls = symbol.declarations;
     assert(
       decls !== undefined && decls.length >= 1,
@@ -111,11 +120,8 @@ export function getCoreDocsInfo(
       filteredDecls as [SerializedDeclaration, ...SerializedDeclaration[]]
     );
   }
-  return {
-    accessibleSymbols,
-    symbolReferences: state.symbolsToSymbolsWhichReferenceTheSymbol,
-    externalSymbols: state.referencedExternalSymbols,
-  };
+
+  return { accessibleSymbols, symbolReferences, externalSymbols };
 }
 
 /**
@@ -129,15 +135,26 @@ export function getCoreDocsInfoWithoutSimpleDeclarations(
   isExternalSymbol: (symbol: ts.Symbol) => boolean
 ): CoreDocInfo {
   state = getInitialState();
-  state.symbolsQueue = new Set(rootSymbols.keys());
-  state.isExternalSymbol = isExternalSymbol;
+  const symbolsQueue = new Set<ts.Symbol>(rootSymbols.keys());
+  const symbolReferences = new Map<ts.Symbol, Set<ts.Symbol>>();
+  const externalSymbols = new Set<ts.Symbol>();
+  let currentlyVistedSymbol: ts.Symbol | undefined;
+  state.referenceSymbol = (symbol) =>
+    collectSymbol(
+      symbol,
+      isExternalSymbol,
+      externalSymbols,
+      currentlyVistedSymbol,
+      symbolReferences,
+      symbolsQueue
+    );
   state.program = program;
   const accessibleSymbols = new Map<
     ts.Symbol,
     [SerializedDeclaration, ...SerializedDeclaration[]]
   >();
-  for (const symbol of state.symbolsQueue) {
-    state.currentlyVistedSymbol = symbol;
+  for (const symbol of symbolsQueue) {
+    currentlyVistedSymbol = symbol;
     const decls = symbol.declarations;
     assert(
       decls !== undefined && decls.length >= 1,
@@ -160,9 +177,5 @@ export function getCoreDocsInfoWithoutSimpleDeclarations(
       }) as [SerializedDeclaration, ...SerializedDeclaration[]]
     );
   }
-  return {
-    accessibleSymbols,
-    symbolReferences: state.symbolsToSymbolsWhichReferenceTheSymbol,
-    externalSymbols: state.referencedExternalSymbols,
-  };
+  return { accessibleSymbols, symbolReferences, externalSymbols };
 }
