@@ -1,5 +1,3 @@
-import { __String } from "typescript";
-
 export type SymbolId = string & { __symbolIdTag: any };
 
 export type TypeParam = {
