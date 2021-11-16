@@ -25,7 +25,7 @@ export type SerializedDeclaration =
       kind: "module";
       name: string;
       docs: string;
-      exports: Record<string, SymbolId | 0>;
+      exports: Record<string, SymbolId>;
     }
   | {
       kind: "variable";
@@ -86,7 +86,7 @@ export type SerializedDeclaration =
       kind: "namespace";
       name: string;
       docs: string;
-      exports: Record<string, SymbolId | 0>;
+      exports: Record<string, SymbolId>;
     };
 
 export type ClassMember =
@@ -168,11 +168,7 @@ export type SerializedType =
       name: string;
       typeArguments: SerializedType[];
     }
-  | {
-      kind: "typeof";
-      fullName: SymbolId;
-      name: string;
-    }
+  | { kind: "typeof"; fullName: SymbolId; name: string }
   | { kind: "array"; readonly: boolean; inner: SerializedType }
   | { kind: "type-parameter"; name: string }
   | { kind: "union"; types: SerializedType[] }

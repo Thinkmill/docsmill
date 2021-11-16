@@ -58,9 +58,7 @@ function getPrinted(filename: string) {
   export {
 ${objectEntriesAssumeNoExcessProps(decl.exports)
   .map(([exportName, exportSymbolId]) => {
-    return `    ${
-      exportSymbolId === 0 ? "not found" : getSymbolIndex(exportSymbolId)
-    } as ${exportName}`;
+    return `    ${getSymbolIndex(exportSymbolId)} as ${exportName}`;
   })
   .join(",\n")}\n  }\n}`;
       } else if (decl.kind === "enum" || decl.kind === "enum-member") {
@@ -74,9 +72,7 @@ ${objectEntriesAssumeNoExcessProps(decl.exports)
   export {
 ${objectEntriesAssumeNoExcessProps(decl.exports)
   .map(([exportName, exportSymbolId]) => {
-    return `    ${
-      exportSymbolId === 0 ? "not found" : getSymbolIndex(exportSymbolId)
-    } as ${exportName}`;
+    return `    ${getSymbolIndex(exportSymbolId)} as ${exportName}`;
   })
   .join(",\n")}\n  }\n}`;
       } else {

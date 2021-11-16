@@ -45,17 +45,6 @@ export function useGroupedExports(fullName: SymbolId) {
     )) {
       const _prev = transformedExports[transformedExports.length - 1];
       const prev: typeof _prev | undefined = _prev;
-      if (exportedSymbol === 0) {
-        if (prev?.kind === "unknown-exports") {
-          prev.exports.push(exportName);
-          continue;
-        }
-        transformedExports.push({
-          kind: "unknown-exports",
-          exports: [exportName],
-        });
-        continue;
-      }
       if (
         !symbols[exportedSymbol] ||
         !canonicalExportLocations[exportedSymbol]

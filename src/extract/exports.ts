@@ -27,7 +27,6 @@ function collectImportableSymbolLocationsFromRootSymbols(
       for (const [exportName, symbolId] of objectEntriesAssumeNoExcessProps(
         moduleSymbolDecl.exports
       )) {
-        if (symbolId === 0) continue;
         const exportedDecls = accessibleSymbols[symbolId];
         if (!exportedDecls) continue;
         if (!state.has(symbolId)) {

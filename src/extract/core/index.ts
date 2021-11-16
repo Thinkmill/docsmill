@@ -2,14 +2,10 @@ import { ts } from "../ts";
 import { SerializedDeclaration } from "../../lib/types";
 import { convertDeclaration } from "../core/convert-declaration";
 import { assert } from "../../lib/assert";
+import { getSymbolIdentifier } from "./utils";
 
 function getInitialState() {
   return {
-    rootSymbols: new Map<ts.Symbol, string>(),
-    accessibleSymbols: new Map<
-      ts.Symbol,
-      [SerializedDeclaration, ...SerializedDeclaration[]]
-    >(),
     symbolsQueue: new Set<ts.Symbol>(),
     symbolsToSymbolsWhichReferenceTheSymbol: new Map<
       ts.Symbol,
@@ -28,13 +24,19 @@ export function getTypeChecker() {
   return state.program.getTypeChecker();
 }
 
-export function getRootSymbolName(symbol: ts.Symbol) {
-  return state.rootSymbols.get(symbol);
-}
-
 let state = getInitialState();
 
-export function collectSymbol(symbol: ts.Symbol) {
+export function referenceSymbol(symbol: ts.Symbol) {
+  assert(
+    !(symbol.flags & ts.SymbolFlags.Alias) &&
+      (symbol as any).mergeId === undefined,
+    "alias symbols cannot be passed to referenceSymbol"
+  );
+  collectSymbol(symbol);
+  return getSymbolIdentifier(symbol);
+}
+
+function collectSymbol(symbol: ts.Symbol) {
   if (!symbol.declarations?.length) {
     return;
   }
@@ -50,7 +52,6 @@ export function collectSymbol(symbol: ts.Symbol) {
       state.symbolsToSymbolsWhichReferenceTheSymbol.get(symbol)!;
     symbolsThatReferenceTheThing.add(state.currentlyVistedSymbol);
   }
-  if (state.accessibleSymbols.has(symbol)) return;
   state.symbolsQueue.add(symbol);
 }
 
@@ -70,10 +71,13 @@ export function getCoreDocsInfo(
   shouldIncludeDecl: (node: ts.Node) => boolean
 ): CoreDocInfo {
   state = getInitialState();
-  state.rootSymbols = rootSymbols;
   state.symbolsQueue = new Set(rootSymbols.keys());
   state.isExternalSymbol = isExternalSymbol;
   state.program = program;
+  const accessibleSymbols = new Map<
+    ts.Symbol,
+    [SerializedDeclaration, ...SerializedDeclaration[]]
+  >();
   for (const symbol of state.symbolsQueue) {
     state.currentlyVistedSymbol = symbol;
     const decls = symbol.declarations;
@@ -82,9 +86,17 @@ export function getCoreDocsInfo(
       "symbols in symbol queue must have at least one declaration"
     );
 
+    const nameReplacement = rootSymbols.get(symbol);
+
     const filteredDecls = decls
       .filter((decl) => shouldIncludeDecl(decl))
-      .map((decl) => convertDeclaration(decl));
+      .map((node) => {
+        const decl = convertDeclaration(node);
+        if (decl.kind === "module" && nameReplacement !== undefined) {
+          return { ...decl, name: nameReplacement };
+        }
+        return decl;
+      });
     if (filteredDecls.length === 0) {
       assert(
         false,
@@ -94,13 +106,13 @@ export function getCoreDocsInfo(
       );
     }
 
-    state.accessibleSymbols.set(
+    accessibleSymbols.set(
       symbol,
       filteredDecls as [SerializedDeclaration, ...SerializedDeclaration[]]
     );
   }
   return {
-    accessibleSymbols: state.accessibleSymbols,
+    accessibleSymbols,
     symbolReferences: state.symbolsToSymbolsWhichReferenceTheSymbol,
     externalSymbols: state.referencedExternalSymbols,
   };
@@ -117,10 +129,13 @@ export function getCoreDocsInfoWithoutSimpleDeclarations(
   isExternalSymbol: (symbol: ts.Symbol) => boolean
 ): CoreDocInfo {
   state = getInitialState();
-  state.rootSymbols = rootSymbols;
   state.symbolsQueue = new Set(rootSymbols.keys());
   state.isExternalSymbol = isExternalSymbol;
   state.program = program;
+  const accessibleSymbols = new Map<
+    ts.Symbol,
+    [SerializedDeclaration, ...SerializedDeclaration[]]
+  >();
   for (const symbol of state.symbolsQueue) {
     state.currentlyVistedSymbol = symbol;
     const decls = symbol.declarations;
@@ -128,12 +143,17 @@ export function getCoreDocsInfoWithoutSimpleDeclarations(
       decls !== undefined && decls.length >= 1,
       "symbols in symbol queue must have at least one declaration"
     );
+    const nameReplacement = rootSymbols.get(symbol);
 
-    state.accessibleSymbols.set(
+    accessibleSymbols.set(
       symbol,
-      decls.map((decl) => {
-        if (ts.isSourceFile(decl) || ts.isModuleDeclaration(decl)) {
-          return convertDeclaration(decl);
+      decls.map((node) => {
+        if (ts.isSourceFile(node) || ts.isModuleDeclaration(node)) {
+          const decl = convertDeclaration(node);
+          if (decl.kind === "module" && nameReplacement !== undefined) {
+            return { ...decl, name: nameReplacement };
+          }
+          return decl;
         } else {
           return { kind: "unknown", name: "", content: "", docs: "" };
         }
@@ -141,7 +161,7 @@ export function getCoreDocsInfoWithoutSimpleDeclarations(
     );
   }
   return {
-    accessibleSymbols: state.accessibleSymbols,
+    accessibleSymbols,
     symbolReferences: state.symbolsToSymbolsWhichReferenceTheSymbol,
     externalSymbols: state.referencedExternalSymbols,
   };

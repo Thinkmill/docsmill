@@ -1,13 +1,12 @@
 import { ts } from "../ts";
 import {
-  getSymbolIdentifier,
   getTypeParameters,
   getParameters,
   getObjectMembers,
   getAliasedSymbol,
   getSymbolAtLocation,
 } from "./utils";
-import { collectSymbol } from ".";
+import { referenceSymbol } from ".";
 import { assert, assertNever } from "../../lib/assert";
 import { SerializedType, SymbolId, TupleElement } from "../../lib/types";
 
@@ -76,7 +75,7 @@ function handleReference(
   symbol = getAliasedSymbol(symbol);
 
   if (symbol.getName() === "Array") {
-    assert(typeArguments !== undefined && typeArguments.length === 1);
+    assert(typeArguments?.length === 1);
     return {
       kind: "array",
       readonly: false,
@@ -84,15 +83,14 @@ function handleReference(
     };
   }
   if (symbol.getName() === "ReadonlyArray") {
-    assert(typeArguments !== undefined && typeArguments.length === 1);
+    assert(typeArguments?.length === 1);
     return {
       kind: "array",
       readonly: true,
       inner: convertTypeNode(typeArguments[0]),
     };
   }
-  collectSymbol(symbol);
-  const fullName = getSymbolIdentifier(symbol);
+  const fullName = referenceSymbol(symbol);
   let name = symbol.getName();
   if (fullName === "unknown") {
     name = printNode(typeName);
@@ -323,11 +321,10 @@ export function convertTypeNode(compilerNode: ts.TypeNode): SerializedType {
       let symbol = getSymbolAtLocation(node);
       if (symbol) {
         symbol = getAliasedSymbol(symbol);
-        collectSymbol(symbol);
 
         return {
           kind: "typeof",
-          fullName: getSymbolIdentifier(symbol),
+          fullName: referenceSymbol(symbol),
           name: symbol.getName(),
         };
       }
@@ -352,12 +349,9 @@ export function convertTypeNode(compilerNode: ts.TypeNode): SerializedType {
     let symbol = getSymbolAtLocation(entityName);
     if (symbol) {
       symbol = getAliasedSymbol(symbol);
-
-      collectSymbol(symbol);
-
       return {
         kind: "typeof",
-        fullName: getSymbolIdentifier(symbol),
+        fullName: referenceSymbol(symbol),
         name: symbol.getName(),
       };
     }

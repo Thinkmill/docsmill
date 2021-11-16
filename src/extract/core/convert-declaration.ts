@@ -1,10 +1,9 @@
 import { ts } from "../ts";
-import { collectSymbol, getRootSymbolName, getTypeChecker } from ".";
+import { getTypeChecker, referenceSymbol } from ".";
 import { ClassMember, SerializedDeclaration, SymbolId } from "../../lib/types";
 import { convertTypeNode } from "./convert-node";
 import { convertType } from "./convert-type";
 import {
-  getSymbolIdentifier,
   getDocsFromJSDocNodes,
   getDocs,
   getTypeParameters,
@@ -95,25 +94,18 @@ export function convertDeclaration(
     const symbol = getSymbolAtLocation(compilerNode);
 
     assert(symbol !== undefined, "expected symbol to exist");
-    let exports: Record<string, SymbolId | 0> = {};
+    let exports: Record<string, SymbolId> = {};
     const typeChecker = getTypeChecker();
     const exportSymbols = typeChecker.getExportsOfModule(symbol);
     for (let exportSymbol of exportSymbols) {
       const aliasedSymbol = getAliasedSymbol(exportSymbol);
-      if (aliasedSymbol.declarations) {
-        collectSymbol(aliasedSymbol);
-        exports[exportSymbol.name] = getSymbolIdentifier(aliasedSymbol);
-      } else {
-        exports[exportSymbol.name] = 0;
-      }
+      exports[exportSymbol.name] = referenceSymbol(aliasedSymbol);
     }
     return {
       kind: "module",
-      name:
-        getRootSymbolName(symbol) ||
-        (ts.isModuleDeclaration(compilerNode)
-          ? (compilerNode.name as ts.StringLiteral).text
-          : compilerNode.fileName),
+      name: ts.isModuleDeclaration(compilerNode)
+        ? (compilerNode.name as ts.StringLiteral).text
+        : compilerNode.fileName,
       docs: getDocsFromJSDocNodes(jsDocs),
       exports,
     };
@@ -304,8 +296,7 @@ export function convertDeclaration(
       members: compilerNode.members.map((member) => {
         const symbol = getSymbolAtLocation(member.name);
         assert(symbol !== undefined, "expected enum member to have symbol");
-        collectSymbol(symbol);
-        return getSymbolIdentifier(symbol);
+        return referenceSymbol(symbol);
       }),
     };
   }
@@ -327,7 +318,7 @@ export function convertDeclaration(
   ) {
     const symbol = getSymbolAtLocation(compilerNode);
     assert(symbol !== undefined, "expected module declaration to have symbol");
-    const exports: Record<string, 0 | SymbolId> = {};
+    const exports: Record<string, SymbolId> = {};
     if (symbol.exports) {
       for (const [name, _exportedSymbol] of symbol.exports as Map<
         string,
@@ -340,8 +331,7 @@ export function convertDeclaration(
           exportedSymbol.declarations[0].end <= compilerNode.body.end
         ) {
           const aliasedSymbol = getAliasedSymbol(exportedSymbol);
-          collectSymbol(aliasedSymbol);
-          exports[name] = getSymbolIdentifier(aliasedSymbol);
+          exports[name] = referenceSymbol(aliasedSymbol);
         }
       }
     }
