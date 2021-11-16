@@ -1,5 +1,5 @@
 import { ts } from "../ts";
-import { getTypeChecker, referenceSymbol } from ".";
+import { ExtractionHost, getTypeChecker, referenceSymbol } from ".";
 import { ClassMember, SerializedDeclaration, SymbolId } from "../../lib/types";
 import { convertTypeNode } from "./convert-node";
 import { convertType } from "./convert-type";
@@ -16,15 +16,16 @@ import {
 import { assert } from "../../lib/assert";
 
 export function convertDeclaration(
-  compilerNode: ts.Node
+  compilerNode: ts.Node,
+  host: ExtractionHost
 ): SerializedDeclaration {
   if (ts.isTypeAliasDeclaration(compilerNode)) {
     return {
       kind: "type-alias",
       name: compilerNode.name.text,
-      docs: getDocs(compilerNode),
-      typeParams: getTypeParameters(compilerNode),
-      type: convertTypeNode(compilerNode.type),
+      docs: getDocs(compilerNode, host),
+      typeParams: getTypeParameters(compilerNode, host),
+      type: convertTypeNode(compilerNode.type, host),
     };
   }
 
@@ -34,10 +35,10 @@ export function convertDeclaration(
       // the only case where a function declaration doesn't have a name is when it's a default export
       // (yes, function expressions never have to have names but this is a function declaration, not a function expression)
       name: compilerNode.name?.text || "default",
-      parameters: getParameters(compilerNode),
-      docs: getDocs(compilerNode),
-      typeParams: getTypeParameters(compilerNode),
-      returnType: getReturnType(compilerNode),
+      parameters: getParameters(compilerNode, host),
+      docs: getDocs(compilerNode, host),
+      typeParams: getTypeParameters(compilerNode, host),
+      returnType: getReturnType(compilerNode, host),
     };
   }
   if (
@@ -70,7 +71,8 @@ export function convertDeclaration(
         const file =
           exportDecl.moduleSpecifier &&
           ts.isStringLiteral(exportDecl.moduleSpecifier)
-            ? getSymbolAtLocation(exportDecl.moduleSpecifier)?.valueDeclaration
+            ? getSymbolAtLocation(exportDecl.moduleSpecifier, host)
+                ?.valueDeclaration
             : undefined;
 
         if (
@@ -91,22 +93,22 @@ export function convertDeclaration(
       }
     }
 
-    const symbol = getSymbolAtLocation(compilerNode);
+    const symbol = getSymbolAtLocation(compilerNode, host);
 
     assert(symbol !== undefined, "expected symbol to exist");
     let exports: Record<string, SymbolId> = {};
-    const typeChecker = getTypeChecker();
+    const typeChecker = getTypeChecker(host);
     const exportSymbols = typeChecker.getExportsOfModule(symbol);
     for (let exportSymbol of exportSymbols) {
-      const aliasedSymbol = getAliasedSymbol(exportSymbol);
-      exports[exportSymbol.name] = referenceSymbol(aliasedSymbol);
+      const aliasedSymbol = getAliasedSymbol(exportSymbol, host);
+      exports[exportSymbol.name] = referenceSymbol(aliasedSymbol, host);
     }
     return {
       kind: "module",
       name: ts.isModuleDeclaration(compilerNode)
         ? (compilerNode.name as ts.StringLiteral).text
         : compilerNode.fileName,
-      docs: getDocsFromJSDocNodes(jsDocs),
+      docs: getDocsFromJSDocNodes(jsDocs, host),
       exports,
     };
   }
@@ -116,7 +118,10 @@ export function convertDeclaration(
       name: compilerNode.name.text,
       docs: "",
       variableKind: "const",
-      type: convertType(getTypeChecker().getTypeAtLocation(compilerNode)),
+      type: convertType(
+        getTypeChecker(host).getTypeAtLocation(compilerNode),
+        host
+      ),
     };
   }
   if (ts.isVariableDeclaration(compilerNode)) {
@@ -128,8 +133,12 @@ export function convertDeclaration(
 
     const docs =
       variableStatement.declarationList.declarations.indexOf(compilerNode) === 1
-        ? (getDocs(variableStatement) + "\n\n" + getDocs(compilerNode)).trim()
-        : getDocs(compilerNode);
+        ? (
+            getDocs(variableStatement, host) +
+            "\n\n" +
+            getDocs(compilerNode, host)
+          ).trim()
+        : getDocs(compilerNode, host);
 
     assert(
       ts.isIdentifier(compilerNode.name),
@@ -144,10 +153,10 @@ export function convertDeclaration(
       return {
         kind: "function",
         name: compilerNode.name.text,
-        parameters: getParameters(compilerNode.initializer),
+        parameters: getParameters(compilerNode.initializer, host),
         docs,
-        typeParams: getTypeParameters(compilerNode.initializer),
-        returnType: getReturnType(compilerNode.initializer),
+        typeParams: getTypeParameters(compilerNode.initializer, host),
+        returnType: getReturnType(compilerNode.initializer, host),
       };
     }
     return {
@@ -161,35 +170,41 @@ export function convertDeclaration(
           ? "let"
           : "var",
       type: compilerNode.type
-        ? convertTypeNode(compilerNode.type)
-        : convertType(getTypeChecker().getTypeAtLocation(compilerNode)),
+        ? convertTypeNode(compilerNode.type, host)
+        : convertType(
+            getTypeChecker(host).getTypeAtLocation(compilerNode),
+            host
+          ),
     };
   }
   if (ts.isPropertySignature(compilerNode)) {
     return {
       kind: "variable",
       name: printPropertyName(compilerNode.name),
-      docs: getDocs(compilerNode),
+      docs: getDocs(compilerNode, host),
       variableKind: "const",
       type: compilerNode.type
-        ? convertTypeNode(compilerNode.type)
-        : convertType(getTypeChecker().getTypeAtLocation(compilerNode)),
+        ? convertTypeNode(compilerNode.type, host)
+        : convertType(
+            getTypeChecker(host).getTypeAtLocation(compilerNode),
+            host
+          ),
     };
   }
   if (ts.isInterfaceDeclaration(compilerNode)) {
     return {
       kind: "interface",
       name: compilerNode.name.text,
-      docs: getDocs(compilerNode),
-      typeParams: getTypeParameters(compilerNode),
+      docs: getDocs(compilerNode, host),
+      typeParams: getTypeParameters(compilerNode, host),
       extends: (compilerNode.heritageClauses || []).flatMap((x) => {
         assert(
           x.token === ts.SyntaxKind.ExtendsKeyword,
           "expected interface declaration to only have extends and never implements"
         );
-        return x.types.map((x) => convertTypeNode(x));
+        return x.types.map((x) => convertTypeNode(x, host));
       }),
-      members: getObjectMembers(compilerNode),
+      members: getObjectMembers(compilerNode, host),
     };
   }
   if (ts.isClassDeclaration(compilerNode)) {
@@ -210,10 +225,12 @@ export function convertDeclaration(
       // just like function declarations, the only case where a class declaration doesn't have a name is when it's a default export
       // (yes, class expressions never have to have names but this is a class declaration, not a class expression)
       name: compilerNode.name?.text || "default",
-      docs: getDocs(compilerNode),
-      typeParams: getTypeParameters(compilerNode),
-      extends: extendsNode ? convertTypeNode(extendsNode.types[0]) : null,
-      implements: (implementsNode?.types || []).map((x) => convertTypeNode(x)),
+      docs: getDocs(compilerNode, host),
+      typeParams: getTypeParameters(compilerNode, host),
+      extends: extendsNode ? convertTypeNode(extendsNode.types[0], host) : null,
+      implements: (implementsNode?.types || []).map((x) =>
+        convertTypeNode(x, host)
+      ),
       willBeComparedNominally: compilerNode.members.some((member) => {
         member.modifiers?.some(
           (x) =>
@@ -228,8 +245,8 @@ export function convertDeclaration(
         }
         return [
           {
-            docs: getDocs(x),
-            parameters: getParameters(x),
+            docs: getDocs(x, host),
+            parameters: getParameters(x, host),
           },
         ];
       }),
@@ -256,24 +273,27 @@ export function convertDeclaration(
             // (and have a tooltip explaining what protected does)
             return {
               kind: "method",
-              docs: getDocs(member),
+              docs: getDocs(member, host),
               name: printPropertyName(member.name),
               static: isStatic,
               optional: !!member.questionToken,
-              parameters: getParameters(member),
-              returnType: getReturnType(member),
-              typeParams: getTypeParameters(member),
+              parameters: getParameters(member, host),
+              returnType: getReturnType(member, host),
+              typeParams: getTypeParameters(member, host),
             };
           }
           if (ts.isPropertyDeclaration(member)) {
             return {
               kind: "prop",
-              docs: getDocs(member),
+              docs: getDocs(member, host),
               name: printPropertyName(member.name),
               optional: !!member.questionToken,
               type: member.type
-                ? convertTypeNode(member.type)
-                : convertType(getTypeChecker().getTypeAtLocation(member)),
+                ? convertTypeNode(member.type, host)
+                : convertType(
+                    getTypeChecker(host).getTypeAtLocation(member),
+                    host
+                  ),
               static: isStatic,
               readonly:
                 member.modifiers?.some(
@@ -292,11 +312,11 @@ export function convertDeclaration(
         (x) => x.kind === ts.SyntaxKind.ConstKeyword
       ),
       name: compilerNode.name.text,
-      docs: getDocs(compilerNode),
+      docs: getDocs(compilerNode, host),
       members: compilerNode.members.map((member) => {
-        const symbol = getSymbolAtLocation(member.name);
+        const symbol = getSymbolAtLocation(member.name, host);
         assert(symbol !== undefined, "expected enum member to have symbol");
-        return referenceSymbol(symbol);
+        return referenceSymbol(symbol, host);
       }),
     };
   }
@@ -306,8 +326,8 @@ export function convertDeclaration(
       name: ts.isIdentifier(compilerNode.name)
         ? compilerNode.name.text
         : compilerNode.name.getText(),
-      docs: getDocs(compilerNode),
-      value: getTypeChecker().getConstantValue(compilerNode) ?? null,
+      docs: getDocs(compilerNode, host),
+      value: getTypeChecker(host).getConstantValue(compilerNode) ?? null,
     };
   }
   if (
@@ -316,7 +336,7 @@ export function convertDeclaration(
     compilerNode.body &&
     ts.isModuleBlock(compilerNode.body)
   ) {
-    const symbol = getSymbolAtLocation(compilerNode);
+    const symbol = getSymbolAtLocation(compilerNode, host);
     assert(symbol !== undefined, "expected module declaration to have symbol");
     const exports: Record<string, SymbolId> = {};
     if (symbol.exports) {
@@ -330,20 +350,20 @@ export function convertDeclaration(
           exportedSymbol.declarations[0].pos >= compilerNode.body.pos &&
           exportedSymbol.declarations[0].end <= compilerNode.body.end
         ) {
-          const aliasedSymbol = getAliasedSymbol(exportedSymbol);
-          exports[name] = referenceSymbol(aliasedSymbol);
+          const aliasedSymbol = getAliasedSymbol(exportedSymbol, host);
+          exports[name] = referenceSymbol(aliasedSymbol, host);
         }
       }
     }
     return {
       kind: "namespace",
       name: compilerNode.name.text,
-      docs: getDocs(compilerNode),
+      docs: getDocs(compilerNode, host),
       exports,
     };
   }
-  let docs = getDocs(compilerNode as any);
-  const symbol = getSymbolAtLocation(compilerNode);
+  let docs = getDocs(compilerNode as any, host);
+  const symbol = getSymbolAtLocation(compilerNode, host);
   assert(symbol !== undefined, "expected symbol to exist");
   console.log(symbol.getName(), ts.SyntaxKind[compilerNode.kind]);
   // console.log(

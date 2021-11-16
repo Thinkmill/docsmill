@@ -3,7 +3,7 @@ import { convertTypeNode } from "./convert-node";
 import { convertType } from "./convert-type";
 import hashString from "@emotion/hash";
 import { assert } from "../../lib/assert";
-import { getTypeChecker } from ".";
+import { ExtractionHost, getTypeChecker } from ".";
 import {
   TypeParam,
   ObjectMember,
@@ -15,15 +15,18 @@ import {
 export function getTypeParameters(
   node: ts.Node & {
     typeParameters?: ts.NodeArray<ts.TypeParameterDeclaration>;
-  }
+  },
+  host: ExtractionHost
 ): TypeParam[] {
   return (node.typeParameters || []).map((typeParam) => {
     return {
       name: typeParam.name.text,
       constraint: typeParam.constraint
-        ? convertTypeNode(typeParam.constraint)
+        ? convertTypeNode(typeParam.constraint, host)
         : null,
-      default: typeParam.default ? convertTypeNode(typeParam.default) : null,
+      default: typeParam.default
+        ? convertTypeNode(typeParam.default, host)
+        : null,
     };
   });
 }
@@ -31,7 +34,8 @@ export function getTypeParameters(
 export function getObjectMembers(
   node: ts.Node & {
     members: ts.NodeArray<ts.TypeElement>;
-  }
+  },
+  host: ExtractionHost
 ): ObjectMember[] {
   return node.members.map((member): ObjectMember => {
     assert(member.decorators === undefined);
@@ -46,13 +50,13 @@ export function getObjectMembers(
       );
       return {
         kind: "index",
-        key: convertTypeNode(member.parameters[0].type!),
-        value: convertTypeNode(member.type),
+        key: convertTypeNode(member.parameters[0].type!, host),
+        value: convertTypeNode(member.type, host),
         readonly:
           member.modifiers?.some(
             (x) => x.kind === ts.SyntaxKind.ReadonlyKeyword
           ) || false,
-        docs: getDocs(member),
+        docs: getDocs(member, host),
       };
     }
 
@@ -68,14 +72,14 @@ export function getObjectMembers(
         name: ts.isIdentifier(member.name)
           ? member.name.text
           : member.name.getText(),
-        docs: getDocs(member),
+        docs: getDocs(member, host),
         optional: !!member.questionToken,
         readonly:
           member.modifiers?.some(
             (x) => x.kind === ts.SyntaxKind.ReadonlyKeyword
           ) || false,
         type: member.type
-          ? convertTypeNode(member.type)
+          ? convertTypeNode(member.type, host)
           : { kind: "intrinsic", value: "any" },
       };
     }
@@ -87,10 +91,10 @@ export function getObjectMembers(
           ? member.name.text
           : member.name.getText(),
         optional: !!member.questionToken,
-        parameters: getParameters(member),
-        typeParams: getTypeParameters(member),
-        docs: getDocs(member),
-        returnType: getReturnType(member),
+        parameters: getParameters(member, host),
+        typeParams: getTypeParameters(member, host),
+        docs: getDocs(member, host),
+        returnType: getReturnType(member, host),
       };
     }
     const isCallSignature = ts.isCallSignatureDeclaration(member);
@@ -98,10 +102,10 @@ export function getObjectMembers(
       assert(member.questionToken === undefined);
       return {
         kind: isCallSignature ? "call" : "constructor",
-        parameters: getParameters(member),
-        typeParams: getTypeParameters(member),
-        docs: getDocs(member),
-        returnType: getReturnType(member),
+        parameters: getParameters(member, host),
+        typeParams: getTypeParameters(member, host),
+        docs: getDocs(member, host),
+        returnType: getReturnType(member, host),
       };
     }
     return { kind: "unknown", content: member.getText() };
@@ -111,14 +115,15 @@ export function getObjectMembers(
 export function getParameters(
   node: ts.Node & {
     parameters: ts.NodeArray<ts.ParameterDeclaration>;
-  }
+  },
+  host: ExtractionHost
 ): Parameter[] {
   return node.parameters.map((x): Parameter => {
     return {
       name: ts.isIdentifier(x.name) ? x.name.text : x.name.getText(),
       type: x.type
-        ? convertTypeNode(x.type)
-        : convertType(getTypeChecker().getTypeAtLocation(x)),
+        ? convertTypeNode(x.type, host)
+        : convertType(getTypeChecker(host).getTypeAtLocation(x), host),
       kind: x.dotDotDotToken
         ? "rest"
         : x.questionToken || x.initializer
@@ -129,7 +134,8 @@ export function getParameters(
 }
 
 function getJsDocCommentTextMarkdown(
-  comment: string | undefined | ts.NodeArray<ts.JSDocComment>
+  comment: string | undefined | ts.NodeArray<ts.JSDocComment>,
+  host: ExtractionHost
 ) {
   if (comment === undefined) {
     return "";
@@ -141,9 +147,9 @@ function getJsDocCommentTextMarkdown(
   return comment
     .map((x) => {
       if (ts.isJSDocLink(x) && x.name) {
-        const symbol = getSymbolAtLocation(x.name);
+        const symbol = getSymbolAtLocation(x.name, host);
         if (symbol) {
-          const finalSymbol = getAliasedSymbol(symbol);
+          const finalSymbol = getAliasedSymbol(symbol, host);
 
           return `[${
             x.text || finalSymbol.getName()
@@ -162,54 +168,64 @@ function getJsDocCommentTextMarkdown(
     .join("");
 }
 
-export function getAliasedSymbol(symbol: ts.Symbol): ts.Symbol {
+export function getAliasedSymbol(
+  symbol: ts.Symbol,
+  host: ExtractionHost
+): ts.Symbol {
   if ((symbol as any).mergeId !== undefined) {
-    return getAliasedSymbol((getTypeChecker() as any).getMergedSymbol(symbol));
+    return getAliasedSymbol(
+      (getTypeChecker(host) as any).getMergedSymbol(symbol),
+      host
+    );
   }
   if (symbol.flags & ts.SymbolFlags.Alias) {
-    return getAliasedSymbol(getTypeChecker().getAliasedSymbol(symbol));
+    return getAliasedSymbol(
+      getTypeChecker(host).getAliasedSymbol(symbol),
+      host
+    );
   }
   return symbol;
 }
 
-export function getDocsFromJSDocNodes(nodes: ts.JSDoc[]) {
+export function getDocsFromJSDocNodes(nodes: ts.JSDoc[], host: ExtractionHost) {
   return nodes
     .map((x) => {
       let fromTags = (x.tags || [])
         .filter((x) => x.tagName.text !== "module")
         .map((x) => {
           return `@${x.tagName.text} — ${getJsDocCommentTextMarkdown(
-            x.comment
+            x.comment,
+            host
           )}`;
         })
         .join("\n\n");
       if (fromTags) {
         fromTags = `\n\n${fromTags}`;
       }
-      return getJsDocCommentTextMarkdown(x.comment) + fromTags;
+      return getJsDocCommentTextMarkdown(x.comment, host) + fromTags;
     })
     .join("\n\n");
 }
 
-export function getDocs(decl: ts.HasJSDoc) {
+export function getDocs(decl: ts.HasJSDoc, host: ExtractionHost) {
   let nodes = ((decl as any).jsDoc ?? []) as ts.JSDoc[];
   return getDocsFromJSDocNodes(
     nodes.filter(
       (x) =>
         x.tags === undefined || x.tags.every((x) => x.tagName.text !== "module")
-    )
+    ),
+    host
   );
 }
 
 export function getSymbolIdentifier(symbol: ts.Symbol): SymbolId {
   if (!symbol.declarations?.length) {
-    const fullName = getTypeChecker().getFullyQualifiedName(symbol);
     if (
-      fullName === "unknown" ||
-      fullName === "globalThis" ||
-      fullName === "undefined"
+      symbol.name === "unknown" ||
+      symbol.name === "globalThis" ||
+      symbol.name === "undefined"
     ) {
-      return fullName as SymbolId;
+      return symbol.name as SymbolId;
     }
     assert(false, "expected at least one declaration");
   }
@@ -225,9 +241,10 @@ export function getSymbolIdentifier(symbol: ts.Symbol): SymbolId {
 }
 
 export function getSymbolAtLocation(
-  compilerNode: ts.Node
+  compilerNode: ts.Node,
+  host: ExtractionHost
 ): ts.Symbol | undefined {
-  const typeChecker = getTypeChecker();
+  const typeChecker = getTypeChecker(host);
   const boundSymbol = (compilerNode as any).symbol as ts.Symbol | undefined;
   if (boundSymbol !== undefined) {
     return boundSymbol;
@@ -240,21 +257,24 @@ export function getSymbolAtLocation(
 
   const nameNode = (compilerNode as any).name as ts.Node | undefined;
   if (nameNode != null) {
-    return getSymbolAtLocation(nameNode);
+    return getSymbolAtLocation(nameNode, host);
   }
 
   return undefined;
 }
 
-export function getReturnType(node: ts.SignatureDeclaration): SerializedType {
+export function getReturnType(
+  node: ts.SignatureDeclaration,
+  host: ExtractionHost
+): SerializedType {
   if (node.type) {
-    return convertTypeNode(node.type);
+    return convertTypeNode(node.type, host);
   }
-  const signature = getTypeChecker().getSignatureFromDeclaration(node);
+  const signature = getTypeChecker(host).getSignatureFromDeclaration(node);
   assert(
     signature !== undefined,
     "expected to always get signature from signature declaration"
   );
   const returnType = signature.getReturnType();
-  return convertType(returnType);
+  return convertType(returnType, host);
 }

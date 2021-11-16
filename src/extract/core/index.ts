@@ -4,26 +4,22 @@ import { convertDeclaration } from "../core/convert-declaration";
 import { assert } from "../../lib/assert";
 import { getSymbolIdentifier } from "./utils";
 
-function getInitialState() {
-  return {
-    referenceSymbol: undefined! as (symbol: ts.Symbol) => void,
-    program: undefined! as ts.Program,
-  };
+export type ExtractionHost = {
+  referenceSymbol: (symbol: ts.Symbol) => void;
+  program: ts.Program;
+};
+
+export function getTypeChecker(host: ExtractionHost): ts.TypeChecker {
+  return host.program.getTypeChecker();
 }
 
-export function getTypeChecker() {
-  return state.program.getTypeChecker();
-}
-
-let state = getInitialState();
-
-export function referenceSymbol(symbol: ts.Symbol) {
+export function referenceSymbol(symbol: ts.Symbol, host: ExtractionHost) {
   assert(
     (symbol.flags & ts.SymbolFlags.AliasExcludes) === 0 &&
       (symbol as any).mergeId === undefined,
     "alias symbols cannot be passed to referenceSymbol"
   );
-  state.referenceSymbol(symbol);
+  host.referenceSymbol(symbol);
   return getSymbolIdentifier(symbol);
 }
 
@@ -67,22 +63,22 @@ export function getCoreDocsInfo(
   isExternalSymbol: (symbol: ts.Symbol) => boolean,
   shouldIncludeDecl: (node: ts.Node) => boolean
 ): CoreDocInfo {
-  state = getInitialState();
   const symbolsQueue = new Set<ts.Symbol>(rootSymbols.keys());
   const symbolReferences = new Map<ts.Symbol, Set<ts.Symbol>>();
   const externalSymbols = new Set<ts.Symbol>();
   let currentlyVistedSymbol: ts.Symbol | undefined;
-
-  state.referenceSymbol = (symbol) =>
-    collectSymbol(
-      symbol,
-      isExternalSymbol,
-      externalSymbols,
-      currentlyVistedSymbol,
-      symbolReferences,
-      symbolsQueue
-    );
-  state.program = program;
+  const host: ExtractionHost = {
+    referenceSymbol: (symbol) =>
+      collectSymbol(
+        symbol,
+        isExternalSymbol,
+        externalSymbols,
+        currentlyVistedSymbol,
+        symbolReferences,
+        symbolsQueue
+      ),
+    program,
+  };
   const accessibleSymbols = new Map<
     ts.Symbol,
     [SerializedDeclaration, ...SerializedDeclaration[]]
@@ -100,7 +96,7 @@ export function getCoreDocsInfo(
     const filteredDecls = decls
       .filter((decl) => shouldIncludeDecl(decl))
       .map((node) => {
-        const decl = convertDeclaration(node);
+        const decl = convertDeclaration(node, host);
         if (decl.kind === "module" && nameReplacement !== undefined) {
           return { ...decl, name: nameReplacement };
         }
@@ -134,21 +130,22 @@ export function getCoreDocsInfoWithoutSimpleDeclarations(
   program: ts.Program,
   isExternalSymbol: (symbol: ts.Symbol) => boolean
 ): CoreDocInfo {
-  state = getInitialState();
   const symbolsQueue = new Set<ts.Symbol>(rootSymbols.keys());
   const symbolReferences = new Map<ts.Symbol, Set<ts.Symbol>>();
   const externalSymbols = new Set<ts.Symbol>();
   let currentlyVistedSymbol: ts.Symbol | undefined;
-  state.referenceSymbol = (symbol) =>
-    collectSymbol(
-      symbol,
-      isExternalSymbol,
-      externalSymbols,
-      currentlyVistedSymbol,
-      symbolReferences,
-      symbolsQueue
-    );
-  state.program = program;
+  const host: ExtractionHost = {
+    referenceSymbol: (symbol) =>
+      collectSymbol(
+        symbol,
+        isExternalSymbol,
+        externalSymbols,
+        currentlyVistedSymbol,
+        symbolReferences,
+        symbolsQueue
+      ),
+    program,
+  };
   const accessibleSymbols = new Map<
     ts.Symbol,
     [SerializedDeclaration, ...SerializedDeclaration[]]
@@ -166,7 +163,7 @@ export function getCoreDocsInfoWithoutSimpleDeclarations(
       symbol,
       decls.map((node) => {
         if (ts.isSourceFile(node) || ts.isModuleDeclaration(node)) {
-          const decl = convertDeclaration(node);
+          const decl = convertDeclaration(node, host);
           if (decl.kind === "module" && nameReplacement !== undefined) {
             return { ...decl, name: nameReplacement };
           }

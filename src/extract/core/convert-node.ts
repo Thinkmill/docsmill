@@ -6,7 +6,7 @@ import {
   getAliasedSymbol,
   getSymbolAtLocation,
 } from "./utils";
-import { referenceSymbol } from ".";
+import { ExtractionHost, referenceSymbol } from ".";
 import { assert, assertNever } from "../../lib/assert";
 import { SerializedType, SymbolId, TupleElement } from "../../lib/types";
 
@@ -53,15 +53,16 @@ function printNode(node: ts.Node) {
 
 function handleReference(
   typeArguments: ts.NodeArray<ts.TypeNode> | undefined,
-  typeName: ts.Node
+  typeName: ts.Node,
+  host: ExtractionHost
 ): SerializedType {
-  let symbol = getSymbolAtLocation(typeName);
+  let symbol = getSymbolAtLocation(typeName, host);
   if (!symbol) {
     return {
       kind: "reference",
       fullName: "unknown" as SymbolId,
       name: printNode(typeName),
-      typeArguments: (typeArguments || []).map((x) => convertTypeNode(x)),
+      typeArguments: (typeArguments || []).map((x) => convertTypeNode(x, host)),
     };
   }
 
@@ -72,14 +73,14 @@ function handleReference(
     };
   }
 
-  symbol = getAliasedSymbol(symbol);
+  symbol = getAliasedSymbol(symbol, host);
 
   if (symbol.getName() === "Array") {
     assert(typeArguments?.length === 1);
     return {
       kind: "array",
       readonly: false,
-      inner: convertTypeNode(typeArguments[0]),
+      inner: convertTypeNode(typeArguments[0], host),
     };
   }
   if (symbol.getName() === "ReadonlyArray") {
@@ -87,10 +88,10 @@ function handleReference(
     return {
       kind: "array",
       readonly: true,
-      inner: convertTypeNode(typeArguments[0]),
+      inner: convertTypeNode(typeArguments[0], host),
     };
   }
-  const fullName = referenceSymbol(symbol);
+  const fullName = referenceSymbol(symbol, host);
   let name = symbol.getName();
   if (fullName === "unknown") {
     name = printNode(typeName);
@@ -100,7 +101,7 @@ function handleReference(
     kind: "reference",
     fullName,
     name,
-    typeArguments: (typeArguments || []).map((x) => convertTypeNode(x)),
+    typeArguments: (typeArguments || []).map((x) => convertTypeNode(x, host)),
   };
 }
 
@@ -120,12 +121,23 @@ const intrinsics = new Map([
   [ts.SyntaxKind.ThisType, "this"],
 ]);
 
-export function convertTypeNode(compilerNode: ts.TypeNode): SerializedType {
+export function convertTypeNode(
+  compilerNode: ts.TypeNode,
+  host: ExtractionHost
+): SerializedType {
   if (ts.isTypeReferenceNode(compilerNode)) {
-    return handleReference(compilerNode.typeArguments, compilerNode.typeName);
+    return handleReference(
+      compilerNode.typeArguments,
+      compilerNode.typeName,
+      host
+    );
   }
   if (ts.isExpressionWithTypeArguments(compilerNode)) {
-    return handleReference(compilerNode.typeArguments, compilerNode.expression);
+    return handleReference(
+      compilerNode.typeArguments,
+      compilerNode.expression,
+      host
+    );
   }
 
   const intrinsic = intrinsics.get(compilerNode.kind);
@@ -159,29 +171,29 @@ export function convertTypeNode(compilerNode: ts.TypeNode): SerializedType {
   if (ts.isUnionTypeNode(compilerNode)) {
     return {
       kind: "union",
-      types: compilerNode.types.map((x) => convertTypeNode(x)),
+      types: compilerNode.types.map((x) => convertTypeNode(x, host)),
     };
   }
   if (ts.isIndexedAccessTypeNode(compilerNode)) {
     return {
       kind: "indexed-access",
-      object: convertTypeNode(compilerNode.objectType),
-      index: convertTypeNode(compilerNode.indexType),
+      object: convertTypeNode(compilerNode.objectType, host),
+      index: convertTypeNode(compilerNode.indexType, host),
     };
   }
   if (ts.isConditionalTypeNode(compilerNode)) {
     return {
       kind: "conditional",
-      checkType: convertTypeNode(compilerNode.checkType),
-      extendsType: convertTypeNode(compilerNode.extendsType),
-      trueType: convertTypeNode(compilerNode.trueType),
-      falseType: convertTypeNode(compilerNode.falseType),
+      checkType: convertTypeNode(compilerNode.checkType, host),
+      extendsType: convertTypeNode(compilerNode.extendsType, host),
+      trueType: convertTypeNode(compilerNode.trueType, host),
+      falseType: convertTypeNode(compilerNode.falseType, host),
     };
   }
   if (ts.isParenthesizedTypeNode(compilerNode)) {
     return {
       kind: "paren",
-      value: convertTypeNode(compilerNode.type),
+      value: convertTypeNode(compilerNode.type, host),
     };
   }
 
@@ -192,7 +204,7 @@ export function convertTypeNode(compilerNode: ts.TypeNode): SerializedType {
   if (ts.isIntersectionTypeNode(compilerNode)) {
     return {
       kind: "intersection",
-      types: compilerNode.types.map((x) => convertTypeNode(x)),
+      types: compilerNode.types.map((x) => convertTypeNode(x, host)),
     };
   }
   if (ts.isMappedTypeNode(compilerNode)) {
@@ -205,12 +217,14 @@ export function convertTypeNode(compilerNode: ts.TypeNode): SerializedType {
       kind: "mapped",
       param: {
         name: typeParam.name.text,
-        constraint: convertTypeNode(typeParam.constraint),
+        constraint: convertTypeNode(typeParam.constraint, host),
       },
       type: compilerNode.type
-        ? convertTypeNode(compilerNode.type)
+        ? convertTypeNode(compilerNode.type, host)
         : { kind: "intrinsic", value: "any" },
-      as: compilerNode.nameType ? convertTypeNode(compilerNode.nameType) : null,
+      as: compilerNode.nameType
+        ? convertTypeNode(compilerNode.nameType, host)
+        : null,
       optional: getModifierKind(compilerNode.questionToken),
       readonly: getModifierKind(compilerNode.readonlyToken),
     };
@@ -218,25 +232,25 @@ export function convertTypeNode(compilerNode: ts.TypeNode): SerializedType {
   if (ts.isTypeLiteralNode(compilerNode)) {
     return {
       kind: "object",
-      members: getObjectMembers(compilerNode),
+      members: getObjectMembers(compilerNode, host),
     };
   }
 
   if (ts.isFunctionTypeNode(compilerNode)) {
     return {
       kind: "signature",
-      parameters: getParameters(compilerNode),
-      typeParams: getTypeParameters(compilerNode),
-      returnType: convertTypeNode(compilerNode.type),
+      parameters: getParameters(compilerNode, host),
+      typeParams: getTypeParameters(compilerNode, host),
+      returnType: convertTypeNode(compilerNode.type, host),
     };
   }
 
   if (ts.isConstructorTypeNode(compilerNode)) {
     return {
       kind: "constructor",
-      parameters: getParameters(compilerNode),
-      typeParams: getTypeParameters(compilerNode),
-      returnType: convertTypeNode(compilerNode.type),
+      parameters: getParameters(compilerNode, host),
+      typeParams: getTypeParameters(compilerNode, host),
+      returnType: convertTypeNode(compilerNode.type, host),
     };
   }
 
@@ -244,7 +258,7 @@ export function convertTypeNode(compilerNode: ts.TypeNode): SerializedType {
     return {
       kind: "array",
       readonly: false,
-      inner: convertTypeNode(compilerNode.elementType),
+      inner: convertTypeNode(compilerNode.elementType, host),
     };
   }
 
@@ -261,7 +275,7 @@ export function convertTypeNode(compilerNode: ts.TypeNode): SerializedType {
               ? "optional"
               : "required",
             label: element.name.text,
-            type: convertTypeNode(element.type),
+            type: convertTypeNode(element.type, host),
           };
         }
         let innerType = element;
@@ -279,7 +293,7 @@ export function convertTypeNode(compilerNode: ts.TypeNode): SerializedType {
         return {
           kind,
           label: null,
-          type: convertTypeNode(innerType),
+          type: convertTypeNode(innerType, host),
         };
       }),
     };
@@ -294,7 +308,7 @@ export function convertTypeNode(compilerNode: ts.TypeNode): SerializedType {
       return { kind: "intrinsic", value: "unique symbol" };
     }
     if (compilerNode.operator === ts.SyntaxKind.ReadonlyKeyword) {
-      const inner = convertTypeNode(compilerNode.type);
+      const inner = convertTypeNode(compilerNode.type, host);
       if (inner.kind === "array" || inner.kind === "tuple") {
         return {
           ...inner,
@@ -309,7 +323,7 @@ export function convertTypeNode(compilerNode: ts.TypeNode): SerializedType {
     if (compilerNode.operator === ts.SyntaxKind.KeyOfKeyword) {
       return {
         kind: "keyof",
-        value: convertTypeNode(compilerNode.type),
+        value: convertTypeNode(compilerNode.type, host),
       };
     }
     assertNever(compilerNode.operator);
@@ -318,13 +332,13 @@ export function convertTypeNode(compilerNode: ts.TypeNode): SerializedType {
   if (ts.isImportTypeNode(compilerNode)) {
     if (compilerNode.isTypeOf) {
       let node = compilerNode.qualifier || compilerNode;
-      let symbol = getSymbolAtLocation(node);
+      let symbol = getSymbolAtLocation(node, host);
       if (symbol) {
-        symbol = getAliasedSymbol(symbol);
+        symbol = getAliasedSymbol(symbol, host);
 
         return {
           kind: "typeof",
-          fullName: referenceSymbol(symbol),
+          fullName: referenceSymbol(symbol, host),
           name: symbol.getName(),
         };
       }
@@ -339,19 +353,19 @@ export function convertTypeNode(compilerNode: ts.TypeNode): SerializedType {
     }
     let qualifier = compilerNode.qualifier;
     if (qualifier) {
-      return handleReference(compilerNode.typeArguments, qualifier);
+      return handleReference(compilerNode.typeArguments, qualifier, host);
     }
     assert(false);
   }
 
   if (ts.isTypeQueryNode(compilerNode)) {
     const entityName = compilerNode.exprName;
-    let symbol = getSymbolAtLocation(entityName);
+    let symbol = getSymbolAtLocation(entityName, host);
     if (symbol) {
-      symbol = getAliasedSymbol(symbol);
+      symbol = getAliasedSymbol(symbol, host);
       return {
         kind: "typeof",
-        fullName: referenceSymbol(symbol),
+        fullName: referenceSymbol(symbol, host),
         name: symbol.getName(),
       };
     }
@@ -372,7 +386,7 @@ export function convertTypeNode(compilerNode: ts.TypeNode): SerializedType {
           ? "this"
           : compilerNode.parameterName.text,
       ...(compilerNode.type
-        ? { type: convertTypeNode(compilerNode.type) }
+        ? { type: convertTypeNode(compilerNode.type, host) }
         : {}),
     };
   }
@@ -383,7 +397,7 @@ export function convertTypeNode(compilerNode: ts.TypeNode): SerializedType {
       head: compilerNode.head.text,
       rest: compilerNode.templateSpans.map((element) => {
         return {
-          type: convertTypeNode(element.type),
+          type: convertTypeNode(element.type, host),
           text: element.literal.text,
         };
       }),
