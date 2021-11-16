@@ -169,7 +169,9 @@ export function SymbolReference({
         </span>
       }
     >
-      {({ triggerProps }) => <a {...triggerProps} {...props} />}
+      {function TooltipTrigger({ triggerProps }) {
+        return <a {...triggerProps} {...props} />;
+      }}
     </Tooltip>
   ) : (
     <a {...props} />

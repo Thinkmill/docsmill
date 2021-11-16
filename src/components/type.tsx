@@ -89,7 +89,7 @@ export function Type({ type }: { type: SerializedType }): JSX.Element {
     return (
       <Fragment>
         <span css={codeFont}>{"{ "}</span>
-        {type.members.map((prop, i) => {
+        {type.members.map(function ObjectMember(prop, i) {
           if (prop.kind === "prop") {
             return (
               <Indent key={i}>

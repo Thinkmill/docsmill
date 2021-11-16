@@ -28,7 +28,7 @@ export function Navigation({ rootSymbolName }: { rootSymbolName: SymbolId }) {
       summary={<SymbolReference fullName={rootSymbolName} name={name} />}
     >
       <ul css={{ padding: 0 }}>
-        {groupedExports.map((group, i) => {
+        {groupedExports.map(function ExportGroup(group, i) {
           if (group.kind !== "canonical") {
             return (
               <Item key={i}>

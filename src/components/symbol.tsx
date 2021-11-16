@@ -127,11 +127,10 @@ export function RenderRootSymbol({ symbol }: { symbol: SymbolId }) {
         <details css={innerBits ? undefined : styles.referencesContainer}>
           <summary>Referenced by</summary>
           <ul css={styles.referenceList}>
-            {relatedSymbols.map((thing, i) => {
+            {relatedSymbols.map(function ReferenceItem(thing, i) {
               return (
                 <li key={i} css={styles.referenceItem}>
                   <SymbolReference
-                    key={i}
                     fullName={thing}
                     name={symbols[thing][0].name}
                   />
@@ -145,11 +144,7 @@ export function RenderRootSymbol({ symbol }: { symbol: SymbolId }) {
         <details css={styles.referencesContainer}>
           <summary>Unexported symbols referenced here</summary>
           {innerBits.map((thing) => {
-            return (
-              <div key={thing}>
-                <RenderRootSymbol symbol={thing} />
-              </div>
-            );
+            return <RenderRootSymbol key={thing} symbol={thing} />;
           })}
         </details>
       )}
@@ -459,7 +454,7 @@ function ClassMembers({
           </Indent>
         );
       })}
-      {members.map((prop, i) => {
+      {members.map(function ClassMember(prop, i) {
         if (prop.kind === "prop") {
           return (
             <Indent key={i}>
@@ -520,7 +515,7 @@ function Exports({ fullName }: { fullName: SymbolId }) {
   const transformedExports = useGroupedExports(fullName);
   return (
     <div css={styles.innerExportsContainer}>
-      {transformedExports.map((exported, i) => {
+      {transformedExports.map(function Exported(exported, i) {
         if (exported.kind === "canonical") {
           return <RenderRootSymbol key={i} symbol={exported.fullName} />;
         }
@@ -562,7 +557,7 @@ function Exports({ fullName }: { fullName: SymbolId }) {
               <Syntax kind="keyword">export</Syntax>
               <Syntax kind="bracket">{" { "}</Syntax>
               <Indent>
-                {exported.exports.map((exportInfo, i) => {
+                {exported.exports.map(function ReexportedItem(exportInfo, i) {
                   return (
                     <div key={i}>
                       <Link

@@ -55,7 +55,7 @@ const theme = {
 };
 
 const components: ReactMarkdownOptions["components"] = {
-  code(props) {
+  code: function CodeElement(props) {
     if (props.inline) {
       return <code css={codeFont}>{props.children}</code>;
     }
@@ -109,7 +109,7 @@ const components: ReactMarkdownOptions["components"] = {
       </pre>
     );
   },
-  a(props) {
+  a: function MarkdownLink(props) {
     let href = ((props.node.properties as any).href as string) || "";
     const { symbols, goodIdentifiers, externalSymbols } = useDocsContext();
     const fullName = href.replace("#symbol-", "") as SymbolId;

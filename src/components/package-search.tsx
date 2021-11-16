@@ -119,7 +119,7 @@ export function PackageSearch({ autoFocus }: { autoFocus?: boolean }) {
                       return attribution;
                     },
 
-                    item({ item }) {
+                    item: function SearchItem({ item }) {
                       const parsedHighlight = parseAlgoliaHitHighlight({
                         hit: item,
                         attribute: "name",
@@ -128,7 +128,10 @@ export function PackageSearch({ autoFocus }: { autoFocus?: boolean }) {
                         <div css={styles.searchItem}>
                           <div>
                             <span>
-                              {parsedHighlight.map((part, i) => {
+                              {parsedHighlight.map(function SearchHighlightPart(
+                                part,
+                                i
+                              ) {
                                 return (
                                   <span
                                     css={
