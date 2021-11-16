@@ -23,38 +23,16 @@ export function referenceSymbol(symbol: ts.Symbol, host: ExtractionHost) {
   return getSymbolIdentifier(symbol);
 }
 
-function collectSymbol(
-  symbol: ts.Symbol,
-  isExternalSymbol: (symbol: ts.Symbol) => boolean,
-  referencedExternalSymbols: Set<ts.Symbol>,
-  currentlyVistedSymbol: ts.Symbol | undefined,
-  symbolReferences: Map<ts.Symbol, Set<ts.Symbol>>,
-  symbolsQueue: Set<ts.Symbol>
-) {
-  if (!symbol.declarations?.length) {
-    return;
-  }
-  if (isExternalSymbol(symbol)) {
-    referencedExternalSymbols.add(symbol);
-    return;
-  }
-  if (currentlyVistedSymbol !== undefined && symbol !== currentlyVistedSymbol) {
-    if (!symbolReferences.has(symbol)) {
-      symbolReferences.set(symbol, new Set());
-    }
-    const symbolsThatReferenceTheThing = symbolReferences.get(symbol)!;
-    symbolsThatReferenceTheThing.add(currentlyVistedSymbol);
-  }
-  symbolsQueue.add(symbol);
-}
-
-export type CoreDocInfo = {
+export type BaseCoreDocInfo = {
   accessibleSymbols: Map<
     ts.Symbol,
     [SerializedDeclaration, ...SerializedDeclaration[]]
   >;
-  symbolReferences: Map<ts.Symbol, Set<ts.Symbol>>;
   externalSymbols: Set<ts.Symbol>;
+};
+
+export type CoreDocInfo = BaseCoreDocInfo & {
+  symbolReferences: Map<ts.Symbol, Set<ts.Symbol>>;
 };
 
 export function getCoreDocsInfo(
@@ -68,15 +46,26 @@ export function getCoreDocsInfo(
   const externalSymbols = new Set<ts.Symbol>();
   let currentlyVistedSymbol: ts.Symbol | undefined;
   const host: ExtractionHost = {
-    referenceSymbol: (symbol) =>
-      collectSymbol(
-        symbol,
-        isExternalSymbol,
-        externalSymbols,
-        currentlyVistedSymbol,
-        symbolReferences,
-        symbolsQueue
-      ),
+    referenceSymbol: (symbol) => {
+      if (!symbol.declarations?.length) {
+        return;
+      }
+      if (isExternalSymbol(symbol)) {
+        externalSymbols.add(symbol);
+        return;
+      }
+      if (
+        currentlyVistedSymbol !== undefined &&
+        symbol !== currentlyVistedSymbol
+      ) {
+        if (!symbolReferences.has(symbol)) {
+          symbolReferences.set(symbol, new Set());
+        }
+        const symbolsThatReferenceTheThing = symbolReferences.get(symbol)!;
+        symbolsThatReferenceTheThing.add(currentlyVistedSymbol);
+      }
+      symbolsQueue.add(symbol);
+    },
     program,
   };
   const accessibleSymbols = new Map<
@@ -129,21 +118,18 @@ export function getCoreDocsInfoWithoutSimpleDeclarations(
   rootSymbols: Map<ts.Symbol, string>,
   program: ts.Program,
   isExternalSymbol: (symbol: ts.Symbol) => boolean
-): CoreDocInfo {
+): BaseCoreDocInfo {
   const symbolsQueue = new Set<ts.Symbol>(rootSymbols.keys());
-  const symbolReferences = new Map<ts.Symbol, Set<ts.Symbol>>();
   const externalSymbols = new Set<ts.Symbol>();
-  let currentlyVistedSymbol: ts.Symbol | undefined;
   const host: ExtractionHost = {
-    referenceSymbol: (symbol) =>
-      collectSymbol(
-        symbol,
-        isExternalSymbol,
-        externalSymbols,
-        currentlyVistedSymbol,
-        symbolReferences,
-        symbolsQueue
-      ),
+    referenceSymbol: (symbol) => {
+      if (!symbol.declarations?.length) {
+        return;
+      }
+      if (!isExternalSymbol(symbol)) {
+        symbolsQueue.add(symbol);
+      }
+    },
     program,
   };
   const accessibleSymbols = new Map<
@@ -151,7 +137,6 @@ export function getCoreDocsInfoWithoutSimpleDeclarations(
     [SerializedDeclaration, ...SerializedDeclaration[]]
   >();
   for (const symbol of symbolsQueue) {
-    currentlyVistedSymbol = symbol;
     const decls = symbol.declarations;
     assert(
       decls !== undefined && decls.length >= 1,
@@ -174,5 +159,5 @@ export function getCoreDocsInfoWithoutSimpleDeclarations(
       }) as [SerializedDeclaration, ...SerializedDeclaration[]]
     );
   }
-  return { accessibleSymbols, symbolReferences, externalSymbols };
+  return { accessibleSymbols, externalSymbols };
 }
