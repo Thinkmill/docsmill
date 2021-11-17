@@ -1,20 +1,10 @@
 import { css as style } from "@emotion/react";
 import { codeFont, syntaxColors, codeFontStyleObj } from "../lib/theme.css";
-import { targetBackground } from "./symbol.css";
 
 const baseSymbol = {
   textDecoration: "none",
   ":hover": { textDecoration: "underline" },
 };
-
-export const symbolName = style([
-  codeFont,
-  targetBackground,
-  {
-    color: syntaxColors.symbol,
-    ...baseSymbol,
-  },
-]);
 
 export const unknownExternalReference = style([
   codeFont,

@@ -62,19 +62,6 @@ export type SimpleSerializedDeclaration =
         docs: string;
       }[];
       members: ClassMember[];
-    }
-  | {
-      kind: "enum";
-      const: boolean;
-      name: string;
-      docs: string;
-      members: SymbolId[];
-    }
-  | {
-      kind: "enum-member";
-      name: string;
-      docs: string;
-      value: string | number | null;
     };
 
 export type SerializedDeclaration =
@@ -90,6 +77,19 @@ export type SerializedDeclaration =
       name: string;
       docs: string;
       exports: Record<string, SymbolId>;
+    }
+  | {
+      kind: "enum";
+      const: boolean;
+      name: string;
+      docs: string;
+      members: SymbolId[];
+    }
+  | {
+      kind: "enum-member";
+      name: string;
+      docs: string;
+      value: string | number | null;
     };
 
 export type ClassMember =

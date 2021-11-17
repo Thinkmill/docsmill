@@ -39,13 +39,18 @@ export function RenderRootSymbol({ symbol }: { symbol: SymbolId }) {
   return (
     <div>
       <div css={{ display: "flex", justifyContent: "space-between" }}>
-        {decls[0].kind === "module" ? (
-          <h2 css={styles.moduleHeading}>{decls[0].name}</h2>
-        ) : (
-          <h3 css={styles.symbolHeading} id={goodIdentifiers[symbol]}>
+        <a css={styles.symbolHeadingLink} href={`#${goodIdentifiers[symbol]}`}>
+          <h3
+            css={
+              decls[0].kind === "module"
+                ? styles.moduleHeading
+                : styles.symbolHeading
+            }
+            id={goodIdentifiers[symbol]}
+          >
             {decls[0].name}
           </h3>
-        )}
+        </a>
         {pkgRefPortion !== undefined && (
           <div>
             {locationsForSymbol.map((location, i) => (

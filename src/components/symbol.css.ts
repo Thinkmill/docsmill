@@ -14,6 +14,15 @@ export const moduleHeading = style({
   ...codeFontStyleObj,
 });
 
+export const symbolHeadingLink = style({
+  textDecoration: "none",
+  ":hover": {
+    textDecoration: "underline",
+    color: syntaxColors.symbol,
+  },
+  color: "inherit",
+});
+
 const HEADER_HEIGHT = 42;
 
 const symbolDepthVar = `--symbol-depth-l941owae1cj`;
@@ -70,7 +79,10 @@ export const referenceList = style({
 });
 
 export const targetBackground = style({
-  ":target": { backgroundColor: "#ffff54ba" },
+  scrollMarginTop: `calc(var(${symbolDepthVar}, 0) * ${HEADER_HEIGHT}px + 8px)`,
+  ":target": {
+    backgroundColor: "#ffff54ba",
+  },
 });
 
 export const moduleSpecifierLink = style({
@@ -82,14 +94,10 @@ export const moduleSpecifierLink = style({
 
 export const reexportTarget = style([targetBackground, codeFont]);
 
-export const symbolHeading = style({
+export const symbolHeading = style(targetBackground, {
   fontSize: "1.6rem",
   fontWeight: "normal",
   marginBottom: 16,
   marginTop: 0,
   ...codeFontStyleObj,
-  scrollMarginTop: `calc(var(${symbolDepthVar}, 0) * ${HEADER_HEIGHT}px + 8px)`,
-  ":target": {
-    backgroundColor: "#ffff54ba",
-  },
 });

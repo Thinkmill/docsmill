@@ -19,25 +19,6 @@ import { SymbolId } from "../lib/types";
 
 const NamesInScopeContext = createContext<Map<string, SymbolId>>(new Map());
 
-export function SymbolName({
-  fullName,
-  name,
-}: {
-  name: string;
-  fullName: SymbolId;
-}) {
-  const { goodIdentifiers } = useDocsContext();
-  return (
-    <a
-      id={goodIdentifiers[fullName]}
-      css={styles.symbolName}
-      href={`#${goodIdentifiers[fullName]}`}
-    >
-      {name}
-    </a>
-  );
-}
-
 const externalReferences = new Map(
   Object.entries({
     Iterable:
