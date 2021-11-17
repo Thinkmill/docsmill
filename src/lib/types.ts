@@ -16,9 +16,9 @@ export type SimpleSerializedDeclaration =
   | {
       kind: "function";
       name: string;
-      parameters: Parameter[];
+      parameters?: [Parameter, ...Parameter[]];
       docs: string;
-      typeParams: TypeParam[];
+      typeParams?: [TypeParam, ...TypeParam[]];
       returnType: SerializedType;
     }
   | {
@@ -32,7 +32,7 @@ export type SimpleSerializedDeclaration =
       kind: "type-alias";
       name: string;
       docs: string;
-      typeParams: TypeParam[];
+      typeParams?: [TypeParam, ...TypeParam[]];
       type: SerializedType;
     }
   | {
@@ -45,24 +45,26 @@ export type SimpleSerializedDeclaration =
       kind: "interface";
       name: string;
       docs: string;
-      typeParams: TypeParam[];
-      extends: SerializedType[];
-      members: ObjectMember[];
+      typeParams?: [TypeParam, ...TypeParam[]];
+      extends?: [SerializedType, ...SerializedType[]];
+      members?: [ObjectMember, ...ObjectMember[]];
     }
   | {
       kind: "class";
       name: string;
       docs: string;
       willBeComparedNominally: boolean;
-      typeParams: TypeParam[];
+      typeParams?: [TypeParam, ...TypeParam[]];
       extends: SerializedType | null;
-      implements: SerializedType[];
-      constructors: {
-        parameters: Parameter[];
-        docs: string;
-      }[];
-      members: ClassMember[];
+      implements?: [SerializedType, ...SerializedType[]];
+      constructors?: [ConstructorDeclaration, ...ConstructorDeclaration[]];
+      members?: [ClassMember, ...ClassMember[]];
     };
+
+export type ConstructorDeclaration = {
+  parameters?: [Parameter, ...Parameter[]];
+  docs: string;
+};
 
 export type SerializedDeclaration =
   | SimpleSerializedDeclaration
@@ -127,8 +129,8 @@ export type TupleElement = {
 };
 
 type FunctionLike = {
-  parameters: Parameter[];
-  typeParams: TypeParam[];
+  parameters?: [Parameter, ...Parameter[]];
+  typeParams?: [TypeParam, ...TypeParam[]];
   returnType: SerializedType;
 };
 
@@ -169,7 +171,7 @@ export type SerializedType =
       kind: "reference";
       fullName: SymbolId;
       name: string;
-      typeArguments: SerializedType[];
+      typeArguments?: [SerializedType, ...SerializedType[]];
     }
   | { kind: "typeof"; fullName: SymbolId; name: string }
   | { kind: "array"; readonly: boolean; inner: SerializedType }
@@ -178,8 +180,12 @@ export type SerializedType =
   | { kind: "intersection"; types: SerializedType[] }
   | { kind: "infer"; name: string }
   | { kind: "paren"; value: SerializedType }
-  | { kind: "tuple"; readonly: boolean; elements: TupleElement[] }
-  | { kind: "object"; members: ObjectMember[] }
+  | {
+      kind: "tuple";
+      readonly: boolean;
+      elements?: [TupleElement, ...TupleElement[]];
+    }
+  | { kind: "object"; members?: [ObjectMember, ...ObjectMember[]] }
   | { kind: "indexed-access"; object: SerializedType; index: SerializedType }
   | {
       kind: "conditional";
@@ -200,18 +206,10 @@ export type SerializedType =
       readonly: -1 | 0 | 1;
       optional: -1 | 0 | 1;
     }
-  | {
-      kind: "signature";
-      parameters: Parameter[];
-      typeParams: TypeParam[];
-      returnType: SerializedType;
-    }
-  | {
+  | ({ kind: "signature" } & FunctionLike)
+  | ({
       kind: "constructor";
-      parameters: Parameter[];
-      typeParams: TypeParam[];
-      returnType: SerializedType;
-    }
+    } & FunctionLike)
   | {
       kind: "type-predicate";
       asserts: boolean;
@@ -222,6 +220,9 @@ export type SerializedType =
   | {
       kind: "template";
       head: string;
-      rest: { type: SerializedType; text: string }[];
+      rest?: [
+        { type: SerializedType; text: string },
+        ...{ type: SerializedType; text: string }[]
+      ];
     }
   | { kind: "raw"; value: string };

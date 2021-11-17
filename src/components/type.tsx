@@ -19,14 +19,14 @@ export function Type({ type }: { type: SerializedType }): JSX.Element {
     return (
       <Fragment>
         <SymbolReference name={type.name} fullName={type.fullName} />
-        {!!type.typeArguments.length && (
+        {type.typeArguments && (
           <Fragment>
             <span css={codeFont}>{"<"}</span>
             {type.typeArguments.map((param, i) => {
               return (
                 <Fragment key={i}>
                   <Type type={param} />
-                  {i === type.typeArguments.length - 1 ? null : (
+                  {i === type.typeArguments!.length - 1 ? null : (
                     <Syntax kind="comma">, </Syntax>
                   )}
                 </Fragment>
@@ -83,7 +83,7 @@ export function Type({ type }: { type: SerializedType }): JSX.Element {
     );
   }
   if (type.kind === "object") {
-    if (type.members.length === 0) {
+    if (type.members === undefined) {
       return <span css={codeFont}>{"{}"}</span>;
     }
     return (
@@ -154,13 +154,13 @@ export function Type({ type }: { type: SerializedType }): JSX.Element {
       <Fragment>
         {type.readonly && <Syntax kind="keyword">readonly </Syntax>}
         <Syntax kind="bracket">[</Syntax>
-        {type.elements.map((element, i) => {
+        {type.elements?.map((element, i) => {
           return (
             <Fragment key={i}>
               {element.kind === "rest" && <Syntax kind="colon">...</Syntax>}
               <Type type={element.type} />
               {element.kind === "optional" && <span css={codeFont}>?</span>}
-              {i !== type.elements.length - 1 && (
+              {i !== type.elements!.length - 1 && (
                 <Syntax kind="comma">, </Syntax>
               )}
             </Fragment>
@@ -295,7 +295,7 @@ export function Type({ type }: { type: SerializedType }): JSX.Element {
     return (
       <Fragment>
         <Syntax kind="string">`{type.head}</Syntax>
-        {type.rest.map((element, i) => {
+        {type.rest?.map((element, i) => {
           return (
             <Fragment key={i}>
               <Syntax kind="colon">{"${"}</Syntax>
@@ -313,8 +313,12 @@ export function Type({ type }: { type: SerializedType }): JSX.Element {
   return <span css={[codeFont, { color: "red" }]}>{type.value}</span>;
 }
 
-export function TypeParams({ params }: { params: TypeParam[] }) {
-  if (!params.length) return null;
+export function TypeParams({
+  params,
+}: {
+  params: [TypeParam, ...TypeParam[]] | undefined;
+}) {
+  if (!params) return null;
   return (
     <Fragment>
       <Syntax kind="bracket">{"<"}</Syntax>
@@ -343,11 +347,15 @@ export function TypeParams({ params }: { params: TypeParam[] }) {
   );
 }
 
-export function Params({ params }: { params: Parameter[] }) {
+export function Params({
+  params,
+}: {
+  params: [Parameter, ...Parameter[]] | undefined;
+}) {
   return (
     <Fragment>
       <Syntax kind="bracket">(</Syntax>
-      {params.map((param, i) => {
+      {params?.map((param, i) => {
         return (
           <Fragment key={i}>
             {param.kind === "rest" && <Syntax kind="colon">...</Syntax>}

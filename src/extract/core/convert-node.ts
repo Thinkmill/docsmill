@@ -5,6 +5,7 @@ import {
   getObjectMembers,
   getAliasedSymbol,
   getSymbolAtLocation,
+  spreadTupleOrNone,
 } from "./utils";
 import { ExtractionHost, referenceSymbol } from ".";
 import { assert, assertNever } from "../../lib/assert";
@@ -62,7 +63,10 @@ function handleReference(
       kind: "reference",
       fullName: "unknown" as SymbolId,
       name: printNode(typeName),
-      typeArguments: (typeArguments || []).map((x) => convertTypeNode(x, host)),
+      ...spreadTupleOrNone(
+        "typeArguments",
+        typeArguments?.map((x) => convertTypeNode(x, host))
+      ),
     };
   }
 
@@ -101,7 +105,10 @@ function handleReference(
     kind: "reference",
     fullName,
     name,
-    typeArguments: (typeArguments || []).map((x) => convertTypeNode(x, host)),
+    ...spreadTupleOrNone(
+      "typeArguments",
+      typeArguments?.map((x) => convertTypeNode(x, host))
+    ),
   };
 }
 
@@ -232,15 +239,15 @@ export function convertTypeNode(
   if (ts.isTypeLiteralNode(compilerNode)) {
     return {
       kind: "object",
-      members: getObjectMembers(compilerNode, host),
+      ...spreadTupleOrNone("members", getObjectMembers(compilerNode, host)),
     };
   }
 
   if (ts.isFunctionTypeNode(compilerNode)) {
     return {
       kind: "signature",
-      parameters: getParameters(compilerNode, host),
-      typeParams: getTypeParameters(compilerNode, host),
+      ...spreadTupleOrNone("parameters", getParameters(compilerNode, host)),
+      ...spreadTupleOrNone("typeParams", getTypeParameters(compilerNode, host)),
       returnType: convertTypeNode(compilerNode.type, host),
     };
   }
@@ -248,8 +255,8 @@ export function convertTypeNode(
   if (ts.isConstructorTypeNode(compilerNode)) {
     return {
       kind: "constructor",
-      parameters: getParameters(compilerNode, host),
-      typeParams: getTypeParameters(compilerNode, host),
+      ...spreadTupleOrNone("parameters", getParameters(compilerNode, host)),
+      ...spreadTupleOrNone("typeParams", getTypeParameters(compilerNode, host)),
       returnType: convertTypeNode(compilerNode.type, host),
     };
   }
@@ -266,36 +273,39 @@ export function convertTypeNode(
     return {
       kind: "tuple",
       readonly: false,
-      elements: compilerNode.elements.map((element): TupleElement => {
-        if (ts.isNamedTupleMember(element)) {
+      ...spreadTupleOrNone(
+        "elements",
+        compilerNode.elements.map((element): TupleElement => {
+          if (ts.isNamedTupleMember(element)) {
+            return {
+              kind: element.dotDotDotToken
+                ? "rest"
+                : element.questionToken
+                ? "optional"
+                : "required",
+              label: element.name.text,
+              type: convertTypeNode(element.type, host),
+            };
+          }
+          let innerType = element;
+          const isOptional = ts.isOptionalTypeNode(element);
+          const isRest = ts.isRestTypeNode(element);
+          let kind: TupleElement["kind"] = "required";
+          if (isOptional) {
+            innerType = element.type;
+            kind = "optional";
+          }
+          if (isRest) {
+            innerType = element.type;
+            kind = "rest";
+          }
           return {
-            kind: element.dotDotDotToken
-              ? "rest"
-              : element.questionToken
-              ? "optional"
-              : "required",
-            label: element.name.text,
-            type: convertTypeNode(element.type, host),
+            kind,
+            label: null,
+            type: convertTypeNode(innerType, host),
           };
-        }
-        let innerType = element;
-        const isOptional = ts.isOptionalTypeNode(element);
-        const isRest = ts.isRestTypeNode(element);
-        let kind: TupleElement["kind"] = "required";
-        if (isOptional) {
-          innerType = element.type;
-          kind = "optional";
-        }
-        if (isRest) {
-          innerType = element.type;
-          kind = "rest";
-        }
-        return {
-          kind,
-          label: null,
-          type: convertTypeNode(innerType, host),
-        };
-      }),
+        })
+      ),
     };
   }
 
@@ -395,12 +405,15 @@ export function convertTypeNode(
     return {
       kind: "template",
       head: compilerNode.head.text,
-      rest: compilerNode.templateSpans.map((element) => {
-        return {
-          type: convertTypeNode(element.type, host),
-          text: element.literal.text,
-        };
-      }),
+      ...spreadTupleOrNone(
+        "rest",
+        compilerNode.templateSpans.map((element) => {
+          return {
+            type: convertTypeNode(element.type, host),
+            text: element.literal.text,
+          };
+        })
+      ),
     };
   }
 

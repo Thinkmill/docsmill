@@ -91,8 +91,8 @@ export function getObjectMembers(
           ? member.name.text
           : member.name.getText(),
         optional: !!member.questionToken,
-        parameters: getParameters(member, host),
-        typeParams: getTypeParameters(member, host),
+        ...spreadTupleOrNone("parameters", getParameters(member, host)),
+        ...spreadTupleOrNone("typeParams", getTypeParameters(member, host)),
         docs: getDocs(member, host),
         returnType: getReturnType(member, host),
       };
@@ -102,14 +102,24 @@ export function getObjectMembers(
       assert(member.questionToken === undefined);
       return {
         kind: isCallSignature ? "call" : "constructor",
-        parameters: getParameters(member, host),
-        typeParams: getTypeParameters(member, host),
+        ...spreadTupleOrNone("parameters", getParameters(member, host)),
+        ...spreadTupleOrNone("typeParams", getTypeParameters(member, host)),
         docs: getDocs(member, host),
         returnType: getReturnType(member, host),
       };
     }
     return { kind: "unknown", content: member.getText() };
   });
+}
+
+export function spreadTupleOrNone<Key extends string, Element>(
+  key: Key,
+  array: readonly Element[] | undefined
+): { [K in Key]?: [Element, ...Element[]] } {
+  if (array === undefined || array.length === 0) {
+    return {};
+  }
+  return { [key]: array } as any;
 }
 
 export function getParameters(

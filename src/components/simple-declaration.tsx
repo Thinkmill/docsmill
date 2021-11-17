@@ -5,7 +5,7 @@ import { Fragment } from "react";
 import { codeFont, syntaxColors } from "../lib/theme.css";
 import {
   ClassMember,
-  Parameter,
+  ConstructorDeclaration,
   SimpleSerializedDeclaration,
 } from "../lib/types";
 import { Docs } from "./docs";
@@ -78,14 +78,14 @@ export function SimpleDeclaration({
         </Syntax>
         <DeclarationName name={decl.name} />
         <TypeParams params={decl.typeParams} />
-        {!!decl.extends.length && (
+        {decl.extends && (
           <Fragment>
             <Syntax kind="keyword"> extends </Syntax>
             {decl.extends.map((param, i) => {
               return (
                 <Fragment key={i}>
                   <Type type={param} />
-                  {i === interfaceSymbol.extends.length - 1 ? null : (
+                  {i === interfaceSymbol.extends!.length - 1 ? null : (
                     <Syntax kind="comma">{", "}</Syntax>
                   )}
                 </Fragment>
@@ -127,14 +127,14 @@ export function SimpleDeclaration({
             <Type type={classSymbol.extends} />
           </Fragment>
         )}
-        {!!decl.implements.length && (
+        {decl.implements && (
           <Fragment>
             <Syntax kind="keyword"> implements </Syntax>
             {decl.implements.map((param, i) => {
               return (
                 <Fragment key={i}>
                   <Type type={param} />
-                  {i === classSymbol.implements.length - 1 ? null : (
+                  {i === classSymbol.implements!.length - 1 ? null : (
                     <Syntax kind="comma">{", "}</Syntax>
                   )}
                 </Fragment>
@@ -166,19 +166,18 @@ function ClassMembers({
   members,
   constructors,
 }: {
-  constructors: {
-    parameters: Parameter[];
-    docs: string;
-  }[];
-  members: ClassMember[];
+  constructors:
+    | [ConstructorDeclaration, ...ConstructorDeclaration[]]
+    | undefined;
+  members: [ClassMember, ...ClassMember[]] | undefined;
 }) {
-  if (members.length === 0 && constructors.length === 0) {
+  if (members === undefined && constructors === undefined) {
     return <span css={codeFont}>{"{}"}</span>;
   }
   return (
     <Fragment>
       <span css={codeFont}>{"{ "}</span>
-      {constructors.map((constructor, i) => {
+      {constructors?.map((constructor, i) => {
         return (
           <Indent key={i}>
             <Docs content={constructor.docs} />
@@ -187,7 +186,7 @@ function ClassMembers({
           </Indent>
         );
       })}
-      {members.map(function ClassMember(prop, i) {
+      {members?.map(function ClassMember(prop, i) {
         if (prop.kind === "prop") {
           return (
             <Indent key={i}>

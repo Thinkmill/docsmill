@@ -100,20 +100,20 @@ function printBasicDeclaration(
       (decl.extends === null
         ? ""
         : ` extends ${printSerializedType(decl.extends, printReference)}`) +
-      (decl.implements.length
+      (decl.implements
         ? ` implements ${decl.implements
             .map((x) => printSerializedType(x, printReference))
             .join(", ")}`
         : "") +
       " {\n" +
       (decl.willBeComparedNominally ? "  has private members\n" : "") +
-      decl.constructors
+      (decl.constructors || [])
         .map(
           (x) =>
             `  constructor${printParameters(x.parameters, printReference)}\n`
         )
         .join("\n") +
-      decl.members
+      (decl.members || [])
         .map((member): string => {
           if (member.kind === "index") {
             return `  ${
@@ -174,7 +174,7 @@ function printBasicDeclaration(
       decl.typeParams,
       printReference
     )}${
-      decl.extends.length
+      decl.extends
         ? ` extends ${decl.extends
             .map((x) => printSerializedType(x, printReference))
             .join(", ")}`
@@ -241,23 +241,27 @@ function printSerializedType(
     )}[${printSerializedType(type.index, printReference)}]`;
   }
   if (type.kind === "tuple") {
-    return `${type.readonly ? "readonly " : ""}[${type.elements
-      .map((element): string => {
-        if (element.kind === "rest") {
-          return `...${
-            element.label === null ? "" : element.label + ": "
-          }${printSerializedType(element.type, printReference)}`;
-        }
-        let start = `${
-          element.label === null ? "" : element.label + ": "
-        }${printSerializedType(element.type, printReference)}`;
+    return `${type.readonly ? "readonly " : ""}[${
+      type.elements === undefined
+        ? ""
+        : type.elements
+            .map((element): string => {
+              if (element.kind === "rest") {
+                return `...${
+                  element.label === null ? "" : element.label + ": "
+                }${printSerializedType(element.type, printReference)}`;
+              }
+              let start = `${
+                element.label === null ? "" : element.label + ": "
+              }${printSerializedType(element.type, printReference)}`;
 
-        if (element.kind === "optional") {
-          return start + "?";
-        }
-        return start;
-      })
-      .join(", ")}]`;
+              if (element.kind === "optional") {
+                return start + "?";
+              }
+              return start;
+            })
+            .join(", ")
+    }]`;
   }
   if (type.kind === "mapped") {
     return `{\n  ${
@@ -303,17 +307,23 @@ function printSerializedType(
     return (
       "`" +
       JSON.stringify(type.head).slice(1, -1) +
-      type.rest.map(
-        (x) =>
-          `\${${printSerializedType(x.type, printReference)}}${JSON.stringify(
-            x.text
-          ).slice(1, -1)}`
-      ) +
+      (type.rest === undefined
+        ? ""
+        : type.rest.map(
+            (x) =>
+              `\${${printSerializedType(
+                x.type,
+                printReference
+              )}}${JSON.stringify(x.text).slice(1, -1)}`
+          )) +
       "`"
     );
   }
 
   if (type.kind === "object") {
+    if (type.members === undefined) {
+      return `{}`;
+    }
     return `{\n${type.members
       .map((value) => {
         if (value.kind === "call") {
@@ -334,7 +344,7 @@ function printSerializedType(
   }
   if (type.kind === "reference") {
     return `${printReference(type.fullName, type.name)}${
-      type.typeArguments.length
+      type.typeArguments
         ? `<${type.typeArguments.map((x) =>
             printSerializedType(x, printReference)
           )}>`
@@ -350,7 +360,7 @@ function printSerializedType(
 }
 
 function printParameters(
-  params: Parameter[],
+  params: Parameter[] = [],
   printReference: (symbolId: SymbolId, name: string) => string
 ) {
   return `(${params.map((param) => {
@@ -371,10 +381,10 @@ function printParameters(
 }
 
 function printTypeParams(
-  typeParams: TypeParam[],
+  typeParams: [TypeParam, ...TypeParam[]] | undefined,
   printReference: (symbolId: SymbolId, name: string) => string
 ) {
-  if (typeParams.length === 0) {
+  if (typeParams === undefined) {
     return "";
   }
   return `<${typeParams
