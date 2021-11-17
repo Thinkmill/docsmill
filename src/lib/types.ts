@@ -12,7 +12,7 @@ export type Parameter = {
   kind: "optional" | "rest" | "normal";
 };
 
-export type SerializedDeclaration =
+export type SimpleSerializedDeclaration =
   | {
       kind: "function";
       name: string;
@@ -20,12 +20,6 @@ export type SerializedDeclaration =
       docs: string;
       typeParams: TypeParam[];
       returnType: SerializedType;
-    }
-  | {
-      kind: "module";
-      name: string;
-      docs: string;
-      exports: Record<string, SymbolId>;
     }
   | {
       kind: "variable";
@@ -81,6 +75,15 @@ export type SerializedDeclaration =
       name: string;
       docs: string;
       value: string | number | null;
+    };
+
+export type SerializedDeclaration =
+  | SimpleSerializedDeclaration
+  | {
+      kind: "module";
+      name: string;
+      docs: string;
+      exports: Record<string, SymbolId>;
     }
   | {
       kind: "namespace";
