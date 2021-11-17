@@ -1,8 +1,12 @@
 /** @jsxRuntime automatic */
 /** @jsxImportSource @emotion/react */
+import { css } from "@emotion/react";
 import { ReactNode } from "react";
-import * as styles from "./indent.css";
+
+const indent = css({
+  paddingLeft: 16,
+});
 
 export function Indent({ children }: { children: ReactNode }) {
-  return <div css={styles.indent}>{children}</div>;
+  return <div css={indent}>{children}</div>;
 }

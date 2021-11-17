@@ -9,9 +9,9 @@ import {
   SimpleSerializedDeclaration,
 } from "../lib/types";
 import { Docs } from "./docs";
-import { Indent } from "./indent";
+import { Indent } from "./core/indent";
 import { a } from "./markdown.css";
-import { Syntax } from "./syntax";
+import { Syntax } from "./core/syntax";
 import { TypeParams, Params, Type, Components } from "./core/type";
 
 export const declarationNameStyles = css(codeFont, {

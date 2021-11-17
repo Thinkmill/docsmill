@@ -4,13 +4,13 @@ import { Fragment } from "react";
 import { useDocsContext } from "../lib/DocsContext";
 import { codeFont } from "../lib/theme.css";
 import { SerializedDeclaration, SymbolId } from "../lib/types";
-import { Indent } from "./indent";
+import { Indent } from "./core/indent";
 import {
   getExternalPackageUrl,
   getExternalSymbolUrl,
   SymbolReference,
 } from "./symbol-references";
-import { Syntax } from "./syntax";
+import { Syntax } from "./core/syntax";
 import * as styles from "./symbol.css";
 import { assert } from "../lib/assert";
 import { useGroupedExports } from "../lib/utils";

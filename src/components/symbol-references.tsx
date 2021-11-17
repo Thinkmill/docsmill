@@ -11,7 +11,7 @@ import { useDocsContext } from "../lib/DocsContext";
 import { codeFont } from "../lib/theme.css";
 import { splitDocs } from "../lib/utils";
 import { Markdown } from "./markdown";
-import { Syntax } from "./syntax";
+import { Syntax } from "./core/syntax";
 import * as styles from "./symbol-references.css";
 import { Tooltip } from "./tooltip";
 import Link from "next/link";

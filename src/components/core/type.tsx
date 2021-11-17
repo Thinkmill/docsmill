@@ -1,18 +1,15 @@
 /** @jsxRuntime automatic */
 /** @jsxImportSource @emotion/react */
 import { Fragment, ReactElement } from "react";
-
 import { codeFont } from "../../lib/theme.css";
-
-import { Syntax } from "../syntax";
-import { Indent } from "../indent";
+import { Syntax } from "./syntax";
+import { Indent } from "./indent";
 import {
   SerializedType,
   TypeParam,
   Parameter,
   SymbolId,
 } from "../../lib/types";
-
 import { css } from "@emotion/react";
 import { codeFontStyleObj } from "../../lib/theme.css";
 
