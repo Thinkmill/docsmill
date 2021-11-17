@@ -31,89 +31,78 @@ export function SimpleDeclaration({
 }) {
   if (decl.kind === "function") {
     return (
-      <div>
-        <Docs content={decl.docs} />
-        <Fragment>
-          <Syntax kind="keyword">{isExported ? "export " : ""}function </Syntax>
-          <DeclarationName name={decl.name} />
-          <TypeParams params={decl.typeParams} />
-          <Params params={decl.parameters} />
-          <Syntax kind="colon">: </Syntax>
-          <Type type={decl.returnType} />
-        </Fragment>
-      </div>
+      <Fragment>
+        <Syntax kind="keyword">{isExported ? "export " : ""}function </Syntax>
+        <DeclarationName name={decl.name} />
+        <TypeParams params={decl.typeParams} />
+        <Params params={decl.parameters} />
+        <Syntax kind="colon">: </Syntax>
+        <Type type={decl.returnType} />
+      </Fragment>
     );
   }
   if (decl.kind === "variable") {
     return (
-      <div>
-        <Docs content={decl.docs} />
-        <Fragment>
-          <Syntax kind="keyword">
-            {isExported ? "export " : ""}
-            {decl.variableKind}{" "}
-          </Syntax>
-          <DeclarationName name={decl.name} />
-          <Syntax kind="colon">: </Syntax>
-          <Type type={decl.type} />
-          <Syntax kind="bracket">{" = "}</Syntax>
-          <span css={codeFont}>...</span>
-        </Fragment>
-      </div>
+      <Fragment>
+        <Syntax kind="keyword">
+          {isExported ? "export " : ""}
+          {decl.variableKind}{" "}
+        </Syntax>
+        <DeclarationName name={decl.name} />
+        <Syntax kind="colon">: </Syntax>
+        <Type type={decl.type} />
+        <Syntax kind="bracket">{" = "}</Syntax>
+        <span css={codeFont}>...</span>
+      </Fragment>
     );
   }
 
   if (decl.kind === "unknown") {
     return (
-      <div>
-        <Docs content={decl.docs} />
+      <Fragment>
         <DeclarationName name={decl.name} />
         <pre css={codeFont}>
           <code>{decl.content}</code>
         </pre>
-      </div>
+      </Fragment>
     );
   }
 
   if (decl.kind === "interface") {
     const interfaceSymbol = decl;
     return (
-      <div>
-        <Docs content={decl.docs} />
-        <Fragment>
-          <Syntax kind="keyword">
-            {isExported ? "export " : ""}
-            interface{" "}
-          </Syntax>
-          <DeclarationName name={decl.name} />
-          <TypeParams params={decl.typeParams} />
-          {!!decl.extends.length && (
-            <Fragment>
-              <Syntax kind="keyword"> extends </Syntax>
-              {decl.extends.map((param, i) => {
-                return (
-                  <Fragment key={i}>
-                    <Type type={param} />
-                    {i === interfaceSymbol.extends.length - 1 ? null : (
-                      <Syntax kind="comma">{", "}</Syntax>
-                    )}
-                  </Fragment>
-                );
-              })}
-            </Fragment>
-          )}
-          <span css={codeFont}> </span>
-          <Type type={{ kind: "object", members: decl.members }} />
-        </Fragment>
-      </div>
+      <Fragment>
+        <Syntax kind="keyword">
+          {isExported ? "export " : ""}
+          interface{" "}
+        </Syntax>
+        <DeclarationName name={decl.name} />
+        <TypeParams params={decl.typeParams} />
+        {!!decl.extends.length && (
+          <Fragment>
+            <Syntax kind="keyword"> extends </Syntax>
+            {decl.extends.map((param, i) => {
+              return (
+                <Fragment key={i}>
+                  <Type type={param} />
+                  {i === interfaceSymbol.extends.length - 1 ? null : (
+                    <Syntax kind="comma">{", "}</Syntax>
+                  )}
+                </Fragment>
+              );
+            })}
+          </Fragment>
+        )}
+        <span css={codeFont}> </span>
+        <Type type={{ kind: "object", members: decl.members }} />
+      </Fragment>
     );
   }
 
   if (decl.kind === "class") {
     const classSymbol = decl;
     return (
-      <div>
-        <Docs content={decl.docs} />
+      <Fragment>
         {decl.willBeComparedNominally && (
           <p>
             This class has private members, so it it will be compared nominally
@@ -126,58 +115,50 @@ export function SimpleDeclaration({
             </a>
           </p>
         )}
-        <Fragment>
-          <Syntax kind="keyword">
-            {isExported ? "export " : ""}
-            class{" "}
-          </Syntax>
-          <DeclarationName name={decl.name} />
-          <TypeParams params={decl.typeParams} />
-          {!!classSymbol.extends && (
-            <Fragment>
-              <Syntax kind="keyword"> extends </Syntax>
-              <Type type={classSymbol.extends} />
-            </Fragment>
-          )}
-          {!!decl.implements.length && (
-            <Fragment>
-              <Syntax kind="keyword"> implements </Syntax>
-              {decl.implements.map((param, i) => {
-                return (
-                  <Fragment key={i}>
-                    <Type type={param} />
-                    {i === classSymbol.implements.length - 1 ? null : (
-                      <Syntax kind="comma">{", "}</Syntax>
-                    )}
-                  </Fragment>
-                );
-              })}
-            </Fragment>
-          )}
-          <span css={codeFont}> </span>
-          <ClassMembers
-            constructors={decl.constructors}
-            members={decl.members}
-          />
-        </Fragment>
-      </div>
+        <Syntax kind="keyword">
+          {isExported ? "export " : ""}
+          class{" "}
+        </Syntax>
+        <DeclarationName name={decl.name} />
+        <TypeParams params={decl.typeParams} />
+        {!!classSymbol.extends && (
+          <Fragment>
+            <Syntax kind="keyword"> extends </Syntax>
+            <Type type={classSymbol.extends} />
+          </Fragment>
+        )}
+        {!!decl.implements.length && (
+          <Fragment>
+            <Syntax kind="keyword"> implements </Syntax>
+            {decl.implements.map((param, i) => {
+              return (
+                <Fragment key={i}>
+                  <Type type={param} />
+                  {i === classSymbol.implements.length - 1 ? null : (
+                    <Syntax kind="comma">{", "}</Syntax>
+                  )}
+                </Fragment>
+              );
+            })}
+          </Fragment>
+        )}
+        <span css={codeFont}> </span>
+        <ClassMembers constructors={decl.constructors} members={decl.members} />
+      </Fragment>
     );
   }
 
   return (
-    <div>
-      <Docs content={decl.docs} />
-      <Fragment>
-        <Syntax kind="keyword">
-          {isExported ? "export " : ""}
-          type{" "}
-        </Syntax>
-        <DeclarationName name={decl.name} />
-        <TypeParams params={decl.typeParams} />
-        <span css={codeFont}> = </span>
-        <Type type={decl.type} />
-      </Fragment>
-    </div>
+    <Fragment>
+      <Syntax kind="keyword">
+        {isExported ? "export " : ""}
+        type{" "}
+      </Syntax>
+      <DeclarationName name={decl.name} />
+      <TypeParams params={decl.typeParams} />
+      <span css={codeFont}> = </span>
+      <Type type={decl.type} />
+    </Fragment>
   );
 }
 

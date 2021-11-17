@@ -39,8 +39,7 @@ export function Declaration({
 
   if (decl.kind === "module") {
     return (
-      <div>
-        <Docs content={decl.docs} />
+      <Fragment>
         <div css={styles.innerExportsHeading}>
           {isExported ? (
             <Fragment>
@@ -67,82 +66,77 @@ export function Declaration({
         <div css={styles.innerExportsCommon}>
           <Syntax kind="bracket">{"}"}</Syntax>
         </div>
-      </div>
+      </Fragment>
     );
   }
 
   if (decl.kind === "unknown") {
     return (
-      <div>
-        <Docs content={decl.docs} />
+      <Fragment>
         <DeclarationName name={decl.name} />
         <pre css={codeFont}>
           <code>{decl.content}</code>
         </pre>
-      </div>
+      </Fragment>
     );
   }
 
   if (decl.kind === "enum") {
     const enumSymbol = decl;
     return (
-      <div>
-        <Docs content={decl.docs} />
-        <Fragment>
-          <Syntax kind="keyword">
-            {isExported ? "export " : ""}
-            {decl.const ? "const " : ""}
-            enum{" "}
-          </Syntax>
-          <DeclarationName name={decl.name} />
-          <Syntax kind="bracket">{" { "}</Syntax>
-          {decl.members.map((memberId, i) => {
-            const members = symbols[memberId];
-            const member = members[0];
-            assert(
-              members.length === 1,
-              "expected enum members to only contain a single enum member"
-            );
-            assert(
-              member.kind === "enum-member",
-              "expected enum to only contain enum members"
-            );
-            return (
-              <Indent key={i}>
-                <Docs content={member.docs} />
-                <a
-                  id={goodIdentifiers[memberId]}
-                  href={`#${goodIdentifiers[memberId]}`}
-                  css={enumMemberName}
-                >
-                  {member.name}
-                </a>
-                {member.value !== null && (
-                  <Fragment>
-                    <Syntax kind="bracket">{" = "}</Syntax>
-                    <Syntax kind="string">
-                      {typeof member.value === "string"
-                        ? JSON.stringify(member.value)
-                        : member.value}
-                    </Syntax>
-                  </Fragment>
-                )}
-                {i === enumSymbol.members.length - 1 ? null : (
-                  <Syntax kind="comma">{", "}</Syntax>
-                )}
-              </Indent>
-            );
-          })}
-          <Syntax kind="bracket">{"}"}</Syntax>
-        </Fragment>
-      </div>
+      <Fragment>
+        <Syntax kind="keyword">
+          {isExported ? "export " : ""}
+          {decl.const ? "const " : ""}
+          enum{" "}
+        </Syntax>
+        <DeclarationName name={decl.name} />
+        <Syntax kind="bracket">{" { "}</Syntax>
+        {decl.members.map((memberId, i) => {
+          const members = symbols[memberId];
+          const member = members[0];
+          assert(
+            members.length === 1,
+            "expected enum members to only contain a single enum member"
+          );
+          assert(
+            member.kind === "enum-member",
+            "expected enum to only contain enum members"
+          );
+          return (
+            <Indent key={i}>
+              <Docs content={member.docs} />
+              <a
+                id={goodIdentifiers[memberId]}
+                href={`#${goodIdentifiers[memberId]}`}
+                css={enumMemberName}
+              >
+                {member.name}
+              </a>
+              {member.value !== null && (
+                <Fragment>
+                  <Syntax kind="bracket">{" = "}</Syntax>
+                  <Syntax kind="string">
+                    {typeof member.value === "string"
+                      ? JSON.stringify(member.value)
+                      : member.value}
+                  </Syntax>
+                </Fragment>
+              )}
+              {i === enumSymbol.members.length - 1 ? null : (
+                <Syntax kind="comma">{", "}</Syntax>
+              )}
+            </Indent>
+          );
+        })}
+        <Syntax kind="bracket">{"}"}</Syntax>
+      </Fragment>
     );
   }
 
   if (decl.kind === "namespace") {
     return (
-      <div>
-        <Docs content={decl.docs} />
+      <Fragment>
         <div css={styles.innerExportsHeading}>
           <Syntax kind="keyword">
             {isExported ? "export " : ""}namespace{" "}
@@ -151,11 +145,10 @@ export function Declaration({
           <Syntax kind="bracket">{" {"}</Syntax>
         </div>
         <Exports fullName={fullName} />
-
         <div css={styles.innerExportsCommon}>
           <Syntax kind="bracket">{"}"}</Syntax>
         </div>
-      </div>
+      </Fragment>
     );
   }
 

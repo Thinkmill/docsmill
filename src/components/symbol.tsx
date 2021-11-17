@@ -9,6 +9,7 @@ import Link from "next/link";
 import { useRouter } from "next/router";
 import { getPkgWithVersionPortionOfParms } from "../npm/params";
 import { Declaration } from "./declaration";
+import { Docs } from "./docs";
 
 export function RenderRootSymbol({ symbol }: { symbol: SymbolId }) {
   const {
@@ -79,12 +80,14 @@ export function RenderRootSymbol({ symbol }: { symbol: SymbolId }) {
       <div css={styles.rootSymbolContainer}>
         {decls.map((decl, i) => {
           return (
-            <Declaration
-              key={i}
-              fullName={symbol}
-              isExported={isExported}
-              decl={decl}
-            />
+            <div key={i}>
+              <Docs content={decl.docs} />
+              <Declaration
+                fullName={symbol}
+                isExported={isExported}
+                decl={decl}
+              />
+            </div>
           );
         })}
       </div>
