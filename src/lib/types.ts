@@ -169,11 +169,11 @@ export type SerializedType =
   | { kind: "intrinsic"; value: string }
   | {
       kind: "reference";
-      fullName: SymbolId;
+      id: SymbolId;
       name: string;
       typeArguments?: [SerializedType, ...SerializedType[]];
     }
-  | { kind: "typeof"; fullName: SymbolId; name: string }
+  | { kind: "typeof"; id: SymbolId; name: string }
   | { kind: "array"; readonly: boolean; inner: SerializedType }
   | { kind: "type-parameter"; name: string }
   | { kind: "union"; types: SerializedType[] }

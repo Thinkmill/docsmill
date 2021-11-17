@@ -74,13 +74,7 @@ export function getExternalSymbolUrl(external: {
   }`;
 }
 
-export function SymbolReference({
-  fullName,
-  name,
-}: {
-  name: string;
-  fullName: SymbolId;
-}) {
+export function SymbolReference({ id, name }: { name: string; id: SymbolId }) {
   const {
     symbols,
     canonicalExportLocations,
@@ -89,11 +83,11 @@ export function SymbolReference({
     rootSymbols,
   } = useDocsContext();
   const namesInScope = useContext(NamesInScopeContext);
-  const externalReference = symbols[fullName]
+  const externalReference = symbols[id]
     ? undefined
     : externalReferences.get(name);
-  if (externalSymbols[fullName]) {
-    const external = externalSymbols[fullName];
+  if (externalSymbols[id]) {
+    const external = externalSymbols[id];
     const pkgDisplayName = getExternalPkgDisplayName(external.pkg);
     return (
       <span css={codeFont}>
@@ -118,17 +112,17 @@ export function SymbolReference({
       </a>
     );
   }
-  if (fullName === undefined || !symbols[fullName]) {
+  if (id === undefined || !symbols[id]) {
     return <span css={styles.unknownExternalReference}>{name}</span>;
   }
 
-  const decls = symbols[fullName];
+  const decls = symbols[id];
   const firstDocsBit = splitDocs(
     decls.find((x) => !!x.docs.length)?.docs || ""
   ).first;
 
   const isRootModuleSymbol =
-    rootSymbols.has(fullName) && decls.some((x) => x.kind === "module");
+    rootSymbols.has(id) && decls.some((x) => x.kind === "module");
 
   const props: AnchorHTMLAttributes<HTMLAnchorElement> & {
     css: import("@emotion/react").SerializedStyles;
@@ -137,10 +131,10 @@ export function SymbolReference({
       ? styles.rootSymbolReference
       : styles.nonRootSymbolReference,
 
-    href: `#${goodIdentifiers[fullName]}`,
+    href: `#${goodIdentifiers[id]}`,
     children: isRootModuleSymbol ? JSON.stringify(name) : name,
   };
-  if (symbols[fullName][0].kind === "unknown") {
+  if (symbols[id][0].kind === "unknown") {
     props.style = { color: "red" };
   }
 
@@ -162,16 +156,16 @@ export function SymbolReference({
 
   if (
     namesInScope.has(name) &&
-    namesInScope.get(name) !== fullName &&
-    canonicalExportLocations[fullName] !== undefined
+    namesInScope.get(name) !== id &&
+    canonicalExportLocations[id] !== undefined
   ) {
-    const canonicalExportLocation = canonicalExportLocations[fullName];
+    const canonicalExportLocation = canonicalExportLocations[id];
     return (
       <span css={codeFont}>
         <Syntax kind="keyword">import</Syntax>
         <Syntax kind="bracket">(</Syntax>
         <SymbolReference
-          fullName={canonicalExportLocation.parent}
+          id={canonicalExportLocation.parent}
           name={symbols[canonicalExportLocation.parent][0].name}
         />
         <Syntax kind="bracket">)</Syntax>.{inner}

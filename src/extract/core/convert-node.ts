@@ -61,7 +61,7 @@ function handleReference(
   if (!symbol) {
     return {
       kind: "reference",
-      fullName: "unknown" as SymbolId,
+      id: "unknown" as SymbolId,
       name: printNode(typeName),
       ...spreadTupleOrNone(
         "typeArguments",
@@ -103,7 +103,7 @@ function handleReference(
 
   return {
     kind: "reference",
-    fullName,
+    id: fullName,
     name,
     ...spreadTupleOrNone(
       "typeArguments",
@@ -348,14 +348,14 @@ export function convertTypeNode(
 
         return {
           kind: "typeof",
-          fullName: referenceSymbol(symbol, host),
+          id: referenceSymbol(symbol, host),
           name: symbol.getName(),
         };
       }
 
       return {
         kind: "typeof",
-        fullName: "unknown" as SymbolId,
+        id: "unknown" as SymbolId,
         name: compilerNode.qualifier
           ? printEntityName(compilerNode.qualifier)
           : printNode(compilerNode),
@@ -375,14 +375,14 @@ export function convertTypeNode(
       symbol = getAliasedSymbol(symbol, host);
       return {
         kind: "typeof",
-        fullName: referenceSymbol(symbol, host),
+        id: referenceSymbol(symbol, host),
         name: symbol.getName(),
       };
     }
 
     return {
       kind: "typeof",
-      fullName: "unknown" as SymbolId,
+      id: "unknown" as SymbolId,
       name: printEntityName(entityName),
     };
   }

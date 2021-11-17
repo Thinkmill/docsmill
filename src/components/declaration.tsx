@@ -4,7 +4,6 @@ import { Fragment } from "react";
 import { useDocsContext } from "../lib/DocsContext";
 import { codeFont } from "../lib/theme.css";
 import { SerializedDeclaration, SymbolId } from "../lib/types";
-import { Docs } from "./docs";
 import { Indent } from "./indent";
 import {
   getExternalPackageUrl,
@@ -20,6 +19,7 @@ import * as symbolReferenceStyles from "./symbol-references.css";
 import Link from "next/link";
 import { DeclarationName, SimpleDeclaration } from "./simple-declaration";
 import { css } from "@emotion/react";
+import { Components } from "./type";
 
 const enumMemberName = css(
   symbolReferenceStyles.nonRootSymbolReference,
@@ -30,10 +30,12 @@ export function Declaration({
   decl,
   isExported,
   fullName,
+  components,
 }: {
   decl: SerializedDeclaration;
   isExported: boolean;
   fullName: SymbolId;
+  components: Components;
 }) {
   const { goodIdentifiers, symbols } = useDocsContext();
 
@@ -105,7 +107,7 @@ export function Declaration({
           );
           return (
             <Indent key={i}>
-              <Docs content={member.docs} />
+              <components.Docs docs={member.docs} />
               <a
                 id={goodIdentifiers[memberId]}
                 href={`#${goodIdentifiers[memberId]}`}
@@ -156,7 +158,13 @@ export function Declaration({
     decl.kind !== "enum-member",
     "unexpected enum member outside of enum declaration"
   );
-  return <SimpleDeclaration decl={decl} isExported={isExported} />;
+  return (
+    <SimpleDeclaration
+      components={components}
+      decl={decl}
+      isExported={isExported}
+    />
+  );
 }
 
 function Exports({ fullName }: { fullName: SymbolId }) {
@@ -182,7 +190,7 @@ function Exports({ fullName }: { fullName: SymbolId }) {
                   return (
                     <div key={exportName}>
                       <SymbolReference
-                        fullName={"unknown" as SymbolId}
+                        id={"unknown" as SymbolId}
                         name={exportName}
                       />
                       ,
@@ -250,24 +258,16 @@ function Exports({ fullName }: { fullName: SymbolId }) {
                 if (x.localName === x.sourceName) {
                   return (
                     <div key={i}>
-                      <SymbolReference
-                        fullName={x.fullName}
-                        name={x.localName}
-                      />
-                      ,
+                      <SymbolReference id={x.fullName} name={x.localName} />,
                     </div>
                   );
                 }
 
                 return (
                   <div key={i}>
-                    <SymbolReference
-                      fullName={x.fullName}
-                      name={x.sourceName}
-                    />
+                    <SymbolReference id={x.fullName} name={x.sourceName} />
                     <Syntax kind="keyword"> as </Syntax>
-                    <SymbolReference fullName={x.fullName} name={x.localName} />
-                    ,
+                    <SymbolReference id={x.fullName} name={x.localName} />,
                   </div>
                 );
               })}
@@ -287,7 +287,7 @@ function ExportedFrom({ fullName }: { fullName: SymbolId }) {
   if (docContext.rootSymbols.has(fullName)) {
     return (
       <SymbolReference
-        fullName={fullName}
+        id={fullName}
         name={docContext.symbols[fullName][0].name}
       />
     );
@@ -296,7 +296,7 @@ function ExportedFrom({ fullName }: { fullName: SymbolId }) {
   return (
     <Fragment>
       <ExportedFrom fullName={parent} />.
-      <SymbolReference fullName={fullName} name={exportName} />
+      <SymbolReference id={fullName} name={exportName} />
     </Fragment>
   );
 }

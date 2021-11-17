@@ -1,31 +1,41 @@
 /** @jsxRuntime automatic */
 /** @jsxImportSource @emotion/react */
-import { Fragment } from "react";
+import { Fragment, ReactElement } from "react";
 
 import { codeFont } from "../lib/theme.css";
 
-import { SymbolReference } from "./symbol-references";
 import { Docs } from "./docs";
 import { Syntax } from "./syntax";
 import { Indent } from "./indent";
 import * as styles from "./type.css";
-import { SerializedType, TypeParam, Parameter } from "../lib/types";
+import { SerializedType, TypeParam, Parameter, SymbolId } from "../lib/types";
 
-export function Type({ type }: { type: SerializedType }): JSX.Element {
+export type Components = {
+  Docs: (props: { docs: string }) => ReactElement | null;
+  SymbolReference: (props: { id: SymbolId; name: string }) => ReactElement;
+};
+
+export function Type({
+  type,
+  components,
+}: {
+  type: SerializedType;
+  components: Components;
+}): ReactElement {
   if (type.kind === "intrinsic") {
     return <span css={styles.intrinsic}>{type.value}</span>;
   }
   if (type.kind === "reference") {
     return (
       <Fragment>
-        <SymbolReference name={type.name} fullName={type.fullName} />
+        <components.SymbolReference name={type.name} id={type.id} />
         {type.typeArguments && (
           <Fragment>
             <span css={codeFont}>{"<"}</span>
             {type.typeArguments.map((param, i) => {
               return (
                 <Fragment key={i}>
-                  <Type type={param} />
+                  <Type components={components} type={param} />
                   {i === type.typeArguments!.length - 1 ? null : (
                     <Syntax kind="comma">, </Syntax>
                   )}
@@ -42,7 +52,7 @@ export function Type({ type }: { type: SerializedType }): JSX.Element {
     return (
       <Fragment>
         {type.readonly ? <Syntax kind="keyword">readonly </Syntax> : null}
-        <Type type={type.inner} />
+        <Type components={components} type={type.inner} />
         <Syntax kind="bracket">[]</Syntax>
       </Fragment>
     );
@@ -56,7 +66,7 @@ export function Type({ type }: { type: SerializedType }): JSX.Element {
         {type.types.map((innerType, i) => {
           return (
             <Fragment key={i}>
-              <Type type={innerType} />
+              <Type components={components} type={innerType} />
               {i !== type.types.length - 1 && (
                 <Syntax kind="colon">{" | "}</Syntax>
               )}
@@ -72,7 +82,7 @@ export function Type({ type }: { type: SerializedType }): JSX.Element {
         {type.types.map((innerType, i) => {
           return (
             <Fragment key={i}>
-              <Type type={innerType} />
+              <Type components={components} type={innerType} />
               {i !== type.types.length - 1 && (
                 <Syntax kind="colon">{" & "}</Syntax>
               )}
@@ -93,13 +103,13 @@ export function Type({ type }: { type: SerializedType }): JSX.Element {
           if (prop.kind === "prop") {
             return (
               <Indent key={i}>
-                <Docs content={prop.docs} />
+                <Docs docs={prop.docs} />
                 {prop.readonly ? (
                   <Syntax kind="keyword">readonly </Syntax>
                 ) : null}
                 <span css={codeFont}>{prop.name}</span>
                 <Syntax kind="colon">{prop.optional ? "?: " : ": "}</Syntax>
-                <Type type={prop.type} />
+                <Type components={components} type={prop.type} />
                 <span css={codeFont}>;</span>
               </Indent>
             );
@@ -113,10 +123,10 @@ export function Type({ type }: { type: SerializedType }): JSX.Element {
                 <span css={codeFont}>
                   [key<Syntax kind="colon">: </Syntax>
                 </span>
-                <Type type={prop.key} />
+                <Type components={components} type={prop.key} />
                 <span css={codeFont}>]</span>
                 <Syntax kind="colon">: </Syntax>
-                <Type type={prop.value} />
+                <Type components={components} type={prop.value} />
                 <span css={codeFont}>;</span>
               </Indent>
             );
@@ -130,17 +140,17 @@ export function Type({ type }: { type: SerializedType }): JSX.Element {
           }
           return (
             <Indent key={i}>
-              <Docs content={prop.docs} />
+              <Docs docs={prop.docs} />
               {prop.kind === "constructor" && (
                 <Syntax kind="keyword">new </Syntax>
               )}
               {prop.kind === "method" && (
                 <span css={codeFont}>{prop.name}</span>
               )}
-              <TypeParams params={prop.typeParams} />
-              <Params params={prop.parameters} />
+              <TypeParams components={components} params={prop.typeParams} />
+              <Params components={components} params={prop.parameters} />
               <Syntax kind="colon">: </Syntax>
-              <Type type={prop.returnType} />
+              <Type components={components} type={prop.returnType} />
               <span css={codeFont}>;</span>
             </Indent>
           );
@@ -158,7 +168,7 @@ export function Type({ type }: { type: SerializedType }): JSX.Element {
           return (
             <Fragment key={i}>
               {element.kind === "rest" && <Syntax kind="colon">...</Syntax>}
-              <Type type={element.type} />
+              <Type components={components} type={element.type} />
               {element.kind === "optional" && <span css={codeFont}>?</span>}
               {i !== type.elements!.length - 1 && (
                 <Syntax kind="comma">, </Syntax>
@@ -173,9 +183,9 @@ export function Type({ type }: { type: SerializedType }): JSX.Element {
   if (type.kind === "indexed-access") {
     return (
       <Fragment>
-        <Type type={type.object} />
+        <Type components={components} type={type.object} />
         <Syntax kind="bracket">[</Syntax>
-        <Type type={type.index} />
+        <Type components={components} type={type.index} />
         <Syntax kind="bracket">]</Syntax>
       </Fragment>
     );
@@ -183,13 +193,13 @@ export function Type({ type }: { type: SerializedType }): JSX.Element {
   if (type.kind === "conditional") {
     return (
       <Fragment>
-        <Type type={type.checkType} />
+        <Type components={components} type={type.checkType} />
         <Syntax kind="keyword"> extends </Syntax>
-        <Type type={type.extendsType} />
+        <Type components={components} type={type.extendsType} />
         <Syntax kind="colon"> ? </Syntax>
-        <Type type={type.trueType} />
+        <Type components={components} type={type.trueType} />
         <Syntax kind="colon"> : </Syntax>
-        <Type type={type.falseType} />
+        <Type components={components} type={type.falseType} />
       </Fragment>
     );
   }
@@ -203,10 +213,10 @@ export function Type({ type }: { type: SerializedType }): JSX.Element {
     return (
       <Fragment>
         {type.kind === "constructor" && <Syntax kind="keyword">new </Syntax>}
-        <TypeParams params={type.typeParams} />
-        <Params params={type.parameters} />
+        <TypeParams components={components} params={type.typeParams} />
+        <Params components={components} params={type.parameters} />
         <Syntax kind="keyword">{" => "}</Syntax>
-        <Type type={type.returnType} />
+        <Type components={components} type={type.returnType} />
       </Fragment>
     );
   }
@@ -233,18 +243,18 @@ export function Type({ type }: { type: SerializedType }): JSX.Element {
             [<Syntax kind="parameter">{type.param.name} </Syntax>
             <Syntax kind="keyword">in </Syntax>
           </span>
-          <Type type={type.param.constraint} />
+          <Type components={components} type={type.param.constraint} />
           {type.as && (
             <Fragment>
               <Syntax kind="keyword"> as </Syntax>
-              <Type type={type.as} />
+              <Type components={components} type={type.as} />
             </Fragment>
           )}
           <Syntax kind="bracket">
             ]{type.optional === 1 ? "?" : type.optional === -1 ? "-?" : ""}
           </Syntax>
           <Syntax kind="colon">: </Syntax>
-          <Type type={type.type} />
+          <Type components={components} type={type.type} />
           <span css={codeFont}>;</span>
         </Indent>
         <span css={codeFont}>{" }"}</span>
@@ -256,7 +266,7 @@ export function Type({ type }: { type: SerializedType }): JSX.Element {
     return (
       <Fragment>
         <Syntax kind="keyword">keyof </Syntax>
-        <Type type={type.value} />
+        <Type components={components} type={type.value} />
       </Fragment>
     );
   }
@@ -264,7 +274,7 @@ export function Type({ type }: { type: SerializedType }): JSX.Element {
     return (
       <Fragment>
         <Syntax kind="bracket">(</Syntax>
-        <Type type={type.value} />
+        <Type components={components} type={type.value} />
         <Syntax kind="bracket">)</Syntax>
       </Fragment>
     );
@@ -273,7 +283,7 @@ export function Type({ type }: { type: SerializedType }): JSX.Element {
     return (
       <Fragment>
         <Syntax kind="keyword">typeof </Syntax>
-        <SymbolReference fullName={type.fullName} name={type.name} />
+        <components.SymbolReference id={type.id} name={type.name} />
       </Fragment>
     );
   }
@@ -285,7 +295,7 @@ export function Type({ type }: { type: SerializedType }): JSX.Element {
         {type.type && (
           <Fragment>
             <Syntax kind="keyword">{" is "}</Syntax>
-            <Type type={type.type} />
+            <Type components={components} type={type.type} />
           </Fragment>
         )}
       </Fragment>
@@ -299,7 +309,7 @@ export function Type({ type }: { type: SerializedType }): JSX.Element {
           return (
             <Fragment key={i}>
               <Syntax kind="colon">{"${"}</Syntax>
-              <Type type={element.type} />
+              <Type components={components} type={element.type} />
               <Syntax kind="colon">{"}"}</Syntax>
               <Syntax kind="string">{element.text}</Syntax>
             </Fragment>
@@ -315,8 +325,10 @@ export function Type({ type }: { type: SerializedType }): JSX.Element {
 
 export function TypeParams({
   params,
+  components,
 }: {
   params: [TypeParam, ...TypeParam[]] | undefined;
+  components: Components;
 }) {
   if (!params) return null;
   return (
@@ -329,13 +341,13 @@ export function TypeParams({
             {param.constraint && (
               <Fragment>
                 <Syntax kind="keyword"> extends </Syntax>
-                <Type type={param.constraint} />
+                <Type components={components} type={param.constraint} />
               </Fragment>
             )}
             {param.default && (
               <Fragment>
                 <Syntax kind="colon">{" = "}</Syntax>
-                <Type type={param.default} />
+                <Type components={components} type={param.default} />
               </Fragment>
             )}
             {i === params.length - 1 ? null : <Syntax kind="comma">, </Syntax>}
@@ -349,8 +361,10 @@ export function TypeParams({
 
 export function Params({
   params,
+  components,
 }: {
   params: [Parameter, ...Parameter[]] | undefined;
+  components: Components;
 }) {
   return (
     <Fragment>
@@ -363,7 +377,7 @@ export function Params({
             <Syntax kind="colon">
               {param.kind === "optional" ? "?: " : ": "}
             </Syntax>
-            <Type type={param.type} />
+            <Type components={components} type={param.type} />
             {i === params.length - 1 ? null : <Syntax kind="comma">, </Syntax>}
           </Fragment>
         );

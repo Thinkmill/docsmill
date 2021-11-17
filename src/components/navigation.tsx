@@ -24,9 +24,7 @@ export function Navigation({ rootSymbolName }: { rootSymbolName: SymbolId }) {
     decls[0].name;
 
   return (
-    <Expandable
-      summary={<SymbolReference fullName={rootSymbolName} name={name} />}
-    >
+    <Expandable summary={<SymbolReference id={rootSymbolName} name={name} />}>
       <ul css={{ padding: 0 }}>
         {groupedExports.map(function ExportGroup(group, i) {
           if (group.kind !== "canonical") {
@@ -68,7 +66,7 @@ export function NavigationItem({
   }
   return (
     <Item>
-      <SymbolReference fullName={symbolId} name={name} />
+      <SymbolReference id={symbolId} name={name} />
     </Item>
   );
 }

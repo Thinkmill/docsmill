@@ -120,10 +120,7 @@ const components: ReactMarkdownOptions["components"] = {
     if (text) {
       if (symbols[fullName] && text === symbols[fullName][0].name) {
         return (
-          <SymbolReference
-            name={symbols[fullName][0].name}
-            fullName={fullName}
-          />
+          <SymbolReference name={symbols[fullName][0].name} id={fullName} />
         );
       }
       const external = externalSymbols[fullName];

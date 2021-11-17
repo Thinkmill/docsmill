@@ -10,6 +10,9 @@ import { useRouter } from "next/router";
 import { getPkgWithVersionPortionOfParms } from "../npm/params";
 import { Declaration } from "./declaration";
 import { Docs } from "./docs";
+import { Components } from "./type";
+
+const components: Components = { Docs, SymbolReference };
 
 export function RenderRootSymbol({ symbol }: { symbol: SymbolId }) {
   const {
@@ -81,8 +84,9 @@ export function RenderRootSymbol({ symbol }: { symbol: SymbolId }) {
         {decls.map((decl, i) => {
           return (
             <div key={i}>
-              <Docs content={decl.docs} />
+              <Docs docs={decl.docs} />
               <Declaration
+                components={components}
                 fullName={symbol}
                 isExported={isExported}
                 decl={decl}
@@ -98,10 +102,7 @@ export function RenderRootSymbol({ symbol }: { symbol: SymbolId }) {
             {relatedSymbols.map(function ReferenceItem(thing, i) {
               return (
                 <li key={i} css={styles.referenceItem}>
-                  <SymbolReference
-                    fullName={thing}
-                    name={symbols[thing][0].name}
-                  />
+                  <SymbolReference id={thing} name={symbols[thing][0].name} />
                 </li>
               );
             })}

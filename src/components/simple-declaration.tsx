@@ -12,7 +12,7 @@ import { Docs } from "./docs";
 import { Indent } from "./indent";
 import { a } from "./markdown.css";
 import { Syntax } from "./syntax";
-import { TypeParams, Params, Type } from "./type";
+import { TypeParams, Params, Type, Components } from "./type";
 
 export const declarationNameStyles = css(codeFont, {
   color: syntaxColors.symbol,
@@ -25,19 +25,21 @@ export function DeclarationName({ name }: { name: string }) {
 export function SimpleDeclaration({
   decl,
   isExported,
+  components,
 }: {
   decl: SimpleSerializedDeclaration;
   isExported: boolean;
+  components: Components;
 }) {
   if (decl.kind === "function") {
     return (
       <Fragment>
         <Syntax kind="keyword">{isExported ? "export " : ""}function </Syntax>
         <DeclarationName name={decl.name} />
-        <TypeParams params={decl.typeParams} />
-        <Params params={decl.parameters} />
+        <TypeParams components={components} params={decl.typeParams} />
+        <Params components={components} params={decl.parameters} />
         <Syntax kind="colon">: </Syntax>
-        <Type type={decl.returnType} />
+        <Type components={components} type={decl.returnType} />
       </Fragment>
     );
   }
@@ -50,7 +52,7 @@ export function SimpleDeclaration({
         </Syntax>
         <DeclarationName name={decl.name} />
         <Syntax kind="colon">: </Syntax>
-        <Type type={decl.type} />
+        <Type components={components} type={decl.type} />
         <Syntax kind="bracket">{" = "}</Syntax>
         <span css={codeFont}>...</span>
       </Fragment>
@@ -77,14 +79,14 @@ export function SimpleDeclaration({
           interface{" "}
         </Syntax>
         <DeclarationName name={decl.name} />
-        <TypeParams params={decl.typeParams} />
+        <TypeParams components={components} params={decl.typeParams} />
         {decl.extends && (
           <Fragment>
             <Syntax kind="keyword"> extends </Syntax>
             {decl.extends.map((param, i) => {
               return (
                 <Fragment key={i}>
-                  <Type type={param} />
+                  <Type components={components} type={param} />
                   {i === interfaceSymbol.extends!.length - 1 ? null : (
                     <Syntax kind="comma">{", "}</Syntax>
                   )}
@@ -94,7 +96,10 @@ export function SimpleDeclaration({
           </Fragment>
         )}
         <span css={codeFont}> </span>
-        <Type type={{ kind: "object", members: decl.members }} />
+        <Type
+          components={components}
+          type={{ kind: "object", members: decl.members }}
+        />
       </Fragment>
     );
   }
@@ -120,11 +125,11 @@ export function SimpleDeclaration({
           class{" "}
         </Syntax>
         <DeclarationName name={decl.name} />
-        <TypeParams params={decl.typeParams} />
+        <TypeParams components={components} params={decl.typeParams} />
         {!!classSymbol.extends && (
           <Fragment>
             <Syntax kind="keyword"> extends </Syntax>
-            <Type type={classSymbol.extends} />
+            <Type components={components} type={classSymbol.extends} />
           </Fragment>
         )}
         {decl.implements && (
@@ -133,7 +138,7 @@ export function SimpleDeclaration({
             {decl.implements.map((param, i) => {
               return (
                 <Fragment key={i}>
-                  <Type type={param} />
+                  <Type components={components} type={param} />
                   {i === classSymbol.implements!.length - 1 ? null : (
                     <Syntax kind="comma">{", "}</Syntax>
                   )}
@@ -143,7 +148,11 @@ export function SimpleDeclaration({
           </Fragment>
         )}
         <span css={codeFont}> </span>
-        <ClassMembers constructors={decl.constructors} members={decl.members} />
+        <ClassMembers
+          components={components}
+          constructors={decl.constructors}
+          members={decl.members}
+        />
       </Fragment>
     );
   }
@@ -155,9 +164,9 @@ export function SimpleDeclaration({
         type{" "}
       </Syntax>
       <DeclarationName name={decl.name} />
-      <TypeParams params={decl.typeParams} />
+      <TypeParams components={components} params={decl.typeParams} />
       <span css={codeFont}> = </span>
-      <Type type={decl.type} />
+      <Type components={components} type={decl.type} />
     </Fragment>
   );
 }
@@ -165,11 +174,13 @@ export function SimpleDeclaration({
 function ClassMembers({
   members,
   constructors,
+  components,
 }: {
   constructors:
     | [ConstructorDeclaration, ...ConstructorDeclaration[]]
     | undefined;
   members: [ClassMember, ...ClassMember[]] | undefined;
+  components: Components;
 }) {
   if (members === undefined && constructors === undefined) {
     return <span css={codeFont}>{"{}"}</span>;
@@ -180,9 +191,9 @@ function ClassMembers({
       {constructors?.map((constructor, i) => {
         return (
           <Indent key={i}>
-            <Docs content={constructor.docs} />
+            <Docs docs={constructor.docs} />
             <Syntax kind="keyword">constructor</Syntax>
-            <Params params={constructor.parameters} />
+            <Params components={components} params={constructor.parameters} />
           </Indent>
         );
       })}
@@ -190,7 +201,7 @@ function ClassMembers({
         if (prop.kind === "prop") {
           return (
             <Indent key={i}>
-              <Docs content={prop.docs} />
+              <Docs docs={prop.docs} />
               {prop.readonly || prop.static ? (
                 <Syntax kind="keyword">
                   {prop.static ? "static " : ""}
@@ -199,7 +210,7 @@ function ClassMembers({
               ) : null}
               <span css={codeFont}>{prop.name}</span>
               <Syntax kind="colon">{prop.optional ? "?: " : ": "}</Syntax>
-              <Type type={prop.type} />
+              <Type components={components} type={prop.type} />
               <span css={codeFont}>;</span>
             </Indent>
           );
@@ -210,10 +221,10 @@ function ClassMembers({
               <span css={codeFont}>
                 [key<Syntax kind="colon">: </Syntax>
               </span>
-              <Type type={prop.key} />
+              <Type components={components} type={prop.key} />
               <span css={codeFont}>]</span>
               <Syntax kind="colon">: </Syntax>
-              <Type type={prop.value} />
+              <Type components={components} type={prop.value} />
               <span css={codeFont}>;</span>
             </Indent>
           );
@@ -227,12 +238,12 @@ function ClassMembers({
         }
         return (
           <Indent key={i}>
-            <Docs content={prop.docs} />
+            <Docs docs={prop.docs} />
             <span css={codeFont}>{prop.name}</span>
-            <TypeParams params={prop.typeParams} />
-            <Params params={prop.parameters} />
+            <TypeParams components={components} params={prop.typeParams} />
+            <Params components={components} params={prop.parameters} />
             <Syntax kind="colon">: </Syntax>
-            <Type type={prop.returnType} />
+            <Type components={components} type={prop.returnType} />
             <span css={codeFont}>;</span>
           </Indent>
         );

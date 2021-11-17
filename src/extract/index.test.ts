@@ -343,7 +343,7 @@ function printSerializedType(
       .join("\n")}\n}`;
   }
   if (type.kind === "reference") {
-    return `${printReference(type.fullName, type.name)}${
+    return `${printReference(type.id, type.name)}${
       type.typeArguments
         ? `<${type.typeArguments.map((x) =>
             printSerializedType(x, printReference)
@@ -353,7 +353,7 @@ function printSerializedType(
   }
 
   if (type.kind === "typeof") {
-    return `typeof ${printReference(type.fullName, type.name)}`;
+    return `typeof ${printReference(type.id, type.name)}`;
   }
 
   return assertNever(type);

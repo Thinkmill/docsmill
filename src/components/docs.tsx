@@ -7,10 +7,10 @@ import { ChevronDoubleUp } from "./icons/chevron-double-up";
 
 import * as styles from "./docs.css";
 
-export function Docs({ content }: { content: string | undefined }) {
-  if (!content) return null;
+export function Docs({ docs }: { docs: string | undefined }) {
+  if (!docs) return null;
 
-  const { first, rest } = splitDocs(content);
+  const { first, rest } = splitDocs(docs);
 
   if (!rest) {
     return (
