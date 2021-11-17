@@ -11,23 +11,28 @@ import { getPkgWithVersionPortionOfParms } from "../npm/params";
 import { Declaration } from "./declaration";
 import { Components } from "./core/type";
 
+export type RenderSymbolInfo = {
+  symbolsForInnerBit: Map<SymbolId, SymbolId[]>;
+  references: Record<SymbolId, SymbolId[]>;
+  locations: Record<
+    SymbolId,
+    { file: string; line: number; src?: { file: string; line: number } }[]
+  >;
+};
+
 export function RenderRootSymbol<Docs>({
   symbol,
   docInfo,
   components,
+  renderSymbolInfo,
 }: {
   symbol: SymbolId;
   docInfo: DocsContextType<Docs>;
   components: Components<Docs>;
+  renderSymbolInfo: RenderSymbolInfo;
 }) {
-  const {
-    canonicalExportLocations,
-    goodIdentifiers,
-    locations,
-    references,
-    symbols,
-    symbolsForInnerBit,
-  } = docInfo;
+  const { references, locations } = renderSymbolInfo;
+  const { canonicalExportLocations, goodIdentifiers, symbols } = docInfo;
   let decls = symbols[symbol];
   let isExported = false;
   if (canonicalExportLocations[symbol]) {
@@ -38,7 +43,7 @@ export function RenderRootSymbol<Docs>({
   const relatedSymbols = (references[symbol] || []).filter((thing) =>
     symbols[thing].some((x) => x.kind !== "module" && x.kind !== "namespace")
   );
-  const innerBits = symbolsForInnerBit.get(symbol);
+  const innerBits = renderSymbolInfo.symbolsForInnerBit.get(symbol);
   const locationsForSymbol = locations[symbol];
   const router = useRouter();
   const pkgRefPortion = router.query.pkg
@@ -96,6 +101,7 @@ export function RenderRootSymbol<Docs>({
                 isExported={isExported}
                 decl={decl}
                 docInfo={docInfo}
+                renderSymbolInfo={renderSymbolInfo}
               />
             </div>
           );
@@ -125,6 +131,7 @@ export function RenderRootSymbol<Docs>({
                 symbol={thing}
                 docInfo={docInfo}
                 components={components}
+                renderSymbolInfo={renderSymbolInfo}
               />
             );
           })}

@@ -14,7 +14,7 @@ import { Syntax } from "./core/syntax";
 import * as styles from "./symbol.css";
 import { assert } from "../lib/assert";
 import { getGroupedExports } from "../lib/utils";
-import { RenderRootSymbol } from "./symbol";
+import { RenderRootSymbol, RenderSymbolInfo } from "./symbol";
 import * as symbolReferenceStyles from "./symbol-references.css";
 import Link from "next/link";
 import { DeclarationName, SimpleDeclaration } from "./core/simple-declaration";
@@ -32,12 +32,14 @@ export function Declaration<Docs>({
   fullName,
   components,
   docInfo,
+  renderSymbolInfo,
 }: {
   decl: SerializedDeclaration<Docs>;
   isExported: boolean;
   fullName: SymbolId;
   components: Components<Docs>;
   docInfo: DocsContextType<Docs>;
+  renderSymbolInfo: RenderSymbolInfo;
 }) {
   if (decl.kind === "module") {
     return (
@@ -59,7 +61,12 @@ export function Declaration<Docs>({
           )}
           <Syntax kind="bracket">{" {"}</Syntax>
         </div>
-        <Exports id={fullName} components={components} docInfo={docInfo} />
+        <Exports
+          id={fullName}
+          components={components}
+          docInfo={docInfo}
+          renderSymbolInfo={renderSymbolInfo}
+        />
 
         <div css={styles.innerExportsCommon}>
           <Syntax kind="bracket">{"}"}</Syntax>
@@ -142,7 +149,12 @@ export function Declaration<Docs>({
           <DeclarationName name={decl.name} />
           <Syntax kind="bracket">{" {"}</Syntax>
         </div>
-        <Exports id={fullName} docInfo={docInfo} components={components} />
+        <Exports
+          id={fullName}
+          docInfo={docInfo}
+          components={components}
+          renderSymbolInfo={renderSymbolInfo}
+        />
         <div css={styles.innerExportsCommon}>
           <Syntax kind="bracket">{"}"}</Syntax>
         </div>
@@ -167,10 +179,12 @@ function Exports<Docs>({
   id,
   components,
   docInfo,
+  renderSymbolInfo,
 }: {
   id: SymbolId;
   docInfo: DocsContextType<Docs>;
   components: Components<Docs>;
+  renderSymbolInfo: RenderSymbolInfo;
 }) {
   const { goodIdentifiers } = docInfo;
   const transformedExports = getGroupedExports(id, docInfo);
@@ -184,6 +198,7 @@ function Exports<Docs>({
               symbol={exported.fullName}
               docInfo={docInfo}
               components={components}
+              renderSymbolInfo={renderSymbolInfo}
             />
           );
         }

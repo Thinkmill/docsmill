@@ -2,9 +2,9 @@
 /** @jsxImportSource @emotion/react */
 import { useEffect, useMemo, useState } from "react";
 
-import { DocsContext } from "../lib/DocsContext";
+import { DocsContext, DocsContextType } from "../lib/DocsContext";
 
-import { RenderRootSymbol } from "../components/symbol";
+import { RenderRootSymbol, RenderSymbolInfo } from "../components/symbol";
 import { NavigationItem } from "../components/navigation";
 import {
   Contents,
@@ -60,9 +60,16 @@ export function Root(props: import("../extract").DocInfo) {
     };
   }, []);
 
-  const docInfo = {
-    symbols: props.accessibleSymbols,
+  const renderSymbolInfo: RenderSymbolInfo = {
+    symbolsForInnerBit: new Map(
+      objectEntriesAssumeNoExcessProps(props.symbolsForInnerBit)
+    ),
     references: props.symbolReferences,
+    locations: props.locations,
+  };
+
+  const docInfo: DocsContextType<string> = {
+    symbols: props.accessibleSymbols,
     canonicalExportLocations: useMemo(
       () =>
         Object.fromEntries(
@@ -73,13 +80,9 @@ export function Root(props: import("../extract").DocInfo) {
         ),
       [props.canonicalExportLocations]
     ),
-    symbolsForInnerBit: new Map(
-      objectEntriesAssumeNoExcessProps(props.symbolsForInnerBit)
-    ),
     goodIdentifiers: props.goodIdentifiers,
-    rootSymbols: new Set(props.rootSymbols),
     externalSymbols: props.externalSymbols,
-    locations: props.locations,
+    rootSymbols: new Set(props.rootSymbols),
   };
 
   return (
@@ -136,6 +139,7 @@ export function Root(props: import("../extract").DocInfo) {
               symbol={rootSymbol}
               docInfo={docInfo}
               components={components}
+              renderSymbolInfo={renderSymbolInfo}
             />
           ))}
         </Contents>
