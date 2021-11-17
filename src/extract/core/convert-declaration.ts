@@ -4,7 +4,6 @@ import { ClassMember, SerializedDeclaration, SymbolId } from "../../lib/types";
 import { convertTypeNode } from "./convert-node";
 import { convertType } from "./convert-type";
 import {
-  getDocsFromJSDocNodes,
   getDocs,
   getTypeParameters,
   getParameters,
@@ -16,10 +15,10 @@ import {
 } from "./utils";
 import { assert } from "../../lib/assert";
 
-export function convertDeclaration(
+export function convertDeclaration<Docs>(
   compilerNode: ts.Node,
-  host: ExtractionHost
-): SerializedDeclaration {
+  host: ExtractionHost<Docs>
+): SerializedDeclaration<Docs> {
   if (ts.isTypeAliasDeclaration(compilerNode)) {
     return {
       kind: "type-alias",
@@ -47,53 +46,6 @@ export function convertDeclaration(
     (ts.isModuleDeclaration(compilerNode) &&
       ts.isStringLiteral(compilerNode.name))
   ) {
-    let jsDocs = getJsDocsFromSourceFile(compilerNode);
-
-    // if you have a file that re-exports _everything_ from somewhere else
-    // then look at that place for jsdocs since e.g. Preconstruct
-    // generates a declaration file that re-exports from the actual place that might include a JSDoc comment
-    if (jsDocs.length === 0 && ts.isSourceFile(compilerNode)) {
-      let foundStar = false;
-      let sourceFile: undefined | ts.SourceFile = undefined;
-
-      for (const exportDecl of compilerNode.statements) {
-        if (
-          exportDecl.modifiers?.some(
-            (x) => x.kind === ts.SyntaxKind.ExportKeyword
-          )
-        ) {
-          sourceFile = undefined;
-          break;
-        }
-        if (!ts.isExportDeclaration(exportDecl)) {
-          continue;
-        }
-
-        const file =
-          exportDecl.moduleSpecifier &&
-          ts.isStringLiteral(exportDecl.moduleSpecifier)
-            ? getSymbolAtLocation(exportDecl.moduleSpecifier, host)
-                ?.valueDeclaration
-            : undefined;
-
-        if (
-          !file ||
-          !ts.isSourceFile(file) ||
-          (sourceFile && file !== sourceFile)
-        ) {
-          sourceFile = undefined;
-          break;
-        }
-        sourceFile = file;
-        if (exportDecl.exportClause === undefined) {
-          foundStar = true;
-        }
-      }
-      if (foundStar && sourceFile) {
-        jsDocs = getJsDocsFromSourceFile(sourceFile);
-      }
-    }
-
     const symbol = getSymbolAtLocation(compilerNode, host);
 
     assert(symbol !== undefined, "expected symbol to exist");
@@ -109,7 +61,7 @@ export function convertDeclaration(
       name: ts.isModuleDeclaration(compilerNode)
         ? (compilerNode.name as ts.StringLiteral).text
         : compilerNode.fileName,
-      docs: getDocsFromJSDocNodes(jsDocs, host),
+      docs: host.getDocs(compilerNode),
       exports,
     };
   }
@@ -117,7 +69,7 @@ export function convertDeclaration(
     return {
       kind: "variable",
       name: compilerNode.name.text,
-      docs: "",
+      docs: host.getDocs(compilerNode),
       variableKind: "const",
       type: convertType(
         getTypeChecker(host).getTypeAtLocation(compilerNode),
@@ -132,14 +84,7 @@ export function convertDeclaration(
       "expected to only get variable declarations as part of a variable statement"
     );
 
-    const docs =
-      variableStatement.declarationList.declarations.indexOf(compilerNode) === 1
-        ? (
-            getDocs(variableStatement, host) +
-            "\n\n" +
-            getDocs(compilerNode, host)
-          ).trim()
-        : getDocs(compilerNode, host);
+    const docs = getDocs(compilerNode, host);
 
     assert(
       ts.isIdentifier(compilerNode.name),
@@ -280,7 +225,7 @@ export function convertDeclaration(
                 ts.isSemicolonClassElement(member)
               )
           )
-          .map((member): ClassMember => {
+          .map((member): ClassMember<Docs> => {
             const isStatic =
               member.modifiers?.some(
                 (x) => x.kind === ts.SyntaxKind.StaticKeyword
@@ -412,19 +357,4 @@ function printPropertyName(propertyName: ts.PropertyName) {
     return JSON.stringify(propertyName.text);
   }
   return propertyName.getText();
-}
-
-function getJsDocsFromSourceFile(decl: ts.Node) {
-  const jsDocs: ts.JSDoc[] = [];
-  decl.forEachChild((node) => {
-    if (!!(node as any).jsDoc) {
-      const nodes: ts.JSDoc[] = (node as any).jsDoc ?? [];
-      for (const doc of nodes) {
-        if (doc.tags?.some((tag) => tag.tagName.text === "module")) {
-          jsDocs.push(doc);
-        }
-      }
-    }
-  });
-  return jsDocs;
 }

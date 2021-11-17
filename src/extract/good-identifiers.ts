@@ -3,7 +3,7 @@ import { SerializedDeclaration, SymbolId } from "../lib/types";
 import { objectEntriesAssumeNoExcessProps } from "../lib/utils";
 
 export function getGoodIdentifiers(
-  accessibleSymbols: Record<SymbolId, SerializedDeclaration[]>,
+  accessibleSymbols: Record<SymbolId, SerializedDeclaration<unknown>[]>,
   packageName: string,
   canonicalExportLocations: {
     [key: SymbolId]: readonly [exportName: string, fileSymbolId: SymbolId];

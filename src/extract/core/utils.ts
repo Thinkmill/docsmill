@@ -12,12 +12,12 @@ import {
   SymbolId,
 } from "../../lib/types";
 
-export function getTypeParameters(
+export function getTypeParameters<Docs>(
   node: ts.Node & {
     typeParameters?: ts.NodeArray<ts.TypeParameterDeclaration>;
   },
-  host: ExtractionHost
-): TypeParam[] {
+  host: ExtractionHost<Docs>
+): TypeParam<Docs>[] {
   return (node.typeParameters || []).map((typeParam) => {
     return {
       name: typeParam.name.text,
@@ -31,13 +31,13 @@ export function getTypeParameters(
   });
 }
 
-export function getObjectMembers(
+export function getObjectMembers<Docs>(
   node: ts.Node & {
     members: ts.NodeArray<ts.TypeElement>;
   },
-  host: ExtractionHost
-): ObjectMember[] {
-  return node.members.map((member): ObjectMember => {
+  host: ExtractionHost<Docs>
+): ObjectMember<Docs>[] {
+  return node.members.map((member): ObjectMember<Docs> => {
     assert(member.decorators === undefined);
     if (ts.isIndexSignatureDeclaration(member)) {
       assert(member.questionToken === undefined);
@@ -122,13 +122,13 @@ export function spreadTupleOrNone<Key extends string, Element>(
   return { [key]: array } as any;
 }
 
-export function getParameters(
+export function getParameters<Docs>(
   node: ts.Node & {
     parameters: ts.NodeArray<ts.ParameterDeclaration>;
   },
-  host: ExtractionHost
-): Parameter[] {
-  return node.parameters.map((x): Parameter => {
+  host: ExtractionHost<Docs>
+): Parameter<Docs>[] {
+  return node.parameters.map((x): Parameter<Docs> => {
     return {
       name: ts.isIdentifier(x.name) ? x.name.text : x.name.getText(),
       type: x.type
@@ -145,7 +145,7 @@ export function getParameters(
 
 function getJsDocCommentTextMarkdown(
   comment: string | undefined | ts.NodeArray<ts.JSDocComment>,
-  host: ExtractionHost
+  host: { program: ts.Program }
 ) {
   if (comment === undefined) {
     return "";
@@ -180,7 +180,7 @@ function getJsDocCommentTextMarkdown(
 
 export function getAliasedSymbol(
   symbol: ts.Symbol,
-  host: ExtractionHost
+  host: { program: ts.Program }
 ): ts.Symbol {
   if ((symbol as any).mergeId !== undefined) {
     return getAliasedSymbol(
@@ -197,7 +197,10 @@ export function getAliasedSymbol(
   return symbol;
 }
 
-export function getDocsFromJSDocNodes(nodes: ts.JSDoc[], host: ExtractionHost) {
+export function getDocsFromJSDocNodes(
+  nodes: ts.JSDoc[],
+  host: { program: ts.Program }
+) {
   return nodes
     .map((x) => {
       let fromTags = (x.tags || [])
@@ -217,7 +220,22 @@ export function getDocsFromJSDocNodes(nodes: ts.JSDoc[], host: ExtractionHost) {
     .join("\n\n");
 }
 
-export function getDocs(decl: ts.HasJSDoc, host: ExtractionHost) {
+function getJsDocsFromSourceFile(decl: ts.Node) {
+  const jsDocs: ts.JSDoc[] = [];
+  decl.forEachChild((node) => {
+    if (!!(node as any).jsDoc) {
+      const nodes: ts.JSDoc[] = (node as any).jsDoc ?? [];
+      for (const doc of nodes) {
+        if (doc.tags?.some((tag) => tag.tagName.text === "module")) {
+          jsDocs.push(doc);
+        }
+      }
+    }
+  });
+  return jsDocs;
+}
+
+function getDocsImplBase(decl: ts.Node, host: { program: ts.Program }) {
   let nodes = ((decl as any).jsDoc ?? []) as ts.JSDoc[];
   return getDocsFromJSDocNodes(
     nodes.filter(
@@ -226,6 +244,81 @@ export function getDocs(decl: ts.HasJSDoc, host: ExtractionHost) {
     ),
     host
   );
+}
+
+export function getDocsImpl(
+  decl: ts.Node,
+  host: { program: ts.Program }
+): string {
+  if (ts.isSourceFile(decl)) {
+    let jsDocs = getJsDocsFromSourceFile(decl);
+
+    // if you have a file that re-exports _everything_ from somewhere else
+    // then look at that place for jsdocs since e.g. Preconstruct
+    // generates a declaration file that re-exports from the actual place that might include a JSDoc comment
+    if (jsDocs.length === 0) {
+      let foundStar = false;
+      let sourceFile: undefined | ts.SourceFile = undefined;
+
+      for (const exportDecl of decl.statements) {
+        if (
+          exportDecl.modifiers?.some(
+            (x) => x.kind === ts.SyntaxKind.ExportKeyword
+          )
+        ) {
+          sourceFile = undefined;
+          break;
+        }
+        if (!ts.isExportDeclaration(exportDecl)) {
+          continue;
+        }
+
+        const file =
+          exportDecl.moduleSpecifier &&
+          ts.isStringLiteral(exportDecl.moduleSpecifier)
+            ? getSymbolAtLocation(exportDecl.moduleSpecifier, host)
+                ?.valueDeclaration
+            : undefined;
+
+        if (
+          !file ||
+          !ts.isSourceFile(file) ||
+          (sourceFile && file !== sourceFile)
+        ) {
+          sourceFile = undefined;
+          break;
+        }
+        sourceFile = file;
+        if (exportDecl.exportClause === undefined) {
+          foundStar = true;
+        }
+      }
+      if (foundStar && sourceFile) {
+        jsDocs = getJsDocsFromSourceFile(sourceFile);
+      }
+    }
+    return getDocsFromJSDocNodes(jsDocs, host);
+  }
+  if (
+    ts.isVariableDeclaration(decl) &&
+    ts.isVariableDeclarationList(decl.parent) &&
+    ts.isVariableStatement(decl.parent.parent) &&
+    decl.parent.declarations[0] === decl
+  ) {
+    return (
+      getDocsImplBase(decl.parent.parent, host) +
+      "\n\n" +
+      getDocsImplBase(decl, host)
+    ).trim();
+  }
+  return getDocsImplBase(decl, host);
+}
+
+export function getDocs<Docs>(
+  decl: ts.HasJSDoc,
+  host: ExtractionHost<Docs>
+): Docs {
+  return host.getDocs(decl);
 }
 
 export function getSymbolIdentifier(symbol: ts.Symbol): SymbolId {
@@ -252,7 +345,7 @@ export function getSymbolIdentifier(symbol: ts.Symbol): SymbolId {
 
 export function getSymbolAtLocation(
   compilerNode: ts.Node,
-  host: ExtractionHost
+  host: { program: ts.Program }
 ): ts.Symbol | undefined {
   const typeChecker = getTypeChecker(host);
   const boundSymbol = (compilerNode as any).symbol as ts.Symbol | undefined;
@@ -273,10 +366,10 @@ export function getSymbolAtLocation(
   return undefined;
 }
 
-export function getReturnType(
+export function getReturnType<Docs>(
   node: ts.SignatureDeclaration,
-  host: ExtractionHost
-): SerializedType {
+  host: ExtractionHost<Docs>
+): SerializedType<Docs> {
   if (node.type) {
     return convertTypeNode(node.type, host);
   }

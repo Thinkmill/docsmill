@@ -1,7 +1,7 @@
 /** @jsxRuntime automatic */
 /** @jsxImportSource @emotion/react */
 import { Fragment } from "react";
-import { useDocsContext } from "../lib/DocsContext";
+import { DocsContextType } from "../lib/DocsContext";
 import { SymbolReference } from "./symbol-references";
 import * as styles from "./symbol.css";
 import { SymbolId } from "../lib/types";
@@ -9,20 +9,25 @@ import Link from "next/link";
 import { useRouter } from "next/router";
 import { getPkgWithVersionPortionOfParms } from "../npm/params";
 import { Declaration } from "./declaration";
-import { Docs } from "./docs";
 import { Components } from "./core/type";
 
-const components: Components = { Docs, SymbolReference };
-
-export function RenderRootSymbol({ symbol }: { symbol: SymbolId }) {
+export function RenderRootSymbol<Docs>({
+  symbol,
+  docInfo,
+  components,
+}: {
+  symbol: SymbolId;
+  docInfo: DocsContextType<Docs>;
+  components: Components<Docs>;
+}) {
   const {
-    symbols,
     canonicalExportLocations,
-    references,
-    symbolsForInnerBit,
-    locations,
     goodIdentifiers,
-  } = useDocsContext();
+    locations,
+    references,
+    symbols,
+    symbolsForInnerBit,
+  } = docInfo;
   let decls = symbols[symbol];
   let isExported = false;
   if (canonicalExportLocations[symbol]) {
@@ -84,12 +89,13 @@ export function RenderRootSymbol({ symbol }: { symbol: SymbolId }) {
         {decls.map((decl, i) => {
           return (
             <div key={i}>
-              <Docs docs={decl.docs} />
+              <components.Docs docs={decl.docs} />
               <Declaration
                 components={components}
                 fullName={symbol}
                 isExported={isExported}
                 decl={decl}
+                docInfo={docInfo}
               />
             </div>
           );
@@ -113,7 +119,14 @@ export function RenderRootSymbol({ symbol }: { symbol: SymbolId }) {
         <details css={styles.referencesContainer}>
           <summary>Unexported symbols referenced here</summary>
           {innerBits.map((thing) => {
-            return <RenderRootSymbol key={thing} symbol={thing} />;
+            return (
+              <RenderRootSymbol
+                key={thing}
+                symbol={thing}
+                docInfo={docInfo}
+                components={components}
+              />
+            );
           })}
         </details>
       )}

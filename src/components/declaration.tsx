@@ -1,7 +1,7 @@
 /** @jsxRuntime automatic */
 /** @jsxImportSource @emotion/react */
 import { Fragment } from "react";
-import { useDocsContext } from "../lib/DocsContext";
+import { DocsContextType, useDocsContext } from "../lib/DocsContext";
 import { codeFont } from "../lib/theme.css";
 import { SerializedDeclaration, SymbolId } from "../lib/types";
 import { Indent } from "./core/indent";
@@ -13,11 +13,11 @@ import {
 import { Syntax } from "./core/syntax";
 import * as styles from "./symbol.css";
 import { assert } from "../lib/assert";
-import { useGroupedExports } from "../lib/utils";
+import { getGroupedExports } from "../lib/utils";
 import { RenderRootSymbol } from "./symbol";
 import * as symbolReferenceStyles from "./symbol-references.css";
 import Link from "next/link";
-import { DeclarationName, SimpleDeclaration } from "./simple-declaration";
+import { DeclarationName, SimpleDeclaration } from "./core/simple-declaration";
 import { css } from "@emotion/react";
 import { Components } from "./core/type";
 
@@ -26,19 +26,19 @@ const enumMemberName = css(
   styles.targetBackground
 );
 
-export function Declaration({
+export function Declaration<Docs>({
   decl,
   isExported,
   fullName,
   components,
+  docInfo,
 }: {
-  decl: SerializedDeclaration;
+  decl: SerializedDeclaration<Docs>;
   isExported: boolean;
   fullName: SymbolId;
-  components: Components;
+  components: Components<Docs>;
+  docInfo: DocsContextType<Docs>;
 }) {
-  const { goodIdentifiers, symbols } = useDocsContext();
-
   if (decl.kind === "module") {
     return (
       <Fragment>
@@ -59,7 +59,7 @@ export function Declaration({
           )}
           <Syntax kind="bracket">{" {"}</Syntax>
         </div>
-        <Exports fullName={fullName} />
+        <Exports id={fullName} components={components} docInfo={docInfo} />
 
         <div css={styles.innerExportsCommon}>
           <Syntax kind="bracket">{"}"}</Syntax>
@@ -91,7 +91,7 @@ export function Declaration({
         <DeclarationName name={decl.name} />
         <Syntax kind="bracket">{" { "}</Syntax>
         {decl.members.map((memberId, i) => {
-          const members = symbols[memberId];
+          const members = docInfo.symbols[memberId];
           const member = members[0];
           assert(
             members.length === 1,
@@ -105,8 +105,8 @@ export function Declaration({
             <Indent key={i}>
               <components.Docs docs={member.docs} />
               <a
-                id={goodIdentifiers[memberId]}
-                href={`#${goodIdentifiers[memberId]}`}
+                id={docInfo.goodIdentifiers[memberId]}
+                href={`#${docInfo.goodIdentifiers[memberId]}`}
                 css={enumMemberName}
               >
                 {member.name}
@@ -142,7 +142,7 @@ export function Declaration({
           <DeclarationName name={decl.name} />
           <Syntax kind="bracket">{" {"}</Syntax>
         </div>
-        <Exports fullName={fullName} />
+        <Exports id={fullName} docInfo={docInfo} components={components} />
         <div css={styles.innerExportsCommon}>
           <Syntax kind="bracket">{"}"}</Syntax>
         </div>
@@ -163,20 +163,35 @@ export function Declaration({
   );
 }
 
-function Exports({ fullName }: { fullName: SymbolId }) {
-  const { goodIdentifiers } = useDocsContext();
-  const transformedExports = useGroupedExports(fullName);
+function Exports<Docs>({
+  id,
+  components,
+  docInfo,
+}: {
+  id: SymbolId;
+  docInfo: DocsContextType<Docs>;
+  components: Components<Docs>;
+}) {
+  const { goodIdentifiers } = docInfo;
+  const transformedExports = getGroupedExports(id, docInfo);
   return (
     <div css={styles.innerExportsContainer}>
       {transformedExports.map(function Exported(exported, i) {
         if (exported.kind === "canonical") {
-          return <RenderRootSymbol key={i} symbol={exported.fullName} />;
+          return (
+            <RenderRootSymbol
+              key={i}
+              symbol={exported.fullName}
+              docInfo={docInfo}
+              components={components}
+            />
+          );
         }
         if (exported.kind === "unknown-exports") {
           return (
             <div
               key={i}
-              id={goodIdentifiers[fullName] + `-re-exports-${i}`}
+              id={goodIdentifiers[id] + `-re-exports-${i}`}
               css={styles.reexportTarget}
             >
               <Syntax kind="keyword">export</Syntax>
@@ -204,7 +219,7 @@ function Exports({ fullName }: { fullName: SymbolId }) {
           return (
             <div
               key={i}
-              id={goodIdentifiers[fullName] + `-re-exports-${i}`}
+              id={goodIdentifiers[id] + `-re-exports-${i}`}
               css={styles.reexportTarget}
             >
               <Syntax kind="keyword">export</Syntax>
@@ -244,7 +259,7 @@ function Exports({ fullName }: { fullName: SymbolId }) {
         return (
           <div
             key={i}
-            id={goodIdentifiers[fullName] + `-re-exports-${i}`}
+            id={goodIdentifiers[id] + `-re-exports-${i}`}
             css={styles.reexportTarget}
           >
             <Syntax kind="keyword">export</Syntax>

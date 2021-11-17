@@ -2,7 +2,7 @@ import { SerializedDeclaration, SymbolId } from "../lib/types";
 import { objectEntriesAssumeNoExcessProps } from "../lib/utils";
 
 export function getSymbolsForInnerBit(
-  accessibleSymbols: Record<string, SerializedDeclaration[]>,
+  accessibleSymbols: Record<string, SerializedDeclaration<unknown>[]>,
   canonicalExportLocations: {
     [key: SymbolId]: readonly [exportName: string, fileSymbolId: SymbolId];
   },

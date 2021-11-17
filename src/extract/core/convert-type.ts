@@ -4,10 +4,10 @@ import { assert } from "../../lib/assert";
 import { SerializedType } from "../../lib/types";
 import { convertTypeNode } from "./convert-node";
 
-export function convertType(
+export function convertType<Docs>(
   type: ts.Type,
-  host: ExtractionHost
-): SerializedType {
+  host: ExtractionHost<Docs>
+): SerializedType<Docs> {
   const compilerNode = getTypeChecker(host).typeToTypeNode(
     type,
     undefined,

@@ -1,5 +1,5 @@
 import { SerializedDeclaration, SymbolId } from "./types";
-import { useDocsContext } from "./DocsContext";
+import { DocsContextType } from "./DocsContext";
 
 export const objectEntriesAssumeNoExcessProps: <T>(
   o: T
@@ -30,9 +30,14 @@ type TransformedExport =
     }
   | { kind: "canonical"; exportName: string; fullName: SymbolId };
 
-export function useGroupedExports(fullName: SymbolId) {
-  const { symbols, canonicalExportLocations, externalSymbols } =
-    useDocsContext();
+export function getGroupedExports(
+  fullName: SymbolId,
+  {
+    symbols,
+    canonicalExportLocations,
+    externalSymbols,
+  }: DocsContextType<unknown>
+) {
   const decls = symbols[fullName].filter(
     (x): x is Extract<typeof x, { kind: "module" | "namespace" }> =>
       x.kind === "module" || x.kind === "namespace"
@@ -104,7 +109,7 @@ export function useGroupedExports(fullName: SymbolId) {
           continue;
         }
         const prevSymbol = symbols[prev.from][0] as Extract<
-          SerializedDeclaration,
+          SerializedDeclaration<unknown>,
           { kind: "module" }
         >;
         if (prevSymbol) {

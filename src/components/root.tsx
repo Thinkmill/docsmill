@@ -16,8 +16,10 @@ import {
 import { useRouter } from "next/router";
 import * as styles from "./root.css";
 import { ChevronDown } from "./icons/chevron-down";
-import { getExternalPackageUrl } from "./symbol-references";
+import { getExternalPackageUrl, SymbolReference } from "./symbol-references";
 import { objectEntriesAssumeNoExcessProps } from "../lib/utils";
+import { Components } from "./core/type";
+import { Docs } from "./docs";
 
 function openParentDetails(element: HTMLElement) {
   if (element instanceof HTMLDetailsElement) {
@@ -27,6 +29,8 @@ function openParentDetails(element: HTMLElement) {
     openParentDetails(element.parentElement);
   }
 }
+
+const components: Components<string> = { Docs, SymbolReference };
 
 export function Root(props: import("../extract").DocInfo) {
   const router = useRouter();
@@ -56,32 +60,30 @@ export function Root(props: import("../extract").DocInfo) {
     };
   }, []);
 
+  const docInfo = {
+    symbols: props.accessibleSymbols,
+    references: props.symbolReferences,
+    canonicalExportLocations: useMemo(
+      () =>
+        Object.fromEntries(
+          objectEntriesAssumeNoExcessProps(props.canonicalExportLocations).map(
+            ([key, [exportName, parent]]) =>
+              [key, { exportName, parent }] as const
+          )
+        ),
+      [props.canonicalExportLocations]
+    ),
+    symbolsForInnerBit: new Map(
+      objectEntriesAssumeNoExcessProps(props.symbolsForInnerBit)
+    ),
+    goodIdentifiers: props.goodIdentifiers,
+    rootSymbols: new Set(props.rootSymbols),
+    externalSymbols: props.externalSymbols,
+    locations: props.locations,
+  };
+
   return (
-    <DocsContext.Provider
-      value={{
-        symbols: props.accessibleSymbols,
-        references: props.symbolReferences,
-        canonicalExportLocations: useMemo(
-          () =>
-            Object.fromEntries(
-              objectEntriesAssumeNoExcessProps(
-                props.canonicalExportLocations
-              ).map(
-                ([key, [exportName, parent]]) =>
-                  [key, { exportName, parent }] as const
-              )
-            ),
-          [props.canonicalExportLocations]
-        ),
-        symbolsForInnerBit: new Map(
-          objectEntriesAssumeNoExcessProps(props.symbolsForInnerBit)
-        ),
-        goodIdentifiers: props.goodIdentifiers,
-        rootSymbols: new Set(props.rootSymbols),
-        externalSymbols: props.externalSymbols,
-        locations: props.locations,
-      }}
-    >
+    <DocsContext.Provider value={docInfo}>
       <Header packageName={props.packageName} />
       <PageContainer>
         <NavigationContainer>
@@ -129,7 +131,12 @@ export function Root(props: import("../extract").DocInfo) {
         </NavigationContainer>
         <Contents>
           {props.rootSymbols.map((rootSymbol) => (
-            <RenderRootSymbol key={rootSymbol} symbol={rootSymbol} />
+            <RenderRootSymbol
+              key={rootSymbol}
+              symbol={rootSymbol}
+              docInfo={docInfo}
+              components={components}
+            />
           ))}
         </Contents>
       </PageContainer>

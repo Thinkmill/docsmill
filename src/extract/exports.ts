@@ -5,7 +5,7 @@ type ExportName = string;
 
 type Symbols = Record<
   SymbolId,
-  [SerializedDeclaration, ...SerializedDeclaration[]]
+  [SerializedDeclaration<unknown>, ...SerializedDeclaration<unknown>[]]
 >;
 
 function collectImportableSymbolLocationsFromRootSymbols(

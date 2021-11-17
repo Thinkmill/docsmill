@@ -1,10 +1,11 @@
 import { ts } from "./ts";
 import { findCanonicalExportLocations } from "./exports";
-import { getSymbolIdentifier } from "./core/utils";
+import { getDocsImpl, getSymbolIdentifier } from "./core/utils";
 import { SerializedDeclaration, SymbolId } from "../lib/types";
 import { combinePaths } from "./path";
 import { getSymbolsForInnerBit } from "./symbols-for-inner-bit";
 import {
+  ExtractionHost,
   getCoreDocsInfo,
   getCoreDocsInfoWithoutSimpleDeclarations,
 } from "./core";
@@ -13,7 +14,7 @@ import { getGoodIdentifiers } from "./good-identifiers";
 export type DocInfo = {
   packageName: string;
   rootSymbols: SymbolId[];
-  accessibleSymbols: { [key: SymbolId]: SerializedDeclaration[] };
+  accessibleSymbols: { [key: SymbolId]: SerializedDeclaration<string>[] };
   symbolReferences: { [key: SymbolId]: SymbolId[] };
   canonicalExportLocations: {
     [k: SymbolId]: readonly [exportName: string, fileSymbolId: SymbolId];
@@ -77,12 +78,18 @@ export function getDocsInfo(
     line: number
   ) => { file: string; line: number } | undefined = () => undefined
 ): DocInfo {
+  const host: ExtractionHost<unknown> = {
+    program,
+    referenceSymbol: () => {},
+    getDocs() {},
+  };
   const { accessibleSymbols, externalSymbols, symbolReferences } =
     getCoreDocsInfo(
       rootSymbols,
       program,
       getIsExternalSymbolForPkg(pkgDir),
-      getShouldIncludeDeclForPkg(pkgDir)
+      getShouldIncludeDeclForPkg(pkgDir),
+      (node) => getDocsImpl(node, host)
     );
 
   const baseInfo = {

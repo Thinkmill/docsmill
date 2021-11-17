@@ -52,11 +52,11 @@ function printNode(node: ts.Node) {
   }
 }
 
-function handleReference(
+function handleReference<Docs>(
   typeArguments: ts.NodeArray<ts.TypeNode> | undefined,
   typeName: ts.Node,
-  host: ExtractionHost
-): SerializedType {
+  host: ExtractionHost<Docs>
+): SerializedType<Docs> {
   let symbol = getSymbolAtLocation(typeName, host);
   if (!symbol) {
     return {
@@ -128,10 +128,10 @@ const intrinsics = new Map([
   [ts.SyntaxKind.ThisType, "this"],
 ]);
 
-export function convertTypeNode(
+export function convertTypeNode<Docs>(
   compilerNode: ts.TypeNode,
-  host: ExtractionHost
-): SerializedType {
+  host: ExtractionHost<Docs>
+): SerializedType<Docs> {
   if (ts.isTypeReferenceNode(compilerNode)) {
     return handleReference(
       compilerNode.typeArguments,
@@ -275,7 +275,7 @@ export function convertTypeNode(
       readonly: false,
       ...spreadTupleOrNone(
         "elements",
-        compilerNode.elements.map((element): TupleElement => {
+        compilerNode.elements.map((element): TupleElement<Docs> => {
           if (ts.isNamedTupleMember(element)) {
             return {
               kind: element.dotDotDotToken
@@ -290,7 +290,7 @@ export function convertTypeNode(
           let innerType = element;
           const isOptional = ts.isOptionalTypeNode(element);
           const isRest = ts.isRestTypeNode(element);
-          let kind: TupleElement["kind"] = "required";
+          let kind: TupleElement<Docs>["kind"] = "required";
           if (isOptional) {
             innerType = element.type;
             kind = "optional";

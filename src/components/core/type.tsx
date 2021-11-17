@@ -15,17 +15,17 @@ import { codeFontStyleObj } from "../../lib/theme.css";
 
 const intrinsicStyles = css({ color: "#2c8093", ...codeFontStyleObj });
 
-export type Components = {
-  Docs: (props: { docs: string }) => ReactElement | null;
+export type Components<Docs> = {
+  Docs: (props: { docs: Docs }) => ReactElement | null;
   SymbolReference: (props: { id: SymbolId; name: string }) => ReactElement;
 };
 
-export function Type({
+export function Type<Docs>({
   type,
   components,
 }: {
-  type: SerializedType;
-  components: Components;
+  type: SerializedType<Docs>;
+  components: Components<Docs>;
 }): ReactElement {
   if (type.kind === "intrinsic") {
     return <span css={intrinsicStyles}>{type.value}</span>;
@@ -328,12 +328,12 @@ export function Type({
   return <span css={[codeFont, { color: "red" }]}>{type.value}</span>;
 }
 
-export function TypeParams({
+export function TypeParams<Docs>({
   params,
   components,
 }: {
-  params: [TypeParam, ...TypeParam[]] | undefined;
-  components: Components;
+  params: [TypeParam<Docs>, ...TypeParam<Docs>[]] | undefined;
+  components: Components<Docs>;
 }) {
   if (!params) return null;
   return (
@@ -364,12 +364,12 @@ export function TypeParams({
   );
 }
 
-export function Params({
+export function Params<Docs>({
   params,
   components,
 }: {
-  params: [Parameter, ...Parameter[]] | undefined;
-  components: Components;
+  params: [Parameter<Docs>, ...Parameter<Docs>[]] | undefined;
+  components: Components<Docs>;
 }) {
   return (
     <Fragment>

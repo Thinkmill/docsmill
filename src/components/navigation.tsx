@@ -2,7 +2,7 @@
 /** @jsxImportSource @emotion/react */
 import { useDocsContext } from "../lib/DocsContext";
 import { SymbolReference } from "./symbol-references";
-import { useGroupedExports } from "../lib/utils";
+import { getGroupedExports } from "../lib/utils";
 import { nonRootSymbolReference } from "./symbol-references.css";
 import { assert } from "../lib/assert";
 import { Expandable, Item } from "./expandable";
@@ -18,7 +18,7 @@ export function Navigation({ rootSymbolName }: { rootSymbolName: SymbolId }) {
     decls.length >= 1,
     "symbols in Navigation must be modules or namespaces"
   );
-  const groupedExports = useGroupedExports(rootSymbolName);
+  const groupedExports = getGroupedExports(rootSymbolName, docContext);
   let name =
     docContext.canonicalExportLocations[rootSymbolName]?.exportName ??
     decls[0].name;

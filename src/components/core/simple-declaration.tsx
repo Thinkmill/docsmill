@@ -2,19 +2,17 @@
 /** @jsxImportSource @emotion/react */
 import { css } from "@emotion/react";
 import { Fragment } from "react";
-import { codeFont, syntaxColors } from "../lib/theme.css";
+import { codeFont, syntaxColors } from "../../lib/theme.css";
 import {
   ClassMember,
   ConstructorDeclaration,
   SimpleSerializedDeclaration,
-} from "../lib/types";
-import { Docs } from "./docs";
-import { Indent } from "./core/indent";
-import { a } from "./markdown.css";
-import { Syntax } from "./core/syntax";
-import { TypeParams, Params, Type, Components } from "./core/type";
+} from "../../lib/types";
+import { Indent } from "./indent";
+import { Syntax } from "./syntax";
+import { TypeParams, Params, Type, Components } from "./type";
 
-export const declarationNameStyles = css(codeFont, {
+const declarationNameStyles = css(codeFont, {
   color: syntaxColors.symbol,
 });
 
@@ -22,14 +20,14 @@ export function DeclarationName({ name }: { name: string }) {
   return <span css={declarationNameStyles}>{name}</span>;
 }
 
-export function SimpleDeclaration({
+export function SimpleDeclaration<Docs>({
   decl,
   isExported,
   components,
 }: {
-  decl: SimpleSerializedDeclaration;
+  decl: SimpleSerializedDeclaration<Docs>;
   isExported: boolean;
-  components: Components;
+  components: Components<Docs>;
 }) {
   if (decl.kind === "function") {
     return (
@@ -112,10 +110,7 @@ export function SimpleDeclaration({
           <p>
             This class has private members, so it it will be compared nominally
             instead of structurally.{" "}
-            <a
-              css={a}
-              href="https://www.typescriptlang.org/docs/handbook/type-compatibility.html#private-and-protected-members-in-classes"
-            >
+            <a href="https://www.typescriptlang.org/docs/handbook/type-compatibility.html#private-and-protected-members-in-classes">
               See the TypeScript reference for more details.
             </a>
           </p>
@@ -171,16 +166,16 @@ export function SimpleDeclaration({
   );
 }
 
-function ClassMembers({
+function ClassMembers<Docs>({
   members,
   constructors,
   components,
 }: {
   constructors:
-    | [ConstructorDeclaration, ...ConstructorDeclaration[]]
+    | [ConstructorDeclaration<Docs>, ...ConstructorDeclaration<Docs>[]]
     | undefined;
-  members: [ClassMember, ...ClassMember[]] | undefined;
-  components: Components;
+  members: [ClassMember<Docs>, ...ClassMember<Docs>[]] | undefined;
+  components: Components<Docs>;
 }) {
   if (members === undefined && constructors === undefined) {
     return <span css={codeFont}>{"{}"}</span>;
@@ -191,7 +186,7 @@ function ClassMembers({
       {constructors?.map((constructor, i) => {
         return (
           <Indent key={i}>
-            <Docs docs={constructor.docs} />
+            <components.Docs docs={constructor.docs} />
             <Syntax kind="keyword">constructor</Syntax>
             <Params components={components} params={constructor.parameters} />
           </Indent>
@@ -201,7 +196,7 @@ function ClassMembers({
         if (prop.kind === "prop") {
           return (
             <Indent key={i}>
-              <Docs docs={prop.docs} />
+              <components.Docs docs={prop.docs} />
               {prop.readonly || prop.static ? (
                 <Syntax kind="keyword">
                   {prop.static ? "static " : ""}
@@ -238,7 +233,7 @@ function ClassMembers({
         }
         return (
           <Indent key={i}>
-            <Docs docs={prop.docs} />
+            <components.Docs docs={prop.docs} />
             <span css={codeFont}>{prop.name}</span>
             <TypeParams components={components} params={prop.typeParams} />
             <Params components={components} params={prop.parameters} />

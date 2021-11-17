@@ -4,16 +4,20 @@ import { convertDeclaration } from "../core/convert-declaration";
 import { assert } from "../../lib/assert";
 import { getSymbolIdentifier } from "./utils";
 
-export type ExtractionHost = {
+export type ExtractionHost<Docs> = {
   referenceSymbol: (symbol: ts.Symbol) => void;
   program: ts.Program;
+  getDocs: (node: ts.Node) => Docs;
 };
 
-export function getTypeChecker(host: ExtractionHost): ts.TypeChecker {
+export function getTypeChecker(host: { program: ts.Program }): ts.TypeChecker {
   return host.program.getTypeChecker();
 }
 
-export function referenceSymbol(symbol: ts.Symbol, host: ExtractionHost) {
+export function referenceSymbol(
+  symbol: ts.Symbol,
+  host: ExtractionHost<unknown>
+) {
   assert(
     (symbol.flags & ts.SymbolFlags.AliasExcludes) === 0 &&
       (symbol as any).mergeId === undefined,
@@ -23,29 +27,31 @@ export function referenceSymbol(symbol: ts.Symbol, host: ExtractionHost) {
   return getSymbolIdentifier(symbol);
 }
 
-export type BaseCoreDocInfo = {
+export type BaseCoreDocInfo<Docs> = {
   accessibleSymbols: Map<
     ts.Symbol,
-    [SerializedDeclaration, ...SerializedDeclaration[]]
+    [SerializedDeclaration<Docs>, ...SerializedDeclaration<Docs>[]]
   >;
   externalSymbols: Set<ts.Symbol>;
 };
 
-export type CoreDocInfo = BaseCoreDocInfo & {
+export type CoreDocInfo<Docs> = BaseCoreDocInfo<Docs> & {
   symbolReferences: Map<ts.Symbol, Set<ts.Symbol>>;
 };
 
-export function getCoreDocsInfo(
+export function getCoreDocsInfo<Docs>(
   rootSymbols: Map<ts.Symbol, string>,
   program: ts.Program,
   isExternalSymbol: (symbol: ts.Symbol) => boolean,
-  shouldIncludeDecl: (node: ts.Node) => boolean
-): CoreDocInfo {
+  shouldIncludeDecl: (node: ts.Node) => boolean,
+  getDocs: (node: ts.Node) => Docs
+): CoreDocInfo<Docs> {
   const symbolsQueue = new Set<ts.Symbol>(rootSymbols.keys());
   const symbolReferences = new Map<ts.Symbol, Set<ts.Symbol>>();
   const externalSymbols = new Set<ts.Symbol>();
   let currentlyVistedSymbol: ts.Symbol | undefined;
-  const host: ExtractionHost = {
+  const host: ExtractionHost<Docs> = {
+    getDocs,
     referenceSymbol: (symbol) => {
       if (!symbol.declarations?.length) {
         return;
@@ -70,7 +76,7 @@ export function getCoreDocsInfo(
   };
   const accessibleSymbols = new Map<
     ts.Symbol,
-    [SerializedDeclaration, ...SerializedDeclaration[]]
+    [SerializedDeclaration<Docs>, ...SerializedDeclaration<Docs>[]]
   >();
   for (const symbol of symbolsQueue) {
     currentlyVistedSymbol = symbol;
@@ -102,7 +108,10 @@ export function getCoreDocsInfo(
 
     accessibleSymbols.set(
       symbol,
-      filteredDecls as [SerializedDeclaration, ...SerializedDeclaration[]]
+      filteredDecls as [
+        SerializedDeclaration<Docs>,
+        ...SerializedDeclaration<Docs>[]
+      ]
     );
   }
 
@@ -118,10 +127,11 @@ export function getCoreDocsInfoWithoutSimpleDeclarations(
   rootSymbols: Map<ts.Symbol, string>,
   program: ts.Program,
   isExternalSymbol: (symbol: ts.Symbol) => boolean
-): BaseCoreDocInfo {
+): BaseCoreDocInfo<unknown> {
   const symbolsQueue = new Set<ts.Symbol>(rootSymbols.keys());
   const externalSymbols = new Set<ts.Symbol>();
-  const host: ExtractionHost = {
+  const host: ExtractionHost<unknown> = {
+    getDocs: () => null,
     referenceSymbol: (symbol) => {
       if (!symbol.declarations?.length) {
         return;
@@ -134,7 +144,7 @@ export function getCoreDocsInfoWithoutSimpleDeclarations(
   };
   const accessibleSymbols = new Map<
     ts.Symbol,
-    [SerializedDeclaration, ...SerializedDeclaration[]]
+    [SerializedDeclaration<unknown>, ...SerializedDeclaration<unknown>[]]
   >();
   for (const symbol of symbolsQueue) {
     const decls = symbol.declarations;
@@ -156,7 +166,10 @@ export function getCoreDocsInfoWithoutSimpleDeclarations(
         } else {
           return { kind: "unknown", name: "", content: "", docs: "" };
         }
-      }) as [SerializedDeclaration, ...SerializedDeclaration[]]
+      }) as [
+        SerializedDeclaration<unknown>,
+        ...SerializedDeclaration<unknown>[]
+      ]
     );
   }
   return { accessibleSymbols, externalSymbols };

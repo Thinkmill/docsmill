@@ -30,7 +30,8 @@ function getPrinted(filename: string) {
     (node) => {
       const sourceFile = node.getSourceFile();
       return sourceFile.fileName === filename;
-    }
+    },
+    () => null
   );
   const accessibleSymbolIds = new Set<string>();
   for (const symbol of info.accessibleSymbols.keys()) {
@@ -88,7 +89,7 @@ ${objectEntriesAssumeNoExcessProps(decl.exports)
 
 function printBasicDeclaration(
   decl: Exclude<
-    SerializedDeclaration,
+    SerializedDeclaration<unknown>,
     { kind: "module" | "namespace" | "enum" | "enum-member" }
   >,
   printReference: (symbolId: SymbolId, name: string) => string
@@ -191,7 +192,7 @@ function printBasicDeclaration(
 }
 
 function printSerializedType(
-  type: SerializedType,
+  type: SerializedType<unknown>,
   printReference: (symbolId: SymbolId, name: string) => string
 ): string {
   if (type.kind === "intrinsic") {
@@ -360,7 +361,7 @@ function printSerializedType(
 }
 
 function printParameters(
-  params: Parameter[] = [],
+  params: Parameter<unknown>[] = [],
   printReference: (symbolId: SymbolId, name: string) => string
 ) {
   return `(${params.map((param) => {
@@ -381,7 +382,7 @@ function printParameters(
 }
 
 function printTypeParams(
-  typeParams: [TypeParam, ...TypeParam[]] | undefined,
+  typeParams: [TypeParam<unknown>, ...TypeParam<unknown>[]] | undefined,
   printReference: (symbolId: SymbolId, name: string) => string
 ) {
   if (typeParams === undefined) {

@@ -9,11 +9,8 @@ import {
 } from "react";
 import { useDocsContext } from "../lib/DocsContext";
 import { codeFont } from "../lib/theme.css";
-import { splitDocs } from "../lib/utils";
-import { Markdown } from "./markdown";
 import { Syntax } from "./core/syntax";
 import * as styles from "./symbol-references.css";
-import { Tooltip } from "./tooltip";
 import Link from "next/link";
 import { SymbolId } from "../lib/types";
 
@@ -117,9 +114,6 @@ export function SymbolReference({ id, name }: { name: string; id: SymbolId }) {
   }
 
   const decls = symbols[id];
-  const firstDocsBit = splitDocs(
-    decls.find((x) => !!x.docs.length)?.docs || ""
-  ).first;
 
   const isRootModuleSymbol =
     rootSymbols.has(id) && decls.some((x) => x.kind === "module");
@@ -138,21 +132,7 @@ export function SymbolReference({ id, name }: { name: string; id: SymbolId }) {
     props.style = { color: "red" };
   }
 
-  let inner = firstDocsBit ? (
-    <Tooltip
-      tooltip={
-        <span css={styles.tooltipMarkdownContent}>
-          <Markdown content={firstDocsBit} />
-        </span>
-      }
-    >
-      {function TooltipTrigger({ triggerProps }) {
-        return <a {...triggerProps} {...props} />;
-      }}
-    </Tooltip>
-  ) : (
-    <a {...props} />
-  );
+  let inner = <a {...props} />;
 
   if (
     namesInScope.has(name) &&
