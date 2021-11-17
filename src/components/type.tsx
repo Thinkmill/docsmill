@@ -4,7 +4,6 @@ import { Fragment, ReactElement } from "react";
 
 import { codeFont } from "../lib/theme.css";
 
-import { Docs } from "./docs";
 import { Syntax } from "./syntax";
 import { Indent } from "./indent";
 import * as styles from "./type.css";
@@ -103,7 +102,7 @@ export function Type({
           if (prop.kind === "prop") {
             return (
               <Indent key={i}>
-                <Docs docs={prop.docs} />
+                <components.Docs docs={prop.docs} />
                 {prop.readonly ? (
                   <Syntax kind="keyword">readonly </Syntax>
                 ) : null}
@@ -140,7 +139,7 @@ export function Type({
           }
           return (
             <Indent key={i}>
-              <Docs docs={prop.docs} />
+              <components.Docs docs={prop.docs} />
               {prop.kind === "constructor" && (
                 <Syntax kind="keyword">new </Syntax>
               )}
