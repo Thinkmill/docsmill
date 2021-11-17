@@ -2,12 +2,21 @@
 /** @jsxImportSource @emotion/react */
 import { Fragment, ReactElement } from "react";
 
-import { codeFont } from "../lib/theme.css";
+import { codeFont } from "../../lib/theme.css";
 
-import { Syntax } from "./syntax";
-import { Indent } from "./indent";
-import * as styles from "./type.css";
-import { SerializedType, TypeParam, Parameter, SymbolId } from "../lib/types";
+import { Syntax } from "../syntax";
+import { Indent } from "../indent";
+import {
+  SerializedType,
+  TypeParam,
+  Parameter,
+  SymbolId,
+} from "../../lib/types";
+
+import { css } from "@emotion/react";
+import { codeFontStyleObj } from "../../lib/theme.css";
+
+const intrinsicStyles = css({ color: "#2c8093", ...codeFontStyleObj });
 
 export type Components = {
   Docs: (props: { docs: string }) => ReactElement | null;
@@ -22,7 +31,7 @@ export function Type({
   components: Components;
 }): ReactElement {
   if (type.kind === "intrinsic") {
-    return <span css={styles.intrinsic}>{type.value}</span>;
+    return <span css={intrinsicStyles}>{type.value}</span>;
   }
   if (type.kind === "reference") {
     return (

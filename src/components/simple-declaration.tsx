@@ -12,7 +12,7 @@ import { Docs } from "./docs";
 import { Indent } from "./indent";
 import { a } from "./markdown.css";
 import { Syntax } from "./syntax";
-import { TypeParams, Params, Type, Components } from "./type";
+import { TypeParams, Params, Type, Components } from "./core/type";
 
 export const declarationNameStyles = css(codeFont, {
   color: syntaxColors.symbol,

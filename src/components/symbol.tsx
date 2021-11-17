@@ -10,7 +10,7 @@ import { useRouter } from "next/router";
 import { getPkgWithVersionPortionOfParms } from "../npm/params";
 import { Declaration } from "./declaration";
 import { Docs } from "./docs";
-import { Components } from "./type";
+import { Components } from "./core/type";
 
 const components: Components = { Docs, SymbolReference };
 

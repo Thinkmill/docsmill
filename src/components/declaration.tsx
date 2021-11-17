@@ -19,7 +19,7 @@ import * as symbolReferenceStyles from "./symbol-references.css";
 import Link from "next/link";
 import { DeclarationName, SimpleDeclaration } from "./simple-declaration";
 import { css } from "@emotion/react";
-import { Components } from "./type";
+import { Components } from "./core/type";
 
 const enumMemberName = css(
   symbolReferenceStyles.nonRootSymbolReference,
@@ -52,11 +52,7 @@ export function Declaration({
           ) : (
             <Fragment>
               <Syntax kind="keyword">module </Syntax>
-              <a
-                id={goodIdentifiers[fullName]}
-                css={styles.moduleSpecifierLink}
-                href={`#${goodIdentifiers[fullName]}`}
-              >
+              <a css={styles.moduleSpecifierLink}>
                 {JSON.stringify(decl.name)}
               </a>
             </Fragment>
