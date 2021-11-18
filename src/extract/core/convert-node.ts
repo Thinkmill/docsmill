@@ -29,9 +29,6 @@ function getModifierKind(
 }
 
 function printEntityName(entityName: ts.EntityName): string {
-  if (!entityName) {
-    debugger;
-  }
   if (ts.isIdentifier(entityName)) {
     return entityName.text;
   }

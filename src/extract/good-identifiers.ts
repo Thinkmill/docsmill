@@ -11,7 +11,6 @@ export function getGoodIdentifiersForExported(
   canonicalExportLocations: Record<SymbolId, SymbolId>,
   rootSymbols: SymbolId[]
 ) {
-  debugger;
   const goodIdentifiers: Record<SymbolId, string> = {};
   const findIdentifier = (symbol: SymbolId): string => {
     const firstDecl = accessibleSymbols[symbol][0];
