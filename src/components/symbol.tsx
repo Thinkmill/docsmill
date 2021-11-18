@@ -25,16 +25,17 @@ export function RenderRootSymbol<Docs>({
   docInfo,
   components,
   renderSymbolInfo,
+  isExported,
 }: {
   symbol: SymbolId;
   docInfo: DocsContextType<Docs>;
   components: Components<Docs>;
   renderSymbolInfo: RenderSymbolInfo;
+  isExported: boolean;
 }) {
   const { references, locations } = renderSymbolInfo;
-  const { canonicalExportLocations, goodIdentifiers, symbols } = docInfo;
+  const { goodIdentifiers, symbols } = docInfo;
   let decls = symbols[symbol];
-  let isExported = canonicalExportLocations[symbol] !== undefined;
   const relatedSymbols = (references[symbol] || []).filter((thing) =>
     symbols[thing].some((x) => x.kind !== "module" && x.kind !== "namespace")
   );
@@ -129,6 +130,7 @@ export function RenderRootSymbol<Docs>({
                 docInfo={docInfo}
                 components={components}
                 renderSymbolInfo={renderSymbolInfo}
+                isExported={false}
               />
             );
           })}

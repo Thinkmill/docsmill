@@ -131,6 +131,7 @@ export function Root(props: import("../extract").DocInfo) {
               docInfo={docInfo}
               components={components}
               renderSymbolInfo={renderSymbolInfo}
+              isExported={false}
             />
           ))}
         </Contents>

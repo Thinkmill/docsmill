@@ -199,6 +199,7 @@ function Exports<Docs>({
               docInfo={docInfo}
               components={components}
               renderSymbolInfo={renderSymbolInfo}
+              isExported
             />
           );
         }

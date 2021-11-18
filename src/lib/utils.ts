@@ -51,8 +51,8 @@ export function getGroupedExports(
     for (const [exportName, exportedSymbol] of objectEntriesAssumeNoExcessProps(
       rootThing.exports
     )) {
-      const _prev = transformedExports[transformedExports.length - 1];
-      const prev: typeof _prev | undefined = _prev;
+      const prev: TransformedExport | undefined =
+        transformedExports[transformedExports.length - 1];
       const decls = symbols[exportedSymbol];
       const canonicalLocation = canonicalExportLocations[exportedSymbol];
       if (decls === undefined || canonicalLocation === undefined) {
