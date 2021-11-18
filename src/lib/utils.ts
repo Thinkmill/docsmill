@@ -5,6 +5,9 @@ export const objectEntriesAssumeNoExcessProps: <T>(
   o: T
 ) => { [Key in keyof T]: [Key, T[Key]] }[keyof T][] = Object.entries;
 
+export const objectKeysAssumeNoExcessProps: <T>(o: T) => (keyof T)[] =
+  Object.keys as any;
+
 type TransformedExport =
   | {
       kind: "external-exports";
@@ -31,14 +34,14 @@ type TransformedExport =
   | { kind: "canonical"; exportName: string; fullName: SymbolId };
 
 export function getGroupedExports(
-  fullName: SymbolId,
+  moduleSymbolId: SymbolId,
   {
     symbols,
     canonicalExportLocations,
     externalSymbols,
   }: DocsContextType<unknown>
 ) {
-  const decls = symbols[fullName].filter(
+  const decls = symbols[moduleSymbolId].filter(
     (x): x is Extract<typeof x, { kind: "module" | "namespace" }> =>
       x.kind === "module" || x.kind === "namespace"
   );
@@ -50,10 +53,9 @@ export function getGroupedExports(
     )) {
       const _prev = transformedExports[transformedExports.length - 1];
       const prev: typeof _prev | undefined = _prev;
-      if (
-        !symbols[exportedSymbol] ||
-        !canonicalExportLocations[exportedSymbol]
-      ) {
+      const decls = symbols[exportedSymbol];
+      const canonicalLocation = canonicalExportLocations[exportedSymbol];
+      if (decls === undefined || canonicalLocation === undefined) {
         const external = externalSymbols[exportedSymbol];
         if (!external) {
           if (prev?.kind === "unknown-exports") {
@@ -86,11 +88,11 @@ export function getGroupedExports(
         });
         continue;
       }
-      const canonicalLocation = canonicalExportLocations[exportedSymbol];
+      const canonicalName = decls[0].name;
       if (
         canonicalLocation &&
-        canonicalLocation.exportName === exportName &&
-        canonicalLocation.parent === fullName
+        canonicalName === exportName &&
+        canonicalLocation === moduleSymbolId
       ) {
         transformedExports.push({
           kind: "canonical",
@@ -100,10 +102,10 @@ export function getGroupedExports(
         continue;
       }
       if (prev?.kind === "exports") {
-        if (prev.from === canonicalLocation.parent) {
+        if (prev.from === canonicalLocation) {
           prev.exports.push({
             localName: exportName,
-            sourceName: canonicalLocation.exportName,
+            sourceName: canonicalName,
             fullName: exportedSymbol,
           });
           continue;
@@ -128,11 +130,11 @@ export function getGroupedExports(
       }
       transformedExports.push({
         kind: "exports",
-        from: canonicalLocation.parent,
+        from: canonicalLocation,
         exports: [
           {
             localName: exportName,
-            sourceName: canonicalLocation.exportName,
+            sourceName: decls[0].name,
             fullName: exportedSymbol,
           },
         ],

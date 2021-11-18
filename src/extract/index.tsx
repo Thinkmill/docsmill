@@ -1,5 +1,5 @@
 import { ts } from "./ts";
-import { findCanonicalExportLocations } from "./exports";
+import { applyCanonicalExportNames, findCanonicalExportInfo } from "./exports";
 import { getSymbolIdentifier } from "./core/utils";
 import { SerializedDeclaration, SymbolId } from "../lib/types";
 import { combinePaths } from "./path";
@@ -16,9 +16,7 @@ export type DocInfo = {
   rootSymbols: SymbolId[];
   accessibleSymbols: { [key: SymbolId]: SerializedDeclaration<string>[] };
   symbolReferences: { [key: SymbolId]: SymbolId[] };
-  canonicalExportLocations: {
-    [k: SymbolId]: readonly [exportName: string, fileSymbolId: SymbolId];
-  };
+  canonicalExportLocations: { [k: SymbolId]: SymbolId };
   goodIdentifiers: Record<SymbolId, string>;
   symbolsForInnerBit: Record<SymbolId, SymbolId[]>;
   externalSymbols: Record<
@@ -137,14 +135,19 @@ export function getDocsInfo(
       serializedExternalSymbols[symbolId] = ref;
     }
   }
-  const canonicalExportLocations = findCanonicalExportLocations(
+  const canonicalExportLocations = findCanonicalExportInfo(
     baseInfo.rootSymbols,
     baseInfo.accessibleSymbols
   );
 
+  baseInfo.accessibleSymbols = applyCanonicalExportNames(
+    baseInfo.accessibleSymbols,
+    canonicalExportLocations.names
+  );
+
   const innerBit = getSymbolsForInnerBit(
     baseInfo.accessibleSymbols,
-    canonicalExportLocations,
+    canonicalExportLocations.locations,
     baseInfo.symbolReferences,
     baseInfo.rootSymbols
   );
@@ -155,12 +158,12 @@ export function getDocsInfo(
     goodIdentifiers: getGoodIdentifiers(
       baseInfo.accessibleSymbols,
       packageName,
-      canonicalExportLocations,
+      canonicalExportLocations.locations,
       innerBit,
       baseInfo.rootSymbols
     ),
     externalSymbols: serializedExternalSymbols,
-    canonicalExportLocations,
+    canonicalExportLocations: canonicalExportLocations.locations,
   };
 }
 
@@ -180,20 +183,24 @@ export function getDocsInfoForDep(
   const rootSymbolIds = [...rootSymbols.keys()].map((x) =>
     getSymbolIdentifier(x)
   );
-  const accessibleSymbols = Object.fromEntries(
+  let accessibleSymbols = Object.fromEntries(
     [...coreDocsInfo.accessibleSymbols].map(([symbol, rootThing]) => [
       getSymbolIdentifier(symbol),
       rootThing,
     ])
   );
-  const canonicalExportLocations = findCanonicalExportLocations(
+  const canonicalExportInfo = findCanonicalExportInfo(
     rootSymbolIds,
     accessibleSymbols
+  );
+  accessibleSymbols = applyCanonicalExportNames(
+    accessibleSymbols,
+    canonicalExportInfo.names
   );
   const goodIdentifiers = getGoodIdentifiers(
     accessibleSymbols,
     packageName,
-    canonicalExportLocations,
+    canonicalExportInfo.locations,
     { symbolsForInnerBit: {}, unexportedToExportedRef: new Map() },
     rootSymbolIds
   );

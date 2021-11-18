@@ -2,7 +2,7 @@
 /** @jsxImportSource @emotion/react */
 import { Fragment } from "react";
 import { DocsContextType } from "../lib/DocsContext";
-import { SymbolReference } from "./symbol-references";
+import { AddNameToScope, SymbolReference } from "./symbol-references";
 import * as styles from "./symbol.css";
 import { SymbolId } from "../lib/types";
 import Link from "next/link";
@@ -34,12 +34,7 @@ export function RenderRootSymbol<Docs>({
   const { references, locations } = renderSymbolInfo;
   const { canonicalExportLocations, goodIdentifiers, symbols } = docInfo;
   let decls = symbols[symbol];
-  let isExported = false;
-  if (canonicalExportLocations[symbol]) {
-    isExported = true;
-    const { exportName } = canonicalExportLocations[symbol];
-    decls = decls.map((decl) => ({ ...decl, name: exportName }));
-  }
+  let isExported = canonicalExportLocations[symbol] !== undefined;
   const relatedSymbols = (references[symbol] || []).filter((thing) =>
     symbols[thing].some((x) => x.kind !== "module" && x.kind !== "namespace")
   );
@@ -91,21 +86,23 @@ export function RenderRootSymbol<Docs>({
         )}
       </div>
       <div css={styles.rootSymbolContainer}>
-        {decls.map((decl, i) => {
-          return (
-            <div key={i}>
-              <components.Docs docs={decl.docs} />
-              <Declaration
-                components={components}
-                fullName={symbol}
-                isExported={isExported}
-                decl={decl}
-                docInfo={docInfo}
-                renderSymbolInfo={renderSymbolInfo}
-              />
-            </div>
-          );
-        })}
+        <AddNameToScope name={decls[0].name} fullName={symbol}>
+          {decls.map((decl, i) => {
+            return (
+              <div key={i}>
+                <components.Docs docs={decl.docs} />
+                <Declaration
+                  components={components}
+                  fullName={symbol}
+                  isExported={isExported}
+                  decl={decl}
+                  docInfo={docInfo}
+                  renderSymbolInfo={renderSymbolInfo}
+                />
+              </div>
+            );
+          })}
+        </AddNameToScope>
       </div>
       {!!relatedSymbols?.length && (
         <details css={innerBits ? undefined : styles.referencesContainer}>

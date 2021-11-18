@@ -318,11 +318,14 @@ function ExportedFrom({ fullName }: { fullName: SymbolId }) {
       />
     );
   }
-  const { exportName, parent } = docContext.canonicalExportLocations[fullName];
+  const parent = docContext.canonicalExportLocations[fullName];
   return (
     <Fragment>
       <ExportedFrom fullName={parent} />.
-      <SymbolReference id={fullName} name={exportName} />
+      <SymbolReference
+        id={fullName}
+        name={docContext.symbols[fullName][0].name}
+      />
     </Fragment>
   );
 }

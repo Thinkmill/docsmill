@@ -145,8 +145,8 @@ export function SymbolReference({ id, name }: { name: string; id: SymbolId }) {
         <Syntax kind="keyword">import</Syntax>
         <Syntax kind="bracket">(</Syntax>
         <SymbolReference
-          id={canonicalExportLocation.parent}
-          name={symbols[canonicalExportLocation.parent][0].name}
+          id={canonicalExportLocation}
+          name={symbols[canonicalExportLocation][0].name}
         />
         <Syntax kind="bracket">)</Syntax>.{inner}
       </span>

@@ -1,6 +1,6 @@
 /** @jsxRuntime automatic */
 /** @jsxImportSource @emotion/react */
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 
 import { DocsContext, DocsContextType } from "../lib/DocsContext";
 
@@ -70,16 +70,7 @@ export function Root(props: import("../extract").DocInfo) {
 
   const docInfo: DocsContextType<string> = {
     symbols: props.accessibleSymbols,
-    canonicalExportLocations: useMemo(
-      () =>
-        Object.fromEntries(
-          objectEntriesAssumeNoExcessProps(props.canonicalExportLocations).map(
-            ([key, [exportName, parent]]) =>
-              [key, { exportName, parent }] as const
-          )
-        ),
-      [props.canonicalExportLocations]
-    ),
+    canonicalExportLocations: props.canonicalExportLocations,
     goodIdentifiers: props.goodIdentifiers,
     externalSymbols: props.externalSymbols,
     rootSymbols: new Set(props.rootSymbols),

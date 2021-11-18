@@ -3,9 +3,7 @@ import { objectEntriesAssumeNoExcessProps } from "../lib/utils";
 
 export function getSymbolsForInnerBit(
   accessibleSymbols: Record<string, SerializedDeclaration<unknown>[]>,
-  canonicalExportLocations: {
-    [key: SymbolId]: readonly [exportName: string, fileSymbolId: SymbolId];
-  },
+  canonicalExportLocations: Record<SymbolId, SymbolId>,
   symbolReferences: Record<SymbolId, SymbolId[]>,
   _rootSymbols: SymbolId[]
 ): {

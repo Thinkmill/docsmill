@@ -1,7 +1,7 @@
 import { ts } from "../ts";
 import { SerializedDeclaration } from "../../lib/types";
 import { convertDeclaration } from "../core/convert-declaration";
-import { assert } from "../../lib/assert";
+import { assert, isNonEmptyArray } from "../../lib/assert";
 import { getSymbolIdentifier } from "./utils";
 
 export type ExtractionHost<Docs> = {
@@ -97,7 +97,7 @@ export function getCoreDocsInfo<Docs>(
         }
         return decl;
       });
-    if (filteredDecls.length === 0) {
+    if (!isNonEmptyArray(filteredDecls)) {
       assert(
         false,
         `at least one decl must not be filtered out but all of the decls were filtered out:\n${decls
@@ -106,13 +106,7 @@ export function getCoreDocsInfo<Docs>(
       );
     }
 
-    accessibleSymbols.set(
-      symbol,
-      filteredDecls as [
-        SerializedDeclaration<Docs>,
-        ...SerializedDeclaration<Docs>[]
-      ]
-    );
+    accessibleSymbols.set(symbol, filteredDecls);
   }
 
   return { accessibleSymbols, symbolReferences, externalSymbols };
@@ -149,7 +143,7 @@ export function getCoreDocsInfoWithoutSimpleDeclarations(
   for (const symbol of symbolsQueue) {
     const decls = symbol.declarations;
     assert(
-      decls !== undefined && decls.length >= 1,
+      decls !== undefined && isNonEmptyArray(decls),
       "symbols in symbol queue must have at least one declaration"
     );
     const nameReplacement = rootSymbols.get(symbol);
@@ -166,10 +160,7 @@ export function getCoreDocsInfoWithoutSimpleDeclarations(
         } else {
           return { kind: "unknown", name: "", content: "", docs: "" };
         }
-      }) as [
-        SerializedDeclaration<unknown>,
-        ...SerializedDeclaration<unknown>[]
-      ]
+      })
     );
   }
   return { accessibleSymbols, externalSymbols };

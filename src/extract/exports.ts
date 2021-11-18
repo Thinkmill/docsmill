@@ -3,14 +3,14 @@ import { objectEntriesAssumeNoExcessProps } from "../lib/utils";
 
 type ExportName = string;
 
-type Symbols = Record<
+type Symbols<Docs> = Record<
   SymbolId,
-  [SerializedDeclaration<unknown>, ...SerializedDeclaration<unknown>[]]
+  [SerializedDeclaration<Docs>, ...SerializedDeclaration<Docs>[]]
 >;
 
 function collectImportableSymbolLocationsFromRootSymbols(
   rootSymbols: SymbolId[],
-  accessibleSymbols: Symbols
+  accessibleSymbols: Symbols<unknown>
 ) {
   const state = new Map<SymbolId, Map<SymbolId, ExportName>>();
   const queue = new Set(rootSymbols);
@@ -41,16 +41,18 @@ function collectImportableSymbolLocationsFromRootSymbols(
   return state;
 }
 
-export function findCanonicalExportLocations(
+export function findCanonicalExportInfo(
   rootSymbols: SymbolId[],
-  accessibleSymbols: Symbols
-): Record<SymbolId, [ExportName, SymbolId]> {
+  accessibleSymbols: Symbols<unknown>
+) {
   const state = collectImportableSymbolLocationsFromRootSymbols(
     rootSymbols,
     accessibleSymbols
   );
 
-  const result: Record<SymbolId, [ExportName, SymbolId]> = {};
+  const exportNames: Record<SymbolId, ExportName> = {};
+  const allExportLocations: Record<SymbolId, SymbolId> = {};
+
   for (const [symbol, exportLocations] of state) {
     let current: [SymbolId, string] | undefined;
     for (const val of exportLocations) {
@@ -66,8 +68,27 @@ export function findCanonicalExportLocations(
         current = val;
       }
     }
-    result[symbol] = [current![1], current![0]];
+    const [parent, exportName] = current!;
+    exportNames[symbol] = exportName;
+    allExportLocations[symbol] = parent;
   }
 
-  return result;
+  return { names: exportNames, locations: allExportLocations };
+}
+
+export function applyCanonicalExportNames<Docs>(
+  symbols: Symbols<Docs>,
+  canonicalExportNames: Record<SymbolId, ExportName>
+): Symbols<Docs> {
+  const newSymbols: Symbols<Docs> = {};
+  for (const [symbolId, decls] of objectEntriesAssumeNoExcessProps(symbols)) {
+    const name = canonicalExportNames[symbolId];
+    if (name !== undefined) {
+      const newDecls = decls.map((decl) => ({ ...decl, name }));
+      newSymbols[symbolId] = newDecls;
+    } else {
+      newSymbols[symbolId] = decls;
+    }
+  }
+  return newSymbols;
 }

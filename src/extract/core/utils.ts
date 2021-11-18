@@ -18,7 +18,8 @@ export function getTypeParameters<Docs>(
   },
   host: ExtractionHost<Docs>
 ): TypeParam<Docs>[] {
-  return (node.typeParameters || []).map((typeParam) => {
+  if (node.typeParameters === undefined) return [];
+  return node.typeParameters.map((typeParam) => {
     return {
       name: typeParam.name.text,
       constraint: typeParam.constraint

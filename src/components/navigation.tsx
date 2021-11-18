@@ -19,9 +19,7 @@ export function Navigation({ rootSymbolName }: { rootSymbolName: SymbolId }) {
     "symbols in Navigation must be modules or namespaces"
   );
   const groupedExports = getGroupedExports(rootSymbolName, docContext);
-  let name =
-    docContext.canonicalExportLocations[rootSymbolName]?.exportName ??
-    decls[0].name;
+  let name = decls[0].name;
 
   return (
     <Expandable summary={<SymbolReference id={rootSymbolName} name={name} />}>

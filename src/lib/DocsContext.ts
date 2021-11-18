@@ -3,10 +3,7 @@ import { SerializedDeclaration, SymbolId } from "./types";
 
 export type DocsContextType<Docs = unknown> = {
   symbols: Record<SymbolId, SerializedDeclaration<Docs>[]>;
-  canonicalExportLocations: Record<
-    SymbolId,
-    { exportName: string; parent: SymbolId }
-  >;
+  canonicalExportLocations: Record<SymbolId, SymbolId>;
   goodIdentifiers: Record<SymbolId, string>;
   externalSymbols: Record<
     SymbolId,
