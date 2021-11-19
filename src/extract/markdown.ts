@@ -4,9 +4,15 @@ import remarkGfm from "remark-gfm";
 import remarkRehype from "remark-rehype";
 import { visit } from "unist-util-visit";
 import { Highlighter, getHighlighter, Lang } from "shiki";
+import path from "path";
 
 let highlighter: Highlighter | undefined;
 let languages: Set<Lang> = new Set();
+
+export function convinceVercelToIncludeTheFiles(blah: string) {
+  path.join(process.cwd(), "node_modules/shiki/languages", blah);
+  path.join(process.cwd(), "node_modules/shiki/themes/github-light.json");
+}
 
 export const highlighterPromise = getHighlighter({
   theme: "github-light",
