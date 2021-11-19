@@ -3,7 +3,7 @@ import remarkParse from "remark-parse";
 import remarkGfm from "remark-gfm";
 import remarkRehype from "remark-rehype";
 import { visit } from "unist-util-visit";
-import { Highlighter, getHighlighter, Lang } from "shiki";
+import { Highlighter, getHighlighter, Lang, FontStyle } from "shiki";
 
 let highlighter: Highlighter | undefined;
 
@@ -68,12 +68,27 @@ export function parseMarkdown(markdown: string): import("hast").Content[] {
         if (typeof className === "string") {
           const lang = className.replace("language-", "");
           if (languages.has(lang as any)) {
+            const tokens = highlighter!.codeToThemedTokens(
+              node.children[0].value,
+              lang
+            );
+            const mappedTokens = tokens.map((x) =>
+              x.map((x) => {
+                if (
+                  x.fontStyle === FontStyle.NotSet ||
+                  x.fontStyle === FontStyle.None ||
+                  x.fontStyle === undefined
+                ) {
+                  return [x.content, x.color || null] as const;
+                }
+                return [x.content, x.color || null, x.fontStyle] as const;
+              })
+            );
             node.data = {
-              highlighted: highlighter!.codeToHtml(
-                node.children[0].value,
-                lang
-              ),
+              tokens: mappedTokens,
             };
+
+            node.children = [];
           }
         }
       }

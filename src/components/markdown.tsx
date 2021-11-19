@@ -8,18 +8,57 @@ import * as styles from "./markdown.css";
 import Link from "next/link";
 import { nonRootSymbolReference } from "./symbol-references.css";
 import { SymbolId } from "../lib/types";
+import type { FontStyle } from "shiki";
+
+function isTokens(
+  tokens: any
+): tokens is (readonly [
+  content: string,
+  color: string | null,
+  fontStyle?: FontStyle.Italic | FontStyle.Bold | FontStyle.Underline
+])[][] {
+  return Array.isArray(tokens);
+}
 
 export const markdownComponents: ReactMarkdownOptions["components"] = {
   code: function CodeElement(props) {
     if (props.inline) {
       return <code css={codeFont}>{props.children}</code>;
     }
-    if (typeof props.node.data?.highlighted === "string") {
+    const allTokens = props.node.data?.tokens;
+    if (isTokens(allTokens)) {
       return (
-        <div
-          css={styles.highlightedCode}
-          dangerouslySetInnerHTML={{ __html: props.node.data.highlighted }}
-        />
+        <pre css={styles.codeblock}>
+          <code css={styles.codeblockInner}>
+            {allTokens.map((tokens, i) => {
+              return (
+                <div key={i}>
+                  {tokens.map((token, i) => {
+                    const style: import("react").CSSProperties = {
+                      color: token[1] ?? undefined,
+                    };
+                    if (token[2] !== undefined) {
+                      if (token[2] & 1) {
+                        style.fontStyle = "italic";
+                      }
+                      if (token[2] & 2) {
+                        style.fontWeight = "bold";
+                      }
+                      if (token[2] & 4) {
+                        style.textDecoration = "underline";
+                      }
+                    }
+                    return (
+                      <span key={i} style={style}>
+                        {token[0]}
+                      </span>
+                    );
+                  })}
+                </div>
+              );
+            })}
+          </code>
+        </pre>
       );
     }
     return (
