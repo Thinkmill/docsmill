@@ -24,3 +24,10 @@ export const codeblock = style([
 ]);
 
 export const codeblockInner = style({ backgroundColor: "transparent" });
+
+export const highlightedCode = style(codeblock, codeblockInner, {
+  pre: {
+    margin: 0,
+    fontFamily: "inherit",
+  },
+});

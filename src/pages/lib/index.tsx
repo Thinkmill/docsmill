@@ -1,11 +1,14 @@
 import { SymbolFlags } from "typescript";
 import { getDocsInfo } from "../../extract";
+import { highlighterPromise } from "../../extract/markdown";
 import { ts } from "../../extract/ts";
 export { Root as default } from "../../components/root";
 
 import { getFromTsConfig } from "../../local-extract";
 
-export function getStaticProps() {
+export async function getStaticProps() {
+  await highlighterPromise;
+
   const { compilerOptions, rootNames } = getFromTsConfig("./tsconfig.json");
 
   const host = ts.createCompilerHost(compilerOptions);

@@ -14,7 +14,9 @@ import { getDocsImpl } from "./get-docs-impl";
 export type DocInfo = {
   packageName: string;
   rootSymbols: SymbolId[];
-  accessibleSymbols: { [key: SymbolId]: SerializedDeclaration<string>[] };
+  accessibleSymbols: {
+    [key: SymbolId]: SerializedDeclaration<import("hast").Content[]>[];
+  };
   symbolReferences: { [key: SymbolId]: SymbolId[] };
   canonicalExportLocations: { [k: SymbolId]: SymbolId };
   goodIdentifiers: Record<SymbolId, string>;

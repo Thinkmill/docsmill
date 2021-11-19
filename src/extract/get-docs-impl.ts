@@ -3,6 +3,7 @@ import {
   getAliasedSymbol,
   getSymbolIdentifier,
 } from "./core/utils";
+import { parseMarkdown } from "./markdown";
 import { ts } from "./ts";
 
 function getJsDocCommentTextMarkdown(
@@ -44,7 +45,7 @@ function getDocsFromJSDocNodes(
   nodes: ts.JSDoc[],
   host: { program: ts.Program }
 ) {
-  return nodes
+  let docs = nodes
     .map((x) => {
       let fromTags = (x.tags || [])
         .filter((x) => x.tagName.text !== "module")
@@ -61,6 +62,7 @@ function getDocsFromJSDocNodes(
       return getJsDocCommentTextMarkdown(x.comment, host) + fromTags;
     })
     .join("\n\n");
+  return docs;
 }
 
 function getJsDocsFromSourceFile(decl: ts.Node) {
@@ -92,7 +94,7 @@ function getDocsImplBase(decl: ts.Node, host: { program: ts.Program }) {
 export function getDocsImpl(
   decl: ts.Node,
   host: { program: ts.Program }
-): string {
+): import("hast").Content[] {
   if (ts.isSourceFile(decl)) {
     let jsDocs = getJsDocsFromSourceFile(decl);
 
@@ -140,7 +142,7 @@ export function getDocsImpl(
         jsDocs = getJsDocsFromSourceFile(sourceFile);
       }
     }
-    return getDocsFromJSDocNodes(jsDocs, host);
+    return parseMarkdown(getDocsFromJSDocNodes(jsDocs, host));
   }
   if (
     ts.isVariableDeclaration(decl) &&
@@ -148,11 +150,10 @@ export function getDocsImpl(
     ts.isVariableStatement(decl.parent.parent) &&
     decl.parent.declarations[0] === decl
   ) {
-    return (
-      getDocsImplBase(decl.parent.parent, host) +
-      "\n\n" +
-      getDocsImplBase(decl, host)
-    ).trim();
+    return [
+      ...parseMarkdown(getDocsImplBase(decl.parent.parent, host)),
+      ...parseMarkdown(getDocsImplBase(decl, host)),
+    ];
   }
-  return getDocsImplBase(decl, host);
+  return parseMarkdown(getDocsImplBase(decl, host));
 }

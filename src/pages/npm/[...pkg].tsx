@@ -11,6 +11,7 @@ import { useMemo } from "react";
 import { compressToUTF16, decompressFromUTF16 } from "lz-string";
 import { DocInfo } from "../../extract";
 import { redirectToPkgVersion } from "../../npm/version-redirect";
+import { highlighterPromise } from "../../extract/markdown";
 
 export default function Npm(
   _props: InferGetStaticPropsType<typeof getStaticProps>
@@ -41,7 +42,10 @@ export async function getStaticProps({
 }: GetStaticPropsContext): Promise<
   GetStaticPropsResult<{ kind: "package"; data: DocInfo | string }>
 > {
-  const res = await redirectToPkgVersion(params?.pkg, "/npm");
+  const [res] = await Promise.all([
+    redirectToPkgVersion(params?.pkg, "/npm"),
+    highlighterPromise,
+  ]);
   if (res.kind === "handled") {
     return res.result;
   }

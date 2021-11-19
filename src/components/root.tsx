@@ -30,7 +30,10 @@ function openParentDetails(element: HTMLElement) {
   }
 }
 
-const components: Components<string> = { Docs, SymbolReference };
+const components: Components<import("hast").Content[]> = {
+  Docs,
+  SymbolReference,
+};
 
 export function Root(props: import("../extract").DocInfo) {
   const router = useRouter();
@@ -68,7 +71,7 @@ export function Root(props: import("../extract").DocInfo) {
     locations: props.locations,
   };
 
-  const docInfo: DocsContextType<string> = {
+  const docInfo: DocsContextType<import("hast").Content[]> = {
     symbols: props.accessibleSymbols,
     canonicalExportLocations: props.canonicalExportLocations,
     goodIdentifiers: props.goodIdentifiers,
