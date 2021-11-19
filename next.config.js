@@ -29,4 +29,4 @@ const withBundleAnalyzer =
 
 module.exports = withBundleAnalyzer({
   enabled: process.env.ANALYZE === "true",
-})({});
+})({ optimizeFonts: false });
