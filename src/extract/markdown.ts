@@ -4,21 +4,39 @@ import remarkGfm from "remark-gfm";
 import remarkRehype from "remark-rehype";
 import { visit } from "unist-util-visit";
 import { Highlighter, getHighlighter, Lang } from "shiki";
-import path from "path";
 
 let highlighter: Highlighter | undefined;
-let languages: Set<Lang> = new Set();
 
-export function convinceVercelToIncludeTheFiles(blah: string) {
-  path.join(process.cwd(), "node_modules/shiki/languages", blah);
-  path.join(process.cwd(), "node_modules/shiki/themes/github-light.json");
+// https://nextjs.org/docs/advanced-features/output-file-tracing
+export function includeThingsInDeployment() {
+  require.resolve("shiki/themes/github-light.json");
+  require.resolve("shiki/languages/typescript.tmLanguage.json");
+  require.resolve("shiki/languages/tsx.tmLanguage.json");
+  require.resolve("shiki/languages/html.tmLanguage.json");
+  require.resolve("shiki/languages/css.tmLanguage.json");
+  require.resolve("shiki/languages/javascript.tmLanguage.json");
+  require.resolve("shiki/languages/jsx.tmLanguage.json");
 }
+
+const langs: Lang[] = [
+  "ts",
+  "typescript",
+  "tsx",
+  "html",
+  "css",
+  "jsx",
+  "javascript",
+  "js",
+  "ts",
+];
+
+const languages = new Set(langs);
 
 export const highlighterPromise = getHighlighter({
   theme: "github-light",
+  langs,
 }).then((x) => {
   highlighter = x;
-  languages = new Set(highlighter.getLoadedLanguages());
 });
 
 const processor = unified().use(remarkParse).use(remarkGfm).use(remarkRehype);
