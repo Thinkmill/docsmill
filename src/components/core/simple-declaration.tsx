@@ -51,8 +51,7 @@ export function SimpleDeclaration<Docs>({
         <DeclarationName name={decl.name} />
         <Syntax kind="colon">: </Syntax>
         <Type components={components} type={decl.type} />
-        <Syntax kind="bracket">{" = "}</Syntax>
-        <span css={codeFont}>...</span>
+        <Syntax kind="bracket">{" = ..."}</Syntax>
       </Fragment>
     );
   }
@@ -93,7 +92,7 @@ export function SimpleDeclaration<Docs>({
             })}
           </Fragment>
         )}
-        <span css={codeFont}> </span>
+        <Syntax kind="bracket"> </Syntax>
         <Type
           components={components}
           type={{ kind: "object", members: decl.members }}
@@ -142,7 +141,7 @@ export function SimpleDeclaration<Docs>({
             })}
           </Fragment>
         )}
-        <span css={codeFont}> </span>
+        <Syntax kind="bracket"> </Syntax>
         <ClassMembers
           components={components}
           constructors={decl.constructors}
@@ -160,7 +159,7 @@ export function SimpleDeclaration<Docs>({
       </Syntax>
       <DeclarationName name={decl.name} />
       <TypeParams components={components} params={decl.typeParams} />
-      <span css={codeFont}> = </span>
+      <Syntax kind="bracket"> = </Syntax>
       <Type components={components} type={decl.type} />
     </Fragment>
   );
@@ -178,11 +177,11 @@ function ClassMembers<Docs>({
   components: Components<Docs>;
 }) {
   if (members === undefined && constructors === undefined) {
-    return <span css={codeFont}>{"{}"}</span>;
+    return <Syntax kind="bracket">{"{}"}</Syntax>;
   }
   return (
     <Fragment>
-      <span css={codeFont}>{"{ "}</span>
+      <Syntax kind="bracket">{"{ "}</Syntax>
       {constructors?.map((constructor, i) => {
         return (
           <Indent key={i}>
@@ -203,47 +202,46 @@ function ClassMembers<Docs>({
                   {prop.readonly ? "readonly " : ""}
                 </Syntax>
               ) : null}
-              <span css={codeFont}>{prop.name}</span>
+              <Syntax kind="bracket">{prop.name}</Syntax>
               <Syntax kind="colon">{prop.optional ? "?: " : ": "}</Syntax>
               <Type components={components} type={prop.type} />
-              <span css={codeFont}>;</span>
+              <Syntax kind="bracket">;</Syntax>
             </Indent>
           );
         }
         if (prop.kind === "index") {
           return (
             <Indent key={i}>
-              <span css={codeFont}>
-                [key<Syntax kind="colon">: </Syntax>
-              </span>
+              <Syntax kind="bracket">[key</Syntax>
+              <Syntax kind="colon">: </Syntax>
               <Type components={components} type={prop.key} />
-              <span css={codeFont}>]</span>
+              <Syntax kind="bracket">]</Syntax>
               <Syntax kind="colon">: </Syntax>
               <Type components={components} type={prop.value} />
-              <span css={codeFont}>;</span>
+              <Syntax kind="bracket">;</Syntax>
             </Indent>
           );
         }
         if (prop.kind === "unknown") {
           return (
             <Indent key={i}>
-              <span css={codeFont}>{prop.content}</span>
+              <Syntax kind="bracket">{prop.content}</Syntax>
             </Indent>
           );
         }
         return (
           <Indent key={i}>
             <components.Docs docs={prop.docs} />
-            <span css={codeFont}>{prop.name}</span>
+            <Syntax kind="bracket">{prop.name}</Syntax>
             <TypeParams components={components} params={prop.typeParams} />
             <Params components={components} params={prop.parameters} />
             <Syntax kind="colon">: </Syntax>
             <Type components={components} type={prop.returnType} />
-            <span css={codeFont}>;</span>
+            <Syntax kind="bracket">;</Syntax>
           </Indent>
         );
       })}
-      <span css={codeFont}>{" }"}</span>
+      <Syntax kind="bracket">{" }"}</Syntax>
     </Fragment>
   );
 }

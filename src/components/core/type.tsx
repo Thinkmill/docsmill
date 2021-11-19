@@ -36,7 +36,7 @@ export function Type<Docs>({
         <components.SymbolReference name={type.name} id={type.id} />
         {type.typeArguments && (
           <Fragment>
-            <span css={codeFont}>{"<"}</span>
+            <Syntax kind="bracket">{"<"}</Syntax>
             {type.typeArguments.map((param, i) => {
               return (
                 <Fragment key={i}>
@@ -47,7 +47,7 @@ export function Type<Docs>({
                 </Fragment>
               );
             })}
-            <span css={codeFont}>{">"}</span>
+            <Syntax kind="bracket">{">"}</Syntax>
           </Fragment>
         )}
       </Fragment>
@@ -99,11 +99,11 @@ export function Type<Docs>({
   }
   if (type.kind === "object") {
     if (type.members === undefined) {
-      return <span css={codeFont}>{"{}"}</span>;
+      return <Syntax kind="bracket">{"{}"}</Syntax>;
     }
     return (
       <Fragment>
-        <span css={codeFont}>{"{ "}</span>
+        <Syntax kind="bracket">{"{ "}</Syntax>
         {type.members.map(function ObjectMember(prop, i) {
           if (prop.kind === "prop") {
             return (
@@ -112,10 +112,10 @@ export function Type<Docs>({
                 {prop.readonly ? (
                   <Syntax kind="keyword">readonly </Syntax>
                 ) : null}
-                <span css={codeFont}>{prop.name}</span>
+                <Syntax kind="bracket">{prop.name}</Syntax>
                 <Syntax kind="colon">{prop.optional ? "?: " : ": "}</Syntax>
                 <Type components={components} type={prop.type} />
-                <span css={codeFont}>;</span>
+                <Syntax kind="bracket">;</Syntax>
               </Indent>
             );
           }
@@ -125,21 +125,20 @@ export function Type<Docs>({
                 {prop.readonly ? (
                   <Syntax kind="keyword">readonly </Syntax>
                 ) : null}
-                <span css={codeFont}>
-                  [key<Syntax kind="colon">: </Syntax>
-                </span>
+                <Syntax kind="bracket">[key</Syntax>
+                <Syntax kind="colon">: </Syntax>
                 <Type components={components} type={prop.key} />
-                <span css={codeFont}>]</span>
+                <Syntax kind="bracket">]</Syntax>
                 <Syntax kind="colon">: </Syntax>
                 <Type components={components} type={prop.value} />
-                <span css={codeFont}>;</span>
+                <Syntax kind="bracket">;</Syntax>
               </Indent>
             );
           }
           if (prop.kind === "unknown") {
             return (
               <Indent key={i}>
-                <span css={codeFont}>{prop.content}</span>
+                <Syntax kind="bracket">{prop.content}</Syntax>
               </Indent>
             );
           }
@@ -150,17 +149,17 @@ export function Type<Docs>({
                 <Syntax kind="keyword">new </Syntax>
               )}
               {prop.kind === "method" && (
-                <span css={codeFont}>{prop.name}</span>
+                <Syntax kind="bracket">{prop.name}</Syntax>
               )}
               <TypeParams components={components} params={prop.typeParams} />
               <Params components={components} params={prop.parameters} />
               <Syntax kind="colon">: </Syntax>
               <Type components={components} type={prop.returnType} />
-              <span css={codeFont}>;</span>
+              <Syntax kind="bracket">;</Syntax>
             </Indent>
           );
         })}
-        <span css={codeFont}>{" }"}</span>
+        <Syntax kind="bracket">{" }"}</Syntax>
       </Fragment>
     );
   }
@@ -174,7 +173,7 @@ export function Type<Docs>({
             <Fragment key={i}>
               {element.kind === "rest" && <Syntax kind="colon">...</Syntax>}
               <Type components={components} type={element.type} />
-              {element.kind === "optional" && <span css={codeFont}>?</span>}
+              {element.kind === "optional" && <Syntax kind="bracket">?</Syntax>}
               {i !== type.elements!.length - 1 && (
                 <Syntax kind="comma">, </Syntax>
               )}
@@ -236,7 +235,7 @@ export function Type<Docs>({
   if (type.kind === "mapped") {
     return (
       <Fragment>
-        <span css={codeFont}>{"{ "}</span>
+        <Syntax kind="bracket">{"{ "}</Syntax>
         <Indent>
           {type.readonly === -1 && <Syntax kind="bracket">-</Syntax>}
           {type.readonly !== 0 && (
@@ -244,10 +243,9 @@ export function Type<Docs>({
               <Syntax kind="keyword">readonly </Syntax>
             </Fragment>
           )}
-          <span css={codeFont}>
-            [<Syntax kind="parameter">{type.param.name} </Syntax>
-            <Syntax kind="keyword">in </Syntax>
-          </span>
+          <Syntax kind="bracket">[</Syntax>
+          <Syntax kind="parameter">{type.param.name} </Syntax>
+          <Syntax kind="keyword">in </Syntax>
           <Type components={components} type={type.param.constraint} />
           {type.as && (
             <Fragment>
@@ -260,9 +258,9 @@ export function Type<Docs>({
           </Syntax>
           <Syntax kind="colon">: </Syntax>
           <Type components={components} type={type.type} />
-          <span css={codeFont}>;</span>
+          <Syntax kind="bracket">;</Syntax>
         </Indent>
-        <span css={codeFont}>{" }"}</span>
+        <Syntax kind="bracket">{" }"}</Syntax>
       </Fragment>
     );
   }
@@ -296,7 +294,7 @@ export function Type<Docs>({
     return (
       <Fragment>
         {type.asserts && <Syntax kind="keyword">asserts </Syntax>}
-        <span css={codeFont}>{type.param}</span>
+        <Syntax kind="bracket">{type.param}</Syntax>
         {type.type && (
           <Fragment>
             <Syntax kind="keyword">{" is "}</Syntax>

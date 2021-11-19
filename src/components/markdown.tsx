@@ -9,6 +9,7 @@ import Link from "next/link";
 import { nonRootSymbolReference } from "./symbol-references.css";
 import { SymbolId } from "../lib/types";
 import type { FontStyle } from "shiki";
+import { Syntax } from "./core/syntax";
 
 function isTokens(
   tokens: any
@@ -87,11 +88,11 @@ export const markdownComponents: ReactMarkdownOptions["components"] = {
         text === externalSymbols[fullName].id.match(/\.([^\.]+)$/)?.[1]
       ) {
         return (
-          <span css={codeFont}>
+          <Syntax kind="bracket">
             <Link href={getExternalSymbolUrl(external)}>
               <a css={nonRootSymbolReference}>{text}</a>
             </Link>
-          </span>
+          </Syntax>
         );
       }
     }

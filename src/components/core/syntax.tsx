@@ -2,6 +2,7 @@
 /** @jsxImportSource @emotion/react */
 
 import { css } from "@emotion/react";
+import { ReactNode } from "react";
 import { codeFontStyleObj, syntaxColors } from "../../lib/theme.css";
 
 export const syntaxKinds = {
@@ -17,7 +18,7 @@ export function Syntax({
   children,
   kind,
 }: {
-  children: string | number | (string | number)[];
+  children: ReactNode;
   kind: keyof typeof syntaxKinds;
 }) {
   return <span css={syntaxKinds[kind]}>{children}</span>;

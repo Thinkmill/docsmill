@@ -8,7 +8,6 @@ import {
   AnchorHTMLAttributes,
 } from "react";
 import { useDocsContext } from "../lib/DocsContext";
-import { codeFont } from "../lib/theme.css";
 import { Syntax } from "./core/syntax";
 import * as styles from "./symbol-references.css";
 import Link from "next/link";
@@ -87,19 +86,18 @@ export function SymbolReference({ id, name }: { name: string; id: SymbolId }) {
     const external = externalSymbols[id];
     const pkgDisplayName = getExternalPkgDisplayName(external.pkg);
     return (
-      <span css={codeFont}>
-        <Syntax kind="keyword">import</Syntax>
-        <Syntax kind="bracket">(</Syntax>
+      <Syntax kind="bracket">
+        <Syntax kind="keyword">import</Syntax>(
         <Link href={getExternalPackageUrl(external.pkg, external.version)}>
           <a css={styles.rootSymbolReference}>
             {JSON.stringify(pkgDisplayName)}
           </a>
         </Link>
-        <Syntax kind="bracket">)</Syntax>.
+        ).
         <Link href={getExternalSymbolUrl(external)}>
           <a css={styles.nonRootSymbolReference}>{name}</a>
         </Link>
-      </span>
+      </Syntax>
     );
   }
   if (externalReference !== undefined) {
@@ -141,15 +139,15 @@ export function SymbolReference({ id, name }: { name: string; id: SymbolId }) {
   ) {
     const canonicalExportLocation = canonicalExportLocations[id];
     return (
-      <span css={codeFont}>
+      <Syntax kind="bracket">
         <Syntax kind="keyword">import</Syntax>
-        <Syntax kind="bracket">(</Syntax>
+        (
         <SymbolReference
           id={canonicalExportLocation}
           name={symbols[canonicalExportLocation][0].name}
         />
-        <Syntax kind="bracket">)</Syntax>.{inner}
-      </span>
+        ).{inner}
+      </Syntax>
     );
   }
 

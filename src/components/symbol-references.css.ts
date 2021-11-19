@@ -24,12 +24,3 @@ export const nonRootSymbolReference = style({
   ...codeFontStyleObj,
   ...baseSymbol,
 });
-
-export const tooltipMarkdownContent = style({
-  "&:last-child": {
-    marginBottom: 0,
-  },
-  "& *": {
-    color: "inherit !important",
-  },
-});
