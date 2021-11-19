@@ -38,7 +38,16 @@ export function getExternalReferenceHandler(
   });
   const getCompleteDocInfo = memoize((pkgName: string) => {
     const { rootSymbols, pkgPath, version } = getFastDocInfo(pkgName);
-    return getDocsInfo(rootSymbols, pkgPath, pkgName, version, program);
+    return getDocsInfo(
+      rootSymbols,
+      pkgPath,
+      pkgName,
+      version,
+      program,
+      undefined,
+      undefined,
+      false
+    );
   });
   return (symbol: ts.Symbol, symbolId: SymbolId) => {
     const decl = symbol.declarations![0];

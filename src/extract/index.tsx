@@ -76,7 +76,8 @@ export function getDocsInfo(
   getSrcMapping: (
     distFilename: string,
     line: number
-  ) => { file: string; line: number } | undefined = () => undefined
+  ) => { file: string; line: number } | undefined = () => undefined,
+  shouldGetDocs: boolean = true
 ): DocInfo {
   const { accessibleSymbols, externalSymbols, symbolReferences } =
     getCoreDocsInfo(
@@ -84,7 +85,7 @@ export function getDocsInfo(
       program,
       getIsExternalSymbolForPkg(pkgDir),
       getShouldIncludeDeclForPkg(pkgDir),
-      (node) => getDocsImpl(node, { program })
+      (node) => (shouldGetDocs ? getDocsImpl(node, { program }) : [])
     );
 
   const baseInfo = {
