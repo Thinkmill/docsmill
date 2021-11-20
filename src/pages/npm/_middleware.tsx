@@ -1,5 +1,5 @@
 import type { NextRequest } from "next/server";
-import { NextResponse } from "next/server";
+// import { NextResponse } from "next/server";
 import { redirectToPkgVersion } from "../../npm/version-redirect";
 
 export async function middleware(req: NextRequest) {
