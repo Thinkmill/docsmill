@@ -9,7 +9,11 @@ export async function middleware(req: NextRequest) {
   //   }
   return new Response(
     JSON.stringify(
-      { res, bool: res.kind === "handled" && "redirect" in res.result },
+      {
+        res,
+        bool: res.kind === "handled" && "redirect" in res.result,
+        x: req.page.params?.pkg,
+      },
       null,
       2
     )
