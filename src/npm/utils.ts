@@ -1,7 +1,4 @@
 import { ts } from "../extract/ts";
-import isRangeValid from "semver/ranges/valid";
-import maxSatisfyingVersion from "semver/ranges/max-satisfying";
-import { PackageMetadata } from "./fetch-package-metadata";
 import { combinePaths } from "../extract/path";
 
 function findPackageJsons(
@@ -68,22 +65,4 @@ export function collectEntrypointsOfPackage(
     entrypoints.set(entrypoint, resolved);
   }
   return entrypoints;
-}
-
-export function resolveToPackageVersion(
-  pkg: PackageMetadata,
-  specifier: string | undefined
-): string {
-  if (specifier !== undefined) {
-    if (Object.prototype.hasOwnProperty.call(pkg.tags, specifier)) {
-      return pkg.tags[specifier];
-    }
-    if (isRangeValid(specifier)) {
-      const version = maxSatisfyingVersion(pkg.versions, specifier);
-      if (version) {
-        return version;
-      }
-    }
-  }
-  return pkg.tags.latest;
 }

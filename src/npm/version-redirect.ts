@@ -1,7 +1,26 @@
 import { GetStaticPropsResult } from "next";
 import isValidSemverVersion from "semver/functions/valid";
-import { getPackageMetadata } from "./fetch-package-metadata";
-import { resolveToPackageVersion } from "./utils";
+import isRangeValid from "semver/ranges/valid";
+import maxSatisfyingVersion from "semver/ranges/max-satisfying";
+import { getPackageMetadata, PackageMetadata } from "./fetch-package-metadata";
+
+export function resolveToPackageVersion(
+  pkg: PackageMetadata,
+  specifier: string | undefined
+): string {
+  if (specifier !== undefined) {
+    if (Object.prototype.hasOwnProperty.call(pkg.tags, specifier)) {
+      return pkg.tags[specifier];
+    }
+    if (isRangeValid(specifier)) {
+      const version = maxSatisfyingVersion(pkg.versions, specifier);
+      if (version) {
+        return version;
+      }
+    }
+  }
+  return pkg.tags.latest;
+}
 
 export async function redirectToPkgVersion(
   _pkgParam: string[] | undefined | string,
@@ -37,7 +56,7 @@ export async function redirectToPkgVersion(
       kind: "handled",
       result: {
         redirect: {
-          statusCode: 302,
+          statusCode: 307,
           destination: `${root}/${pkgName}@${version}${pkgParam.join("/")}`,
         },
         revalidate: 60 * 20,

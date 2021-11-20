@@ -5,7 +5,7 @@ import { libFiles as _libFiles } from "@ts-morph/common/dist/data/libFiles";
 import isValidSemverVersion from "semver/functions/valid";
 import tar from "tar-stream";
 import { DocInfo, getDocsInfo } from "../extract";
-import { collectEntrypointsOfPackage, resolveToPackageVersion } from "./utils";
+import { collectEntrypointsOfPackage } from "./utils";
 import { getPackageMetadata } from "./fetch-package-metadata";
 import { assert } from "../lib/assert";
 import {
@@ -18,6 +18,7 @@ import { createGunzip } from "zlib";
 import { getSourceMapHandler } from "./source-map";
 import { getExternalReferenceHandler } from "./external-reference";
 import { collectImports } from "./collect-imports";
+import { resolveToPackageVersion } from "./version-redirect";
 
 // https://github.com/pnpm/get-npm-tarball-url
 function getNpmTarballUrl(pkgName: string, pkgVersion: string): string {
