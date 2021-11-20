@@ -7,5 +7,5 @@ export async function middleware(req: NextRequest) {
   if (res.kind === "handled" && "redirect" in res.result) {
     return NextResponse.redirect(res.result.redirect.destination, 307);
   }
-  return new Response("hello");
+  return new Response(JSON.stringify(res, null, 2));
 }
