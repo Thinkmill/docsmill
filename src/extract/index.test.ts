@@ -357,6 +357,10 @@ function printSerializedType(
     return `typeof ${printReference(type.id, type.name)}`;
   }
 
+  if (type.kind === "prefix-unary") {
+    return `${type.operator} ${type.value}`;
+  }
+
   return assertNever(type);
 }
 

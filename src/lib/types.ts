@@ -202,7 +202,8 @@ export type SerializedType<Docs> =
       falseType: SerializedType<Docs>;
     }
   | { kind: "string-literal"; value: string }
-  | { kind: "numeric-literal"; value: number }
+  | { kind: "numeric-literal"; value: string }
+  | { kind: "prefix-unary"; operator: string; value: string }
   | { kind: "bigint-literal"; value: string }
   | { kind: "keyof"; value: SerializedType<Docs> }
   | {

@@ -179,7 +179,9 @@ export function getSymbolIdentifier(symbol: ts.Symbol): SymbolId {
     ) {
       return symbol.name as SymbolId;
     }
-    assert(false, "expected at least one declaration");
+    console.warn("no declaration for symbol", symbol.name);
+    // assert(false, "expected at least one declaration");
+    return symbol.name as SymbolId;
   }
 
   return hashString(

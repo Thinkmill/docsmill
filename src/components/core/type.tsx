@@ -12,6 +12,7 @@ import {
 } from "../../lib/types";
 import { css } from "@emotion/react";
 import { codeFontStyleObj } from "../../lib/theme.css";
+import { assertNever } from "../../lib/assert";
 
 const intrinsicStyles = css({ color: "#2c8093", ...codeFontStyleObj });
 
@@ -210,6 +211,14 @@ export function Type<Docs>({
   if (type.kind === "string-literal") {
     return <Syntax kind="string">"{type.value}"</Syntax>;
   }
+  if (type.kind === "prefix-unary") {
+    return (
+      <Fragment>
+        <Syntax kind="bracket">{type.operator}</Syntax>
+        <Syntax kind="string">{type.value}</Syntax>
+      </Fragment>
+    );
+  }
   if (type.kind === "numeric-literal" || type.kind === "bigint-literal") {
     return <Syntax kind="string">{type.value}</Syntax>;
   }
@@ -323,7 +332,10 @@ export function Type<Docs>({
     );
   }
 
-  return <span css={[codeFont, { color: "red" }]}>{type.value}</span>;
+  if (type.kind === "raw") {
+    return <span css={[codeFont, { color: "red" }]}>{type.value}</span>;
+  }
+  assertNever(type);
 }
 
 export function TypeParams<Docs>({

@@ -1,6 +1,5 @@
 import { ts } from "../extract/ts";
-// @ts-ignore
-import { libFiles as _libFiles } from "@ts-morph/common/dist/data/libFiles";
+import libFiles from "../../lib-files.json";
 
 import isValidSemverVersion from "semver/functions/valid";
 import tar from "tar-stream";
@@ -39,8 +38,6 @@ function getScopelessName(name: string) {
   }
   return name.split("/")[1];
 }
-
-const libFiles: { fileName: string; text: string }[] = _libFiles;
 
 async function handleTarballStream(tarballStream: NodeJS.ReadableStream) {
   const extract = tarballStream.pipe(createGunzip()).pipe(tar.extract());
@@ -264,6 +261,7 @@ export async function getPackage(
     noEmit: true,
     strict: true,
     moduleResolution: ts.ModuleResolutionKind.NodeJs,
+    target: ts.ScriptTarget.ESNext,
   };
 
   const compilerHost = getCompilerHost();

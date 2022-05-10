@@ -159,7 +159,7 @@ export function convertTypeNode<Docs>(
       return { kind: "string-literal", value: literal.text };
     }
     if (ts.isNumericLiteral(literal)) {
-      return { kind: "numeric-literal", value: Number(literal.text) };
+      return { kind: "numeric-literal", value: literal.text };
     }
     if (ts.isBigIntLiteral(literal)) {
       return { kind: "bigint-literal", value: literal.text };
@@ -170,6 +170,25 @@ export function convertTypeNode<Docs>(
     if (literal.kind === ts.SyntaxKind.FalseKeyword) {
       return { kind: "intrinsic", value: "false" };
     }
+    if (ts.isPrefixUnaryExpression(literal)) {
+      if (literal.operator === ts.SyntaxKind.MinusToken) {
+        assert(ts.isNumericLiteral(literal.operand));
+        return {
+          kind: "prefix-unary",
+          operator: "-",
+          value: literal.operand.text,
+        };
+      }
+      if (literal.operator === ts.SyntaxKind.PlusToken) {
+        assert(ts.isNumericLiteral(literal.operand));
+        return {
+          kind: "prefix-unary",
+          operator: "+",
+          value: literal.operand.text,
+        };
+      }
+    }
+    debugger;
   }
 
   if (ts.isUnionTypeNode(compilerNode)) {
@@ -413,8 +432,6 @@ export function convertTypeNode<Docs>(
       ),
     };
   }
-
-  // debugger;
 
   return {
     kind: "raw",
