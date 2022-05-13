@@ -37,12 +37,11 @@ export function getExternalReferenceHandler(
     };
   });
   const getCompleteDocInfo = memoize((pkgName: string) => {
-    const { rootSymbols, pkgPath, version } = getFastDocInfo(pkgName);
+    const { rootSymbols, pkgPath } = getFastDocInfo(pkgName);
     return getDocsInfo(
       rootSymbols,
       pkgPath,
       pkgName,
-      version,
       program,
       undefined,
       undefined,

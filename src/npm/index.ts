@@ -251,10 +251,16 @@ export function getCompilerHost(): ts.CompilerHost & {
   return host;
 }
 
+export type PackageDocInfo = DocInfo & {
+  packageName: string;
+  version: string;
+  versions: string[];
+};
+
 export async function getPackage(
   pkgName: string,
   pkgSpecifier: string
-): Promise<DocInfo> {
+): Promise<PackageDocInfo> {
   // const fileSystem = new InMemoryFileSystemHost();
 
   const compilerOptions: ts.CompilerOptions = {
@@ -391,16 +397,17 @@ export async function getPackage(
   }
 
   return {
+    packageName: pkgName,
+    version,
+    versions: [...versions].reverse(),
     ...getDocsInfo(
       rootSymbols,
       pkgPath,
       pkgName,
-      version,
       program,
       getExternalReferenceHandler(program, resolvedDepsWithEntrypoints),
       getSourceMapHandler(compilerHost, pkgName)
     ),
-    versions: [...versions].reverse(),
   };
 }
 

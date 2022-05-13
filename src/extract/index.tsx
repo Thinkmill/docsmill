@@ -12,9 +12,8 @@ import { getGoodIdentifiers } from "./good-identifiers";
 import { getDocsImpl } from "./get-docs-impl";
 
 export type DocInfo = {
-  packageName: string;
   rootSymbols: SymbolId[];
-  accessibleSymbols: {
+  symbols: {
     [key: SymbolId]: SerializedDeclaration<import("hast").Content[]>[];
   };
   symbolReferences: { [key: SymbolId]: SymbolId[] };
@@ -25,8 +24,6 @@ export type DocInfo = {
     SymbolId,
     { pkg: string; version: string; id: string }
   >;
-  versions?: string[];
-  currentVersion: string;
   locations: Record<
     SymbolId,
     { file: string; line: number; src?: { file: string; line: number } }[]
@@ -66,7 +63,6 @@ export function getDocsInfo(
   rootSymbols: Map<ts.Symbol, string>,
   pkgDir: string,
   packageName: string,
-  currentVersion: string,
   program: ts.Program,
   getExternalReference: (
     symbol: ts.Symbol,
@@ -90,11 +86,10 @@ export function getDocsInfo(
 
   const baseInfo = {
     packageName,
-    currentVersion,
     rootSymbols: [...rootSymbols.keys()].map((symbol) =>
       getSymbolIdentifier(symbol)
     ),
-    accessibleSymbols: Object.fromEntries(
+    symbols: Object.fromEntries(
       [...accessibleSymbols].map(([symbol, rootThing]) => [
         getSymbolIdentifier(symbol),
         rootThing,
@@ -140,16 +135,16 @@ export function getDocsInfo(
   }
   const canonicalExportLocations = findCanonicalExportInfo(
     baseInfo.rootSymbols,
-    baseInfo.accessibleSymbols
+    baseInfo.symbols
   );
 
-  baseInfo.accessibleSymbols = applyCanonicalExportNames(
-    baseInfo.accessibleSymbols,
+  baseInfo.symbols = applyCanonicalExportNames(
+    baseInfo.symbols,
     canonicalExportLocations.names
   );
 
   const innerBit = getSymbolsForInnerBit(
-    baseInfo.accessibleSymbols,
+    baseInfo.symbols,
     canonicalExportLocations.locations,
     baseInfo.symbolReferences,
     baseInfo.rootSymbols
@@ -159,7 +154,7 @@ export function getDocsInfo(
     ...baseInfo,
     symbolsForInnerBit: innerBit.symbolsForInnerBit,
     goodIdentifiers: getGoodIdentifiers(
-      baseInfo.accessibleSymbols,
+      baseInfo.symbols,
       packageName,
       canonicalExportLocations.locations,
       innerBit,

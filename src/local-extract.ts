@@ -54,7 +54,7 @@ export function getInfo(filename: string) {
   const rootSymbol = program.getTypeChecker().getSymbolAtLocation(sourceFile);
   assert(rootSymbol !== undefined, "could not get symbol for source file");
   const rootSymbols = new Map([[rootSymbol, "test"]]);
-  return getDocsInfo(rootSymbols, ".", "test", "0.0.0", program);
+  return getDocsInfo(rootSymbols, ".", "test", program);
 }
 
 export async function getFromLocalPackage(
@@ -163,7 +163,6 @@ export async function getFromLocalPackage(
     rootSymbols,
     pkgPath,
     pkgJson.name,
-    pkgJson.version,
     program,
     (_, symbolId) => externalSymbols.get(symbolId)
   );
@@ -199,13 +198,7 @@ export function getExternalSymbolIdMap(
         rootSymbols.set(sourceFileSymbol, entrypoint);
       }
     }
-    const { goodIdentifiers } = getDocsInfo(
-      rootSymbols,
-      pkgPath,
-      dep,
-      version,
-      program
-    );
+    const { goodIdentifiers } = getDocsInfo(rootSymbols, pkgPath, dep, program);
     for (const [symbolId, identifier] of objectEntriesAssumeNoExcessProps(
       goodIdentifiers
     )) {

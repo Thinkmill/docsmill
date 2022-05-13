@@ -41,7 +41,7 @@ export function Autocomplete<TItem extends BaseItem>({
       return undefined;
     }
 
-    searchRef.current = autocomplete({
+    const search = autocomplete({
       container: containerRef.current!,
       renderer: { createElement, Fragment },
       render({ children }, root) {
@@ -49,9 +49,10 @@ export function Autocomplete<TItem extends BaseItem>({
       },
       ...props,
     });
+    searchRef.current = search;
 
     return () => {
-      searchRef.current!.destroy();
+      search.destroy();
     };
   }, []);
 

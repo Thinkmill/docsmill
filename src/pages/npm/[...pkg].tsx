@@ -1,4 +1,4 @@
-import { getPackage } from "../../npm";
+import { getPackage, PackageDocInfo } from "../../npm";
 import {
   GetStaticPropsContext,
   GetStaticPathsResult,
@@ -6,10 +6,9 @@ import {
   GetStaticPropsResult,
 } from "next";
 
-import { Root } from "../../components/root";
+import { PackageDocs } from "../../components/package-docs";
 import { useMemo } from "react";
 import { compressToUTF16, decompressFromUTF16 } from "lz-string";
-import { DocInfo } from "../../extract";
 import { redirectToPkgVersion } from "../../npm/version-redirect";
 import { highlighterPromise } from "../../extract/markdown";
 
@@ -26,11 +25,11 @@ export default function Npm(
     }
     return {
       kind: "package" as const,
-      data: JSON.parse(decompressed) as DocInfo,
+      data: JSON.parse(decompressed) as PackageDocInfo,
     };
   }, [_props]);
 
-  return <Root {...props.data} />;
+  return <PackageDocs {...props.data} />;
 }
 
 export function getStaticPaths(): GetStaticPathsResult {
@@ -40,7 +39,7 @@ export function getStaticPaths(): GetStaticPathsResult {
 export async function getStaticProps({
   params,
 }: GetStaticPropsContext): Promise<
-  GetStaticPropsResult<{ kind: "package"; data: DocInfo | string }>
+  GetStaticPropsResult<{ kind: "package"; data: PackageDocInfo | string }>
 > {
   const [res] = await Promise.all([
     redirectToPkgVersion(params?.pkg, "/npm"),
@@ -53,7 +52,7 @@ export async function getStaticProps({
     return { notFound: true };
   }
 
-  let data: DocInfo | string = await getPackage(res.pkg, res.version);
+  let data: PackageDocInfo | string = await getPackage(res.pkg, res.version);
   const stringified = JSON.stringify(data);
   // you might be thinking: why are you compressing this?
   // it's just gonna result in a larger size when it's eventually gzipped
