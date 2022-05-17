@@ -3,7 +3,7 @@ import libFiles from "../../lib-files.json";
 
 import isValidSemverVersion from "semver/functions/valid";
 import tar from "tar-stream";
-import { DocInfo, getDocsInfo } from "../extract";
+import { DocInfo, getDocsInfo, getIsNodeWithinPkg } from "../extract";
 import { collectEntrypointsOfPackage, resolveToPackageVersion } from "./utils";
 import { getPackageMetadata } from "./fetch-package-metadata";
 import { assert } from "../lib/assert";
@@ -371,6 +371,8 @@ export async function getPackage(
     host: compilerHost,
   });
 
+  const isWithinPkg = getIsNodeWithinPkg(pkgPath);
+
   const rootSymbols = new Map<ts.Symbol, string>();
 
   const typeChecker = program.getTypeChecker();
@@ -385,7 +387,9 @@ export async function getPackage(
       ts.isStringLiteral(decl.name),
       "expected module declaration from ambient module symbol to have string literal name node"
     );
-    rootSymbols.set(module, decl.name.text);
+    if (isWithinPkg(decl)) {
+      rootSymbols.set(module, decl.name.text);
+    }
   }
   for (const [entrypoint, resolved] of entrypoints) {
     const sourceFile = program.getSourceFile(resolved);

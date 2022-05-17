@@ -30,22 +30,15 @@ export type DocInfo = {
   >;
 };
 
-export function getIsExternalSymbolForPkg(pkgDir: string) {
-  const pkgDirNodeModules = combinePaths(pkgDir, "node_modules");
+function getIsExternalSymbolForPkg(pkgDir: string) {
+  const isNodeInPkg = getIsNodeWithinPkg(pkgDir);
   return (symbol: ts.Symbol) => {
     const decl = symbol.declarations![0];
-    const sourceFile = decl.getSourceFile();
-    if (
-      !sourceFile.fileName.includes(pkgDir) ||
-      sourceFile.fileName.includes(pkgDirNodeModules)
-    ) {
-      return true;
-    }
-    return false;
+    return !isNodeInPkg(decl);
   };
 }
 
-export function getShouldIncludeDeclForPkg(pkgDir: string) {
+export function getIsNodeWithinPkg(pkgDir: string) {
   const pkgDirNodeModules = combinePaths(pkgDir, "node_modules");
   return (node: ts.Node) => {
     const sourceFile = node.getSourceFile();
@@ -80,7 +73,7 @@ export function getDocsInfo(
       rootSymbols,
       program,
       getIsExternalSymbolForPkg(pkgDir),
-      getShouldIncludeDeclForPkg(pkgDir),
+      getIsNodeWithinPkg(pkgDir),
       (node) => (shouldGetDocs ? getDocsImpl(node, { program }) : [])
     );
 
