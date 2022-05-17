@@ -149,10 +149,11 @@ export function getAliasedSymbol(
   host: { program: ts.Program }
 ): ts.Symbol {
   if ((symbol as any).mergeId !== undefined) {
-    return getAliasedSymbol(
-      (getTypeChecker(host) as any).getMergedSymbol(symbol),
-      host
-    );
+    const mergedSymbol = (getTypeChecker(host) as any).getMergedSymbol(symbol);
+    if (mergedSymbol === symbol) {
+      return mergedSymbol;
+    }
+    return getAliasedSymbol(mergedSymbol, host);
   }
   if (symbol.flags & ts.SymbolFlags.Alias) {
     return getAliasedSymbol(
@@ -180,7 +181,6 @@ export function getSymbolIdentifier(symbol: ts.Symbol): SymbolId {
       return symbol.name as SymbolId;
     }
     console.warn("no declaration for symbol", symbol.name);
-    // assert(false, "expected at least one declaration");
     return symbol.name as SymbolId;
   }
 
