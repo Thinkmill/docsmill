@@ -250,6 +250,7 @@ function Exports<Docs>({
                           pkg: exported.from,
                           version: exported.version,
                         })}
+                        passHref
                       >
                         <a css={symbolReferenceStyles.nonRootSymbolReference}>
                           {exportInfo.name}
@@ -264,6 +265,7 @@ function Exports<Docs>({
               <Syntax kind="keyword">from </Syntax>
               <Link
                 href={getExternalPackageUrl(exported.from, exported.version)}
+                passHref
               >
                 <a css={symbolReferenceStyles.rootSymbolReference}>
                   {JSON.stringify(exported.from)}
