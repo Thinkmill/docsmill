@@ -43,7 +43,7 @@ export function Autocomplete<TItem extends BaseItem>({
 
     const search = autocomplete({
       container: containerRef.current!,
-      renderer: { createElement, Fragment },
+      renderer: { createElement: createElement as any, Fragment },
       render({ children }, root) {
         render(children as any, root);
       },

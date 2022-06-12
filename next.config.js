@@ -27,6 +27,11 @@ const withBundleAnalyzer =
     });
   };
 
+/** @type {import('next').NextConfig} */
+const config = {
+  optimizeFonts: false,
+};
+
 module.exports = withBundleAnalyzer({
   enabled: process.env.ANALYZE === "true",
-})({ optimizeFonts: false });
+})(config);
