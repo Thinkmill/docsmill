@@ -52,6 +52,9 @@ export function getSourceMapHandler(
       let generatedCodeColumn = 0; // first field - reset each time
 
       return line.map((segment) => {
+        if (segment.length === 0) {
+          return;
+        }
         if (segment.some((x) => isNaN(x))) {
           throw new Error(`nan: ${segment}`);
         }
