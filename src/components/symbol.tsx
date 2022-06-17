@@ -62,7 +62,7 @@ export function RenderRootSymbol<Docs>({
           </h3>
         </a>
         {pkgRefPortion !== undefined && (
-          <div>
+          <div css={{ display: "flex", gap: 4 }}>
             {locationsForSymbol.map((location, i) => (
               <Fragment key={i}>
                 <Link
@@ -70,7 +70,7 @@ export function RenderRootSymbol<Docs>({
                     location.line + 1
                   }`}
                 >
-                  <a>[decl]</a>
+                  <a>decl</a>
                 </Link>
                 {location.src && (
                   <Link
@@ -78,7 +78,7 @@ export function RenderRootSymbol<Docs>({
                       location.src.line + 1
                     }`}
                   >
-                    <a>[src]</a>
+                    <a>source</a>
                   </Link>
                 )}
               </Fragment>

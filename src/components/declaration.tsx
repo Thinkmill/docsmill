@@ -54,9 +54,7 @@ export function Declaration<Docs>({
           ) : (
             <Fragment>
               <Syntax kind="keyword">module </Syntax>
-              <a css={styles.moduleSpecifierLink}>
-                {JSON.stringify(decl.name)}
-              </a>
+              <Syntax kind="string">{JSON.stringify(decl.name)}</Syntax>
             </Fragment>
           )}
           <Syntax kind="bracket">{" {"}</Syntax>
