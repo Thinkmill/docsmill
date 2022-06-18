@@ -183,7 +183,9 @@ export function convertDeclaration<Docs>(
       name: compilerNode.name?.text || "default",
       docs: getDocs(compilerNode, host),
       ...spreadTupleOrNone("typeParams", getTypeParameters(compilerNode, host)),
-      extends: extendsNode ? convertTypeNode(extendsNode.types[0], host) : null,
+      ...(extendsNode
+        ? { extends: convertTypeNode(extendsNode.types[0], host) }
+        : {}),
       ...spreadTupleOrNone(
         "implements",
         implementsNode?.types?.map((x) => convertTypeNode(x, host))

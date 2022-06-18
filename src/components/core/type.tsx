@@ -238,6 +238,12 @@ export function Type<Docs>({
       <Fragment>
         <Syntax kind="keyword">infer </Syntax>
         <Syntax kind="parameter">{type.name}</Syntax>
+        {type.constraint !== undefined && (
+          <Fragment>
+            <Syntax kind="keyword"> extends </Syntax>
+            <Type components={components} type={type.constraint} />
+          </Fragment>
+        )}
       </Fragment>
     );
   }
@@ -352,6 +358,9 @@ export function TypeParams<Docs>({
       {params.map((param, i) => {
         return (
           <Fragment key={i}>
+            {param.variance && (
+              <Syntax kind="keyword">{param.variance} </Syntax>
+            )}
             <Syntax kind="parameter">{param.name}</Syntax>
             {param.constraint && (
               <Fragment>
@@ -387,10 +396,10 @@ export function Params<Docs>({
       {params?.map((param, i) => {
         return (
           <Fragment key={i}>
-            {param.kind === "rest" && <Syntax kind="colon">...</Syntax>}
+            {param.modifier === "rest" && <Syntax kind="colon">...</Syntax>}
             <Syntax kind="parameter">{param.name}</Syntax>
             <Syntax kind="colon">
-              {param.kind === "optional" ? "?: " : ": "}
+              {param.modifier === "optional" ? "?: " : ": "}
             </Syntax>
             <Type components={components} type={param.type} />
             {i === params.length - 1 ? null : <Syntax kind="comma">, </Syntax>}

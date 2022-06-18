@@ -20,14 +20,29 @@ export function getTypeParameters<Docs>(
 ): TypeParam<Docs>[] {
   if (node.typeParameters === undefined) return [];
   return node.typeParameters.map((typeParam) => {
+    let hasIn = false;
+    let hasOut = false;
+    if (typeParam.modifiers !== undefined) {
+      for (const modifier of typeParam.modifiers) {
+        if (modifier.kind === ts.SyntaxKind.InKeyword) {
+          hasIn = true;
+        } else if (modifier.kind === ts.SyntaxKind.OutKeyword) {
+          hasOut = true;
+        }
+      }
+    }
+
+    const variance =
+      hasIn && hasOut ? "in out" : hasIn ? "in" : hasOut ? "out" : undefined;
     return {
       name: typeParam.name.text,
-      constraint: typeParam.constraint
-        ? convertTypeNode(typeParam.constraint, host)
-        : null,
-      default: typeParam.default
-        ? convertTypeNode(typeParam.default, host)
-        : null,
+      ...(typeParam.constraint
+        ? { constraint: convertTypeNode(typeParam.constraint, host) }
+        : {}),
+      ...(typeParam.default
+        ? { default: convertTypeNode(typeParam.default, host) }
+        : {}),
+      ...(variance && { variance }),
     };
   });
 }
@@ -130,16 +145,17 @@ export function getParameters<Docs>(
   host: ExtractionHost<Docs>
 ): Parameter<Docs>[] {
   return node.parameters.map((x): Parameter<Docs> => {
+    const modifier = x.dotDotDotToken
+      ? "rest"
+      : x.questionToken || x.initializer
+      ? "optional"
+      : undefined;
     return {
       name: ts.isIdentifier(x.name) ? x.name.text : x.name.getText(),
       type: x.type
         ? convertTypeNode(x.type, host)
         : convertType(getTypeChecker(host).getTypeAtLocation(x), host),
-      kind: x.dotDotDotToken
-        ? "rest"
-        : x.questionToken || x.initializer
-        ? "optional"
-        : "normal",
+      ...(modifier ? { modifier } : {}),
     };
   });
 }

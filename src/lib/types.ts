@@ -2,14 +2,15 @@ export type SymbolId = string & { __symbolIdTag: any };
 
 export type TypeParam<Docs> = {
   name: string;
-  constraint: SerializedType<Docs> | null;
-  default: SerializedType<Docs> | null;
+  constraint?: SerializedType<Docs>;
+  default?: SerializedType<Docs>;
+  variance?: "in" | "out" | "in out";
 };
 
 export type Parameter<Docs> = {
   name: string;
   type: SerializedType<Docs>;
-  kind: "optional" | "rest" | "normal";
+  modifier?: "optional" | "rest";
 };
 
 export type SimpleSerializedDeclaration<Docs> =
@@ -55,7 +56,7 @@ export type SimpleSerializedDeclaration<Docs> =
       docs: Docs;
       willBeComparedNominally: boolean;
       typeParams?: [TypeParam<Docs>, ...TypeParam<Docs>[]];
-      extends: SerializedType<Docs> | null;
+      extends?: SerializedType<Docs>;
       implements?: [SerializedType<Docs>, ...SerializedType<Docs>[]];
       constructors?: [
         ConstructorDeclaration<Docs>,
@@ -126,7 +127,7 @@ export type ClassMember<Docs> =
     };
 
 export type TupleElement<Docs> = {
-  label: string | null;
+  label?: string;
   kind: "optional" | "required" | "rest";
   type: SerializedType<Docs>;
 };
@@ -181,7 +182,7 @@ export type SerializedType<Docs> =
   | { kind: "type-parameter"; name: string }
   | { kind: "union"; types: SerializedType<Docs>[] }
   | { kind: "intersection"; types: SerializedType<Docs>[] }
-  | { kind: "infer"; name: string }
+  | { kind: "infer"; name: string; constraint?: SerializedType<Docs> }
   | { kind: "paren"; value: SerializedType<Docs> }
   | {
       kind: "tuple";
@@ -210,7 +211,7 @@ export type SerializedType<Docs> =
       kind: "mapped";
       param: { name: string; constraint: SerializedType<Docs> };
       type: SerializedType<Docs>;
-      as: SerializedType<Docs> | null;
+      as?: SerializedType<Docs>;
       readonly: -1 | 0 | 1;
       optional: -1 | 0 | 1;
     }

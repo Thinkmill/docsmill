@@ -98,7 +98,7 @@ function printBasicDeclaration(
     return (
       "class " +
       decl.name +
-      (decl.extends === null
+      (decl.extends === undefined
         ? ""
         : ` extends ${printSerializedType(decl.extends, printReference)}`) +
       (decl.implements
@@ -214,7 +214,11 @@ function printSerializedType(
     return `RAW ${type.value} RAW`;
   }
   if (type.kind === "infer") {
-    return `infer ${type.name}`;
+    return `infer ${type.name}${
+      type.constraint === undefined
+        ? ""
+        : ` extends ${printSerializedType(type.constraint, printReference)}`
+    }`;
   }
   if (type.kind === "keyof") {
     return `keyof ${printSerializedType(type, printReference)}`;
@@ -268,7 +272,7 @@ function printSerializedType(
     return `{\n  ${
       { [-1]: "-readonly ", 0: "", 1: "readonly " }[type.readonly]
     }[${type.param.name} in ${type.param.constraint}${
-      type.as === null
+      type.as === undefined
         ? ""
         : " as " + printSerializedType(type.as, printReference)
     }]${{ [-1]: "-?", 0: "", 1: "?" }[type.optional]}: ${printSerializedType(
@@ -369,13 +373,13 @@ function printParameters(
   printReference: (symbolId: SymbolId, name: string) => string
 ) {
   return `(${params.map((param) => {
-    if (param.kind === "optional") {
+    if (param.modifier === "optional") {
       return `${param.name}?: ${printSerializedType(
         param.type,
         printReference
       )}`;
     }
-    if (param.kind === "rest") {
+    if (param.modifier === "rest") {
       return `...${param.name}: ${printSerializedType(
         param.type,
         printReference
@@ -395,14 +399,14 @@ function printTypeParams(
   return `<${typeParams
     .map((typeParam) => {
       return `${typeParam.name}${
-        typeParam.constraint === null
+        typeParam.constraint === undefined
           ? ""
           : ` extends ${printSerializedType(
               typeParam.constraint,
               printReference
             )}`
       }${
-        typeParam.default === null
+        typeParam.default === undefined
           ? ""
           : ` = ${printSerializedType(typeParam.default, printReference)}`
       }`;

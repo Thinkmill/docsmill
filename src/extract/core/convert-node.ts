@@ -221,7 +221,18 @@ export function convertTypeNode<Docs>(
   }
 
   if (ts.isInferTypeNode(compilerNode)) {
-    return { kind: "infer", name: compilerNode.typeParameter.name.text };
+    return {
+      kind: "infer",
+      name: compilerNode.typeParameter.name.text,
+      ...(compilerNode.typeParameter.constraint
+        ? {
+            constraint: convertTypeNode(
+              compilerNode.typeParameter.constraint,
+              host
+            ),
+          }
+        : {}),
+    };
   }
 
   if (ts.isIntersectionTypeNode(compilerNode)) {
@@ -245,9 +256,9 @@ export function convertTypeNode<Docs>(
       type: compilerNode.type
         ? convertTypeNode(compilerNode.type, host)
         : { kind: "intrinsic", value: "any" },
-      as: compilerNode.nameType
-        ? convertTypeNode(compilerNode.nameType, host)
-        : null,
+      ...(compilerNode.nameType
+        ? { as: convertTypeNode(compilerNode.nameType, host) }
+        : {}),
       optional: getModifierKind(compilerNode.questionToken),
       readonly: getModifierKind(compilerNode.readonlyToken),
     };
@@ -317,7 +328,6 @@ export function convertTypeNode<Docs>(
           }
           return {
             kind,
-            label: null,
             type: convertTypeNode(innerType, host),
           };
         })
