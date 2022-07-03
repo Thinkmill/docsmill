@@ -1,6 +1,6 @@
 /** @jsxRuntime automatic */
 /** @jsxImportSource @emotion/react */
-import { highlighterPromise } from "../extract/markdown";
+import { highlighterPromise } from "../extract/highlight";
 export { default } from "./lib";
 import { getInfo } from "../local-extract";
 

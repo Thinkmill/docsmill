@@ -3,41 +3,7 @@ import remarkParse from "remark-parse";
 import remarkGfm from "remark-gfm";
 import remarkRehype from "remark-rehype";
 import { visit } from "unist-util-visit";
-import { Highlighter, getHighlighter, Lang, FontStyle } from "shiki";
-
-let highlighter: Highlighter | undefined;
-
-// https://nextjs.org/docs/advanced-features/output-file-tracing
-export function includeThingsInDeployment() {
-  require.resolve("shiki/themes/github-light.json");
-  require.resolve("shiki/languages/typescript.tmLanguage.json");
-  require.resolve("shiki/languages/tsx.tmLanguage.json");
-  require.resolve("shiki/languages/html.tmLanguage.json");
-  require.resolve("shiki/languages/css.tmLanguage.json");
-  require.resolve("shiki/languages/javascript.tmLanguage.json");
-  require.resolve("shiki/languages/jsx.tmLanguage.json");
-}
-
-const langs: Lang[] = [
-  "ts",
-  "typescript",
-  "tsx",
-  "html",
-  "css",
-  "jsx",
-  "javascript",
-  "js",
-  "ts",
-];
-
-const languages = new Set(langs);
-
-export const highlighterPromise = getHighlighter({
-  theme: "github-light",
-  langs,
-}).then((x) => {
-  highlighter = x;
-});
+import { highlight, languages } from "./highlight";
 
 const processor = unified().use(remarkParse).use(remarkGfm).use(remarkRehype);
 
@@ -67,25 +33,9 @@ export function parseMarkdown(markdown: string): import("hast").Content[] {
           : "language-tsx";
         if (typeof className === "string") {
           const lang = className.replace("language-", "");
-          if (languages.has(lang as any)) {
-            const tokens = highlighter!.codeToThemedTokens(
-              node.children[0].value,
-              lang
-            );
-            const mappedTokens = tokens.map((x) =>
-              x.map((x) => {
-                if (
-                  x.fontStyle === FontStyle.NotSet ||
-                  x.fontStyle === FontStyle.None ||
-                  x.fontStyle === undefined
-                ) {
-                  return [x.content, x.color || null] as const;
-                }
-                return [x.content, x.color || null, x.fontStyle] as const;
-              })
-            );
+          if (languages.has(lang)) {
             node.data = {
-              tokens: mappedTokens,
+              tokens: highlight(node.children[0].value, lang),
             };
 
             node.children = [];

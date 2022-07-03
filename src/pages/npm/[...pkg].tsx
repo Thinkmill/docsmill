@@ -10,7 +10,7 @@ import { PackageDocs } from "../../components/package-docs";
 import { useMemo } from "react";
 import { compressToUTF16, decompressFromUTF16 } from "lz-string";
 import { redirectToPkgVersion } from "../../npm/version-redirect";
-import { highlighterPromise } from "../../extract/markdown";
+import { highlighterPromise } from "../../extract/highlight";
 
 export default function Npm(
   _props: InferGetStaticPropsType<typeof getStaticProps>

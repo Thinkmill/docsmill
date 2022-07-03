@@ -3,6 +3,7 @@ import { AppProps } from "next/app";
 import { globalStyles } from "../lib/theme.css";
 import "@algolia/autocomplete-theme-classic";
 import { useEffect } from "react";
+import Router from "next/router";
 
 let svg = (
   <svg xmlns="http://www.w3.org/2000/svg" style={{ display: "none" }}>
@@ -28,13 +29,23 @@ function openParentDetails(element: HTMLElement) {
 
 function MyApp({ Component, pageProps }: AppProps) {
   useEffect(() => {
+    const handler = () => {
+      // pushState doesn't update :target, assigning window.location.hash does though
+      window.location.hash = window.location.hash;
+    };
+    Router.events.on("routeChangeComplete", handler);
+    return () => {
+      Router.events.off("routeChangeComplete", handler);
+    };
+  }, []);
+  useEffect(() => {
     let handler = () => {
       const hash = window.location.hash.replace("#", "");
+      if (!hash) return;
       const element = document.getElementById(hash);
-      if (element) {
-        openParentDetails(element);
-        element.scrollIntoView();
-      }
+      if (!element) return;
+      openParentDetails(element);
+      element.scrollIntoView();
     };
     window.addEventListener("hashchange", handler, false);
     handler();

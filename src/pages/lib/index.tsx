@@ -2,7 +2,7 @@
 /** @jsxImportSource @emotion/react */
 import { SymbolFlags } from "typescript";
 import { getDocsInfo } from "../../extract";
-import { highlighterPromise } from "../../extract/markdown";
+import { highlighterPromise } from "../../extract/highlight";
 import { ts } from "../../extract/ts";
 import { DocsContext, DocsContextType } from "../../lib/DocsContext";
 

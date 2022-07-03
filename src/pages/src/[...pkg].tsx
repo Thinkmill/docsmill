@@ -1,6 +1,5 @@
-import { useMonaco } from "@monaco-editor/react";
-import { useEffect, useRef } from "react";
-import type monaco from "monaco-editor/esm/vs/editor/editor.api";
+/** @jsxRuntime automatic */
+/** @jsxImportSource @emotion/react */
 import { Expandable, Item } from "../../components/expandable";
 import { assertNever } from "../../lib/assert";
 import Link from "next/link";
@@ -12,86 +11,83 @@ import {
   GetStaticPropsResult,
 } from "next";
 import { getPkgWithVersionPortionOfParms } from "../../npm/params";
+import {
+  extensionsToLang,
+  highlight,
+  highlighterPromise,
+} from "../../extract/highlight";
+import { Line, Token } from "../../components/highlight";
+import { css } from "@emotion/react";
+import { codeFont, tokens } from "../../lib/theme.css";
 
-function SrcInner({
-  monaco,
-  file,
-}: {
-  monaco: NonNullable<ReturnType<typeof useMonaco>>;
-  file: { name: string; content: string } | null;
-}) {
-  const ref = useRef<null | HTMLDivElement>(null);
-  const editorRef = useRef<null | monaco.editor.ICodeEditor>();
-  useEffect(() => {
-    if (!ref.current) return;
-    const editor = monaco.editor.create(ref.current, {
-      model: null,
-      domReadOnly: true,
-      readOnly: true,
-      automaticLayout: true,
-    });
-    monaco.languages.typescript.typescriptDefaults.setDiagnosticsOptions({
-      noSuggestionDiagnostics: true,
-    });
-    monaco.languages.typescript.javascriptDefaults.setDiagnosticsOptions({
-      noSuggestionDiagnostics: true,
-    });
-    editorRef.current = editor;
-    // const editorService = (editor as any)._codeEditorService;
-    // const openEditorBase = editorService.openCodeEditor.bind(editorService);
-    // editorService.openCodeEditor = async (
-    //   input: {
-    //     resource: monaco.Uri;
-    //     options: { selection: monaco.Selection };
-    //   },
-    //   source: any
-    // ) => {
-    //   const result = await openEditorBase(input, source);
-    //   if (result === null) {
-    //     let model = monaco.editor.getModel(input.resource);
-    //     editor.setModel(model);
-    //     editor.revealRangeInCenterIfOutsideViewport({
-    //       startLineNumber: input.options.selection.startLineNumber,
-    //       endLineNumber: input.options.selection.endLineNumber,
-    //       startColumn: input.options.selection.startColumn,
-    //       endColumn: input.options.selection.endColumn,
-    //     });
-    //     editor.setPosition({
-    //       lineNumber: input.options.selection.startLineNumber,
-    //       column: input.options.selection.startColumn,
-    //     });
-    //   }
-    //   return result;
-    // };
-    return () => {
-      editor.dispose();
-    };
-  }, []);
-  useEffect(() => {
-    if (ref.current && editorRef.current) {
-      for (const model of monaco.editor.getModels()) {
-        model.dispose();
-      }
-      if (file) {
-        const model = monaco.editor.createModel(
-          file.content,
-          undefined,
-          monaco.Uri.file(file.name)
-        );
-        editorRef.current.setModel(model);
-        if (window.location.hash.startsWith("#L")) {
-          const lineNumber = parseInt(window.location.hash.replace("#L", ""));
-          if (lineNumber) {
-            editorRef.current.revealLineNearTop(lineNumber);
-            editorRef.current.setPosition({ lineNumber, column: 1 });
-            editorRef.current.focus();
-          }
-        }
-      }
-    }
-  }, [monaco, file]);
+const styles = {
+  table: css(
+    {
+      border: "none",
+      borderCollapse: "collapse",
+      whiteSpace: "pre",
+      margin: 8,
+      code: codeFont,
+    },
+    codeFont
+  ),
+};
 
-  return <div style={{ height: "100%" }} ref={ref} />;
+function SrcInner({ content }: { content: string | Token[][] }) {
+  const highlightedTokens =
+    typeof content === "string"
+      ? content.split(/\r?\n/).map((x): Token[] => [[x, null]])
+      : content;
+  return (
+    <div
+      css={{
+        margin: 16,
+        backgroundColor: tokens.color.gray50,
+        border: `1px solid ${tokens.color.gray200}`,
+        borderRadius: 4,
+        "& tr": {
+          scrollMarginTop: 12 * 10,
+          counterIncrement: "line",
+          ":target": {
+            backgroundColor: "#ffff54ba",
+          },
+        },
+        "& a": {
+          "::before": {
+            display: "block",
+            content: "counter(line)",
+            top: 0,
+            left: 0,
+            textAlign: "right",
+          },
+          color: tokens.color.gray600,
+          textDecoration: "none",
+        },
+        "& td:nth-of-type(2)": {
+          padding: "0 0 0 8px",
+        },
+        overflowX: "scroll",
+        height: "max-content",
+      }}
+    >
+      <table css={styles.table}>
+        <tbody>
+          {highlightedTokens.map((line, i) => (
+            <tr id={`L${i + 1}`} key={i}>
+              <td>
+                <a href={`#L${i + 1}`}></a>
+              </td>
+              <td>
+                <code>
+                  <Line tokens={line} />
+                </code>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
 }
 
 function FileStructure({ node }: { node: File | Directory }) {
@@ -136,30 +132,21 @@ type Directory = {
 
 type SrcProps = {
   meta: Directory;
-  content: string;
+  content: string | Token[][];
   name: string;
 };
 
 export default function Src(props: SrcProps) {
-  const monaco = useMonaco();
-  if (monaco) {
-    return (
-      <div style={{ display: "flex" }}>
-        <div style={{ overflow: "auto", height: "100vh" }}>
-          {props.meta.files.map((x) => (
-            <FileStructure key={x.path} node={x} />
-          ))}
-        </div>
-        <div style={{ flex: 1 }}>
-          <SrcInner
-            monaco={monaco}
-            file={{ content: props.content, name: props.name }}
-          />
-        </div>
+  return (
+    <div style={{ display: "grid", gridTemplateColumns: "1fr 4fr" }}>
+      <div>
+        {props.meta.files.map((x) => (
+          <FileStructure key={x.path} node={x} />
+        ))}
       </div>
-    );
-  }
-  return "Loading...";
+      <SrcInner content={props.content} />
+    </div>
+  );
 }
 
 export function getStaticPaths(): GetStaticPathsResult {
@@ -173,6 +160,8 @@ export async function getStaticProps({
   if (res.kind === "handled") {
     return res.result;
   }
+  await highlighterPromise;
+  const filepath = res.restParams.join("/");
   const [meta, content] = await Promise.all([
     fetch(`https://unpkg.com/${res.pkg}@${res.version}/?meta`).then((x) =>
       x.json()
@@ -183,7 +172,16 @@ export async function getStaticProps({
           `https://unpkg.com/${res.pkg}@${res.version}/${res.restParams.join(
             "/"
           )}`
-        ).then((x) => x.text()),
+        )
+          .then((x) => x.text())
+          .then((x) => {
+            const extension = filepath.match(/\.([^.]+)$/)?.[1];
+            const lang = extensionsToLang.get(extension || "");
+            if (lang !== undefined) {
+              return highlight(x, lang);
+            }
+            return x;
+          }),
   ]);
   return {
     props: { meta, content, name: res.restParams.join("/") },

@@ -8,18 +8,8 @@ import * as styles from "./markdown.css";
 import Link from "next/link";
 import { nonRootSymbolReference } from "./symbol-references.css";
 import { SymbolId } from "../lib/types";
-import type { FontStyle } from "shiki";
 import { Syntax } from "./core/syntax";
-
-function isTokens(
-  tokens: any
-): tokens is (readonly [
-  content: string,
-  color: string | null,
-  fontStyle?: FontStyle.Italic | FontStyle.Bold | FontStyle.Underline
-])[][] {
-  return Array.isArray(tokens);
-}
+import { isTokens, Line } from "./highlight";
 
 export const markdownComponents: ReactMarkdownOptions["components"] = {
   code: function CodeElement(props) {
@@ -34,27 +24,7 @@ export const markdownComponents: ReactMarkdownOptions["components"] = {
             {allTokens.map((tokens, i) => {
               return (
                 <div key={i}>
-                  {tokens.map((token, i) => {
-                    const style: import("react").CSSProperties = {
-                      color: token[1] ?? undefined,
-                    };
-                    if (token[2] !== undefined) {
-                      if (token[2] & 1) {
-                        style.fontStyle = "italic";
-                      }
-                      if (token[2] & 2) {
-                        style.fontWeight = "bold";
-                      }
-                      if (token[2] & 4) {
-                        style.textDecoration = "underline";
-                      }
-                    }
-                    return (
-                      <span key={i} style={style}>
-                        {token[0]}
-                      </span>
-                    );
-                  })}
+                  <Line tokens={tokens} />
                 </div>
               );
             })}
