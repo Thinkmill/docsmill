@@ -3,17 +3,11 @@
 import { ReactNode } from "react";
 
 import * as styles from "./layout.css";
-import dynamic from "next/dynamic";
-
-const PackageSearch = dynamic(import("./package-search"), { ssr: false });
 
 export function Header({ packageName }: { packageName: string }) {
   return (
     <header css={styles.header}>
-      <h1 css={styles.headerHeading}>{packageName} API Documentation</h1>
-      <div css={styles.headerSearch}>
-        <PackageSearch />
-      </div>
+      <h1 css={styles.headerHeading}>{packageName}</h1>
     </header>
   );
 }

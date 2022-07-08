@@ -1,7 +1,6 @@
 import { Global } from "@emotion/react";
 import { AppProps } from "next/app";
 import { globalStyles } from "../lib/theme.css";
-import "@algolia/autocomplete-theme-classic";
 import { useEffect } from "react";
 import Router from "next/router";
 
@@ -30,8 +29,10 @@ function openParentDetails(element: HTMLElement) {
 function MyApp({ Component, pageProps }: AppProps) {
   useEffect(() => {
     const handler = () => {
-      // pushState doesn't update :target, assigning window.location.hash does though
-      window.location.hash = window.location.hash;
+      if (window.location.hash) {
+        // pushState doesn't update :target, assigning window.location.hash does though
+        window.location.hash = window.location.hash;
+      }
     };
     Router.events.on("routeChangeComplete", handler);
     return () => {

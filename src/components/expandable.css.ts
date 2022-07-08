@@ -62,4 +62,9 @@ export const itemIcon = style({
 export const item = style({
   paddingRight: 16,
   display: "flex",
+  whiteSpace: "nowrap",
+  "& *": {
+    textOverflow: "ellipsis",
+    overflow: "hidden",
+  },
 });

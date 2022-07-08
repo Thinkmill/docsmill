@@ -11,4 +11,5 @@ export const highlightedPart = style({
 
 export const attribution = style({
   marginTop: 4,
+  marginLeft: 4,
 });

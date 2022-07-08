@@ -4,6 +4,7 @@ import { tokens } from "../lib/theme.css";
 export const header = style({
   display: "flex",
   justifyContent: "space-between",
+  alignItems: "center",
   flexWrap: "wrap",
   padding: "1rem",
   backgroundColor: tokens.color.gray50,

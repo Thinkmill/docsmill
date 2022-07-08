@@ -1,190 +1,171 @@
 /** @jsxRuntime automatic */
 /** @jsxImportSource @emotion/react */
-import { BaseItem } from "@algolia/autocomplete-core";
-import {
-  autocomplete,
-  AutocompleteApi,
-  AutocompleteOptions,
-  getAlgoliaResults,
-} from "@algolia/autocomplete-js";
-import algoliasearch from "algoliasearch";
-import { createElement, useEffect, useRef, Fragment, useMemo } from "react";
-import { render } from "react-dom";
-import {
-  NPM_SEARCH_ALGOLIA_API_KEY,
-  NPM_SEARCH_ALGOLIA_APP_ID,
-  NPM_SEARCH_ALGOLIA_INDEX,
-} from "../lib/constants";
-import { parseAlgoliaHitHighlight } from "@algolia/autocomplete-preset-algolia";
+import { memo, useEffect, useId, useState } from "react";
+import { components as defaultComponents, Props } from "react-select";
+import Select from "react-select/base";
 import * as styles from "./package-search.css";
-import { useRouter } from "next/router";
 import { getExternalPackageUrl } from "./symbol-references";
+import Router from "next/router";
 
-const searchClient = algoliasearch(
-  NPM_SEARCH_ALGOLIA_APP_ID,
-  NPM_SEARCH_ALGOLIA_API_KEY,
-  // this avoids preflight requests
-  { authMode: 0 }
-);
+const NPM_SEARCH_ALGOLIA_APP_ID = "OFCNCOG2CU";
+const NPM_SEARCH_ALGOLIA_API_KEY = "0868500922f7d393d8d59fc283a82f2e";
+const NPM_SEARCH_ALGOLIA_INDEX = "npm-search";
 
-export function Autocomplete<TItem extends BaseItem>({
-  apiRef,
-  ...props
-}: Omit<AutocompleteOptions<TItem>, "container" | "renderer" | "render"> & {
-  apiRef?: (val: AutocompleteApi<TItem> | null) => void;
-}) {
-  const containerRef = useRef(null);
-  const searchRef = useRef<AutocompleteApi<TItem> | null>(null);
-
-  useEffect(() => {
-    if (!containerRef.current) {
-      return undefined;
-    }
-
-    const search = autocomplete({
-      container: containerRef.current!,
-      renderer: { createElement: createElement as any, Fragment },
-      render({ children }, root) {
-        render(children as any, root);
-      },
-      ...props,
-    });
-    searchRef.current = search;
-
-    return () => {
-      search.destroy();
-    };
-  }, []);
-
-  useEffect(() => {
-    searchRef.current?.update(props);
-    apiRef?.(searchRef.current);
-  });
-
-  return <div ref={containerRef} />;
-}
+const algoliaQueryURL = `https://${NPM_SEARCH_ALGOLIA_APP_ID}-dsn.algolia.net/1/indexes/${NPM_SEARCH_ALGOLIA_INDEX}/query?x-algolia-api-key=${NPM_SEARCH_ALGOLIA_API_KEY}&x-algolia-application-id=${NPM_SEARCH_ALGOLIA_APP_ID}`;
 
 type Item = {
-  name: string;
+  objectID: string;
   tags: { latest: string; [key: string]: string };
-  _highlightResult?: {};
+  _highlightResult: {
+    name: {
+      value: string;
+    };
+  };
   types: {
     ts: false | "included" | "definitely-typed";
   };
 };
 
-export function PackageSearch({ autoFocus }: { autoFocus?: boolean }) {
-  const router = useRouter();
-  const apiRef = useRef<AutocompleteApi<Item> | null>(null);
-  return (
-    <div css={{ display: "flex" }}>
-      <span css={{ flex: 1 }}>
-        {useMemo(
-          () => (
-            <Autocomplete<Item>
-              placeholder={"Search for an npm package"}
-              getSources={({ query, setQuery, setStatus }) => [
-                {
-                  sourceId: "packages",
-                  getItems() {
-                    return getAlgoliaResults({
-                      searchClient,
-                      queries: [
-                        {
-                          indexName: NPM_SEARCH_ALGOLIA_INDEX,
-                          query,
-                          params: {
-                            hitsPerPage: 10,
-                            // these are purely optimisations to reduce the amount that's downloaded
-                            // you can temporarily remove them to see all the data
-                            attributesToRetrieve: ["name", "tags", "types"],
-                            attributesToHighlight: ["name"],
-                          },
-                        },
-                      ],
-                    });
-                  },
-                  onSelect(item) {
-                    setStatus("stalled");
-                    router.push(item.itemUrl!).then(() => {
-                      setQuery("");
-                      setStatus("idle");
-                      (document.activeElement as any)?.blur();
-                    });
-                  },
-                  getItemUrl({ item }) {
-                    return getExternalPackageUrl(item.name, item.tags.latest);
-                  },
-                  templates: {
-                    footer() {
-                      return attribution;
-                    },
-
-                    item: function SearchItem({ item }) {
-                      const parsedHighlight = parseAlgoliaHitHighlight({
-                        hit: item,
-                        attribute: "name",
-                      });
-                      return (
-                        <div css={styles.searchItem}>
-                          <div>
-                            <span>
-                              {parsedHighlight.map(function SearchHighlightPart(
-                                part,
-                                i
-                              ) {
-                                return (
-                                  <span
-                                    css={
-                                      part.isHighlighted
-                                        ? styles.highlightedPart
-                                        : undefined
-                                    }
-                                    key={i}
-                                  >
-                                    {part.value}
-                                  </span>
-                                );
-                              })}
-                            </span>
-                            <div>
-                              <small>{item.tags.latest}</small>
-                            </div>
-                          </div>
-                          <span>
-                            {item.types.ts === "included"
-                              ? "Included Types"
-                              : item.types.ts === "definitely-typed"
-                              ? "DefinitelyTyped"
-                              : "No Types"}
-                          </span>
-                        </div>
-                      );
-                    },
-                  },
-                },
-              ]}
-              navigator={{
-                navigate({ itemUrl }) {
-                  apiRef.current?.setStatus("stalled");
-                  router.push(itemUrl).then(() => {
-                    apiRef.current?.setQuery("");
-                    apiRef.current?.setStatus("idle");
-                  });
-                },
-              }}
-              autoFocus={autoFocus}
-              apiRef={(val) => {
-                apiRef.current = val;
-              }}
-            />
-          ),
-          [router.push]
-        )}
-      </span>
-    </div>
-  );
+function parseHitHighlight(highlightedValue: string): string[] {
+  const preTagParts = highlightedValue.split("<em>");
+  const firstValue = preTagParts.shift();
+  const parts = firstValue ? [firstValue] : [];
+  for (const part of preTagParts) {
+    parts.push(...part.split("</em>"));
+  }
+  return parts;
 }
+
+const components: Props<Item, false>["components"] = {
+  MenuList({ children, ...props }) {
+    return (
+      <defaultComponents.MenuList {...props}>
+        {children}
+        {attribution}
+      </defaultComponents.MenuList>
+    );
+  },
+  Option(props) {
+    return (
+      <defaultComponents.Option {...props}>
+        <div css={styles.searchItem}>
+          <div>
+            <span>
+              {parseHitHighlight(props.data._highlightResult.name.value).map(
+                function SearchHighlightPart(part, i) {
+                  if (part === "") return;
+                  if (i % 2) {
+                    return part;
+                  }
+                  return (
+                    <span css={styles.highlightedPart} key={i}>
+                      {part}
+                    </span>
+                  );
+                }
+              )}
+            </span>
+            <div>
+              <small>{props.data.tags.latest}</small>
+            </div>
+          </div>
+          <span>
+            {props.data.types.ts === "included"
+              ? "Included Types"
+              : props.data.types.ts === "definitely-typed"
+              ? "DefinitelyTyped"
+              : "No Types"}
+          </span>
+        </div>
+      </defaultComponents.Option>
+    );
+  },
+};
+
+const reactSelectStyles: Props<Item, false>["styles"] = {
+  option: (base) => ({
+    ...base,
+    padding: "0px 12px",
+  }),
+};
+
+const getName = (item: Item) => item.objectID;
+
+export const PackageSearch = memo(function PackageSearch(props: {
+  autoFocus?: boolean;
+}) {
+  const [options, setOptions] = useState<Item[]>([]);
+  const [menuIsOpen, setMenuIsOpen] = useState(false);
+  const [inputValue, setInputValue] = useState("");
+  const query = inputValue.trim();
+  if (query === "" && options.length) {
+    setOptions([]);
+  }
+  useEffect(() => {
+    if (query === "") {
+      return;
+    }
+    const params = new URLSearchParams();
+    params.set("query", query);
+    params.set("hitsPerPage", "10");
+    params.set("attributesToRetrieve", "tags,types");
+    params.set("attributesToHighlight", "name");
+    const abortController = new AbortController();
+    fetch(algoliaQueryURL, {
+      method: "POST",
+      body: JSON.stringify({ params: params.toString() }),
+      signal: abortController.signal,
+    })
+      .then((x) => x.json())
+      .then((x) => {
+        if (!abortController.signal.aborted) {
+          setOptions(x.hits);
+        }
+      })
+      .catch(() => {});
+    return () => {
+      abortController.abort();
+    };
+  }, [query]);
+
+  const [loadingPage, setLoadingPage] = useState<string | null>(null);
+  return (
+    <Select<Item>
+      instanceId={useId()}
+      getOptionLabel={getName}
+      getOptionValue={getName}
+      placeholder="Search for an npm package"
+      components={components}
+      styles={reactSelectStyles}
+      isLoading={loadingPage !== null}
+      isDisabled={loadingPage !== null}
+      onChange={(option) => {
+        if (option === null) return;
+        setLoadingPage(option.objectID);
+        Router.push(
+          getExternalPackageUrl(option.objectID, option.tags.latest)
+        ).finally(() => {
+          setLoadingPage(null);
+        });
+      }}
+      autoFocus={props.autoFocus}
+      onMenuClose={() => {
+        setMenuIsOpen(false);
+      }}
+      onMenuOpen={() => {
+        setMenuIsOpen(true);
+      }}
+      filterOption={() => true}
+      menuIsOpen={menuIsOpen && !!options.length}
+      onInputChange={(value) => {
+        setInputValue(value);
+      }}
+      options={options}
+      inputValue={inputValue}
+      value={loadingPage ? ({ objectID: loadingPage } as any) : null}
+    />
+  );
+});
 
 const attribution = (
   <div css={styles.attribution}>
