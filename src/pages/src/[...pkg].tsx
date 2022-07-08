@@ -128,9 +128,9 @@ function FileStructure({ entry, path }: { entry: Entry; path: string[] }) {
         href={`/src/${getPkgWithVersionPortionOfParms(router.query.pkg)}/${path
           .concat(entry)
           .join("/")}`}
-        passHref
+        title={entry}
       >
-        <a title={entry}>{entry}</a>
+        {entry}
       </Link>
     );
   }

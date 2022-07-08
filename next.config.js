@@ -30,6 +30,9 @@ const withBundleAnalyzer =
 /** @type {import('next').NextConfig} */
 const config = {
   optimizeFonts: false,
+  experimental: {
+    newNextLinkBehavior: true,
+  },
 };
 
 module.exports = withBundleAnalyzer({

@@ -248,11 +248,9 @@ function Exports<Docs>({
                           pkg: exported.from,
                           version: exported.version,
                         })}
-                        passHref
+                        css={symbolReferenceStyles.nonRootSymbolReference}
                       >
-                        <a css={symbolReferenceStyles.nonRootSymbolReference}>
-                          {exportInfo.name}
-                        </a>
+                        {exportInfo.name}
                       </Link>
                       ,
                     </div>
@@ -263,11 +261,9 @@ function Exports<Docs>({
               <Syntax kind="keyword">from </Syntax>
               <Link
                 href={getExternalPackageUrl(exported.from, exported.version)}
-                passHref
+                css={symbolReferenceStyles.rootSymbolReference}
               >
-                <a css={symbolReferenceStyles.rootSymbolReference}>
-                  {JSON.stringify(exported.from)}
-                </a>
+                {JSON.stringify(exported.from)}
               </Link>
             </div>
           );

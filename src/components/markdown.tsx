@@ -59,8 +59,11 @@ export const markdownComponents: ReactMarkdownOptions["components"] = {
       ) {
         return (
           <Syntax kind="bracket">
-            <Link href={getExternalSymbolUrl(external)} passHref>
-              <a css={nonRootSymbolReference}>{text}</a>
+            <Link
+              href={getExternalSymbolUrl(external)}
+              css={nonRootSymbolReference}
+            >
+              {text}
             </Link>
           </Syntax>
         );
@@ -73,8 +76,8 @@ export const markdownComponents: ReactMarkdownOptions["components"] = {
     const external = externalSymbols[fullName];
     if (external) {
       return (
-        <Link href={getExternalSymbolUrl(external)} passHref>
-          <a css={styles.a}>{props.children}</a>
+        <Link href={getExternalSymbolUrl(external)} css={styles.a}>
+          {props.children}
         </Link>
       );
     }

@@ -90,15 +90,16 @@ export function SymbolReference({ id, name }: { name: string; id: SymbolId }) {
         <Syntax kind="keyword">import</Syntax>(
         <Link
           href={getExternalPackageUrl(external.pkg, external.version)}
-          passHref
+          css={styles.rootSymbolReference}
         >
-          <a css={styles.rootSymbolReference}>
-            {JSON.stringify(pkgDisplayName)}
-          </a>
+          {JSON.stringify(pkgDisplayName)}
         </Link>
         ).
-        <Link href={getExternalSymbolUrl(external)} passHref>
-          <a css={styles.nonRootSymbolReference}>{name}</a>
+        <Link
+          href={getExternalSymbolUrl(external)}
+          css={styles.nonRootSymbolReference}
+        >
+          {name}
         </Link>
       </Syntax>
     );

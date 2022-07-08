@@ -70,7 +70,7 @@ export function RenderRootSymbol<Docs>({
                     location.line + 1
                   }`}
                 >
-                  <a>decl</a>
+                  decl
                 </Link>
                 {location.src && (
                   <Link
@@ -78,7 +78,7 @@ export function RenderRootSymbol<Docs>({
                       location.src.line + 1
                     }`}
                   >
-                    <a>source</a>
+                    source
                   </Link>
                 )}
               </Fragment>
