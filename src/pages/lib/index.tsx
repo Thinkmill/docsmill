@@ -1,5 +1,6 @@
-/** @jsxRuntime automatic */
-/** @jsxImportSource @emotion/react */
+/** @jsxRuntime classic */
+/** @jsx jsx */
+import { jsx } from "@emotion/react";
 import { SymbolFlags } from "typescript";
 import { getDocsInfo } from "../../extract";
 import { highlighterPromise } from "../../extract/highlight";

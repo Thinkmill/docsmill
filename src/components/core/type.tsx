@@ -1,5 +1,6 @@
-/** @jsxRuntime automatic */
-/** @jsxImportSource @emotion/react */
+/** @jsxRuntime classic */
+/** @jsx jsx */
+import { jsx } from "@emotion/react";
 import { Fragment, ReactElement } from "react";
 import { codeFont } from "../../lib/theme.css";
 import { Syntax } from "./syntax";

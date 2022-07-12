@@ -1,5 +1,6 @@
-/** @jsxRuntime automatic */
-/** @jsxImportSource @emotion/react */
+/** @jsxRuntime classic */
+/** @jsx jsx */
+import { jsx } from "@emotion/react";
 import { memo, useEffect, useId, useState } from "react";
 import { components as defaultComponents, Props } from "react-select";
 import Select from "react-select/base";

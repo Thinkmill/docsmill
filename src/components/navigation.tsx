@@ -1,5 +1,6 @@
-/** @jsxRuntime automatic */
-/** @jsxImportSource @emotion/react */
+/** @jsxRuntime classic */
+/** @jsx jsx */
+import { jsx } from "@emotion/react";
 import { useDocsContext } from "../lib/DocsContext";
 import { SymbolReference } from "./symbol-references";
 import { getGroupedExports } from "../lib/utils";

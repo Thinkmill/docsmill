@@ -1,5 +1,6 @@
-/** @jsxRuntime automatic */
-/** @jsxImportSource @emotion/react */
+/** @jsxRuntime classic */
+/** @jsx jsx */
+import { jsx } from "@emotion/react";
 import Link from "next/link";
 import { useRouter } from "next/router";
 import { redirectToPkgVersion } from "../../npm/version-redirect";

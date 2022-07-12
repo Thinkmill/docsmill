@@ -1,5 +1,6 @@
-/** @jsxRuntime automatic */
-/** @jsxImportSource @emotion/react */
+/** @jsxRuntime classic */
+/** @jsx jsx */
+import { jsx } from "@emotion/react";
 import { Options as ReactMarkdownOptions } from "react-markdown";
 import { codeFont } from "../lib/theme.css";
 import { getExternalSymbolUrl, SymbolReference } from "./symbol-references";
