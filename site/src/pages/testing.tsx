@@ -5,6 +5,6 @@ import { getInfo } from "../local-extract";
 export async function getStaticProps() {
   await highlighterPromise;
   return {
-    props: getInfo("src/test.ts"),
+    props: getInfo("src/test-input.ts"),
   };
 }

@@ -30,6 +30,9 @@ const withBundleAnalyzer =
 /** @type {import('next').NextConfig} */
 const config = {
   optimizeFonts: false,
+  typescript: {
+    tsconfigPath: "../tsconfig.json",
+  },
   experimental: {
     newNextLinkBehavior: true,
   },

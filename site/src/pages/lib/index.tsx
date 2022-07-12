@@ -78,7 +78,7 @@ import { assert } from "../../lib/assert";
 export async function getStaticProps() {
   await highlighterPromise;
 
-  const { compilerOptions, rootNames } = getFromTsConfig("./tsconfig.json");
+  const { compilerOptions, rootNames } = getFromTsConfig("../tsconfig.json");
 
   const host = ts.createCompilerHost(compilerOptions);
 

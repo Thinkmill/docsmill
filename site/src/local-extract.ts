@@ -46,7 +46,7 @@ export function getFromTsConfig(tsConfigFilePath: string) {
 }
 
 export function getInfo(filename: string) {
-  const { compilerOptions, rootNames } = getFromTsConfig("./tsconfig.json");
+  const { compilerOptions, rootNames } = getFromTsConfig("../tsconfig.json");
   const program = ts.createProgram({ options: compilerOptions, rootNames });
   const resolved = resolvePath(process.cwd(), filename);
   const sourceFile = program.getSourceFile(resolved);
