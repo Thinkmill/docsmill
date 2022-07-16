@@ -38,6 +38,10 @@ const config = {
   },
 };
 
-module.exports = withBundleAnalyzer({
-  enabled: process.env.ANALYZE === "true",
-})(config);
+const withPreconstruct = require("@preconstruct/next");
+
+module.exports = withPreconstruct(
+  withBundleAnalyzer({
+    enabled: process.env.ANALYZE === "true",
+  })(config)
+);

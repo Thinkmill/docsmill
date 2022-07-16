@@ -1,0 +1,4 @@
+{
+  "main": "dist/docsmill-extract-core-types.cjs.js",
+  "module": "dist/docsmill-extract-core-types.esm.js"
+}

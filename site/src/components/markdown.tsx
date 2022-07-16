@@ -8,7 +8,7 @@ import { useDocsContext } from "../lib/DocsContext";
 import * as styles from "./markdown.css";
 import Link from "next/link";
 import { nonRootSymbolReference } from "./symbol-references.css";
-import { SymbolId } from "../lib/types";
+import { SymbolId } from "@docsmill/extract-core/types";
 import { Syntax } from "./core/syntax";
 import { isTokens, Line } from "./highlight";
 

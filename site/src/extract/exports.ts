@@ -1,4 +1,4 @@
-import { SerializedDeclaration, SymbolId } from "../lib/types";
+import { SerializedDeclaration, SymbolId } from "@docsmill/extract-core/types";
 import { objectEntriesAssumeNoExcessProps } from "../lib/utils";
 
 type ExportName = string;

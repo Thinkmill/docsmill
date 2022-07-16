@@ -1,4 +1,4 @@
-import { SerializedDeclaration, SymbolId } from "./types";
+import { SerializedDeclaration, SymbolId } from "@docsmill/extract-core/types";
 import { DocsContextType } from "./DocsContext";
 
 export const objectEntriesAssumeNoExcessProps: <T>(

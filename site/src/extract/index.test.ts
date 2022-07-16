@@ -1,17 +1,16 @@
 import { assert, assertNever } from "../lib/assert";
-import {
-  Parameter,
-  SerializedDeclaration,
-  SerializedType,
-  SymbolId,
-  TypeParam,
-} from "../lib/types";
-import { getCoreDocsInfo } from "./core";
-import { getSymbolIdentifier } from "./core/utils";
+import { getCoreDocsInfo, getSymbolIdentifier } from "@docsmill/extract-core";
 import { ts } from "./ts";
 import path from "path";
 import { memoize } from "../npm/utils";
 import { objectEntriesAssumeNoExcessProps } from "../lib/utils";
+import {
+  SymbolId,
+  SerializedDeclaration,
+  SerializedType,
+  Parameter,
+  TypeParam,
+} from "@docsmill/extract-core/types";
 
 function getPrinted(filename: string) {
   const program = ts.createProgram({ options: {}, rootNames: [filename] });

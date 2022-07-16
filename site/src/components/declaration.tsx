@@ -4,7 +4,7 @@ import { jsx } from "@emotion/react";
 import { Fragment } from "react";
 import { DocsContextType, useDocsContext } from "../lib/DocsContext";
 import { codeFont } from "../lib/theme.css";
-import { SerializedDeclaration, SymbolId } from "../lib/types";
+import { SerializedDeclaration, SymbolId } from "@docsmill/extract-core/types";
 import { Indent } from "./core/indent";
 import {
   getExternalPackageUrl,

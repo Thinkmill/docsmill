@@ -1,7 +1,7 @@
-import { ts } from "../ts";
+import { ts } from "./ts";
 import { ExtractionHost, getTypeChecker } from ".";
-import { assert } from "../../lib/assert";
-import { SerializedType } from "../../lib/types";
+import { assert } from "emery/assertions";
+import { SerializedType } from "./types";
 import { convertTypeNode } from "./convert-node";
 
 export function convertType<Docs>(

@@ -10,7 +10,7 @@ import {
   TypeParam,
   Parameter,
   SymbolId,
-} from "../../lib/types";
+} from "@docsmill/extract-core/types";
 import { css } from "@emotion/react";
 import { codeFontStyleObj } from "../../lib/theme.css";
 import { assertNever } from "../../lib/assert";

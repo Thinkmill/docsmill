@@ -4,7 +4,7 @@ import { getDocsInfo } from "./extract";
 import { collectEntrypointsOfPackage } from "./npm/utils";
 import { collectUnresolvedPackages } from "./npm";
 import { getDirectoryPath, resolvePath } from "./extract/path";
-import { SymbolId } from "./lib/types";
+import { SymbolId } from "@docsmill/extract-core/types";
 import { objectEntriesAssumeNoExcessProps } from "./lib/utils";
 
 const getCanonicalFileName = ts.sys.useCaseSensitiveFileNames

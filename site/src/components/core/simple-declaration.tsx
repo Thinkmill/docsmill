@@ -8,7 +8,7 @@ import {
   ClassMember,
   ConstructorDeclaration,
   SimpleSerializedDeclaration,
-} from "../../lib/types";
+} from "@docsmill/extract-core/types";
 import { Indent } from "./indent";
 import { Syntax } from "./syntax";
 import { TypeParams, Params, Type, Components } from "./type";

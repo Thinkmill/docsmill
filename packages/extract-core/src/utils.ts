@@ -1,8 +1,8 @@
-import { ts } from "../ts";
+import { ts } from "./ts";
 import { convertTypeNode } from "./convert-node";
 import { convertType } from "./convert-type";
 import hashString from "@emotion/hash";
-import { assert } from "../../lib/assert";
+import { assert } from "emery/assertions";
 import { ExtractionHost, getTypeChecker } from ".";
 import {
   TypeParam,
@@ -10,7 +10,7 @@ import {
   Parameter,
   SerializedType,
   SymbolId,
-} from "../../lib/types";
+} from "./types";
 
 export function getTypeParameters<Docs>(
   node: ts.Node & {

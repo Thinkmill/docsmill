@@ -1,4 +1,4 @@
-import { ts } from "../ts";
+import { ts } from "./ts";
 import {
   getTypeParameters,
   getParameters,
@@ -8,8 +8,8 @@ import {
   spreadTupleOrNone,
 } from "./utils";
 import { ExtractionHost, referenceSymbol } from ".";
-import { assert, assertNever } from "../../lib/assert";
-import { SerializedType, SymbolId, TupleElement } from "../../lib/types";
+import { assert, assertNever } from "emery/assertions";
+import { SerializedType, SymbolId, TupleElement } from "./types";
 
 function getModifierKind(
   modifier:

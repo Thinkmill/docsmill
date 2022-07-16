@@ -1,0 +1,23 @@
+{
+  "name": "@docsmill/extract-core",
+  "version": "0.0.0",
+  "main": "dist/docsmill-extract-core.cjs.js",
+  "module": "dist/docsmill-extract-core.esm.js",
+  "license": "MIT",
+  "private": true,
+  "exports": {
+    ".": "./dist/docsmill-extract-core.cjs.js"
+  },
+  "dependencies": {
+    "@emotion/hash": "^0.8.0",
+    "emery": "^1.4.1",
+    "typescript": "^4.7.4"
+  },
+  "preconstruct": {
+    "entrypoints": [
+      "index.ts",
+      "types.ts"
+    ]
+  },
+  "repository": "https://github.com/Thinkmill/docsmill"
+}

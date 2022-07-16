@@ -1,8 +1,15 @@
-import { ts } from "../ts";
-import { SerializedDeclaration } from "../../lib/types";
-import { convertDeclaration } from "../core/convert-declaration";
-import { assert, isNonEmptyArray } from "../../lib/assert";
+import { ts } from "./ts";
+import { SerializedDeclaration } from "./types";
+import { convertDeclaration } from "./convert-declaration";
+import { assert } from "emery/assertions";
+import { isNonEmptyArray } from "emery/guards";
 import { getSymbolIdentifier } from "./utils";
+
+export {
+  getSymbolIdentifier,
+  getAliasedSymbol,
+  getSymbolAtLocation,
+} from "./utils";
 
 export type ExtractionHost<Docs> = {
   referenceSymbol: (symbol: ts.Symbol) => void;

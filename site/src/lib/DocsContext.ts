@@ -1,5 +1,5 @@
 import { createContext, useContext } from "react";
-import { SerializedDeclaration, SymbolId } from "./types";
+import { SerializedDeclaration, SymbolId } from "@docsmill/extract-core/types";
 
 export type DocsContextType<Docs = unknown> = {
   symbols: Record<SymbolId, SerializedDeclaration<Docs>[]>;

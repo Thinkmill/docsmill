@@ -1,5 +1,5 @@
 import { assert } from "../lib/assert";
-import { SerializedDeclaration, SymbolId } from "../lib/types";
+import { SerializedDeclaration, SymbolId } from "@docsmill/extract-core/types";
 import {
   objectEntriesAssumeNoExcessProps,
   objectKeysAssumeNoExcessProps,

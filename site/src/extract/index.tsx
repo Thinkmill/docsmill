@@ -1,13 +1,13 @@
 import { ts } from "./ts";
 import { applyCanonicalExportNames, findCanonicalExportInfo } from "./exports";
-import { getSymbolIdentifier } from "./core/utils";
-import { SerializedDeclaration, SymbolId } from "../lib/types";
+import { SerializedDeclaration, SymbolId } from "@docsmill/extract-core/types";
 import { combinePaths } from "./path";
 import { getSymbolsForInnerBit } from "./symbols-for-inner-bit";
 import {
   getCoreDocsInfo,
   getCoreDocsInfoWithoutSimpleDeclarations,
-} from "./core";
+  getSymbolIdentifier,
+} from "@docsmill/extract-core";
 import { getGoodIdentifiers } from "./good-identifiers";
 import { getDocsImpl } from "./get-docs-impl";
 

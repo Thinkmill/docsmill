@@ -12,7 +12,7 @@ import { useDocsContext } from "../lib/DocsContext";
 import { Syntax } from "./core/syntax";
 import * as styles from "./symbol-references.css";
 import Link from "next/link";
-import { SymbolId } from "../lib/types";
+import { SymbolId } from "@docsmill/extract-core/types";
 
 const NamesInScopeContext = createContext<Map<string, SymbolId>>(new Map());
 

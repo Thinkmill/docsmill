@@ -2,7 +2,7 @@ import {
   getSymbolAtLocation,
   getAliasedSymbol,
   getSymbolIdentifier,
-} from "./core/utils";
+} from "@docsmill/extract-core";
 import { parseMarkdown } from "./markdown";
 import { ts } from "./ts";
 

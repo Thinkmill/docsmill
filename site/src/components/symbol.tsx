@@ -5,7 +5,7 @@ import { Fragment } from "react";
 import { DocsContextType } from "../lib/DocsContext";
 import { AddNameToScope, SymbolReference } from "./symbol-references";
 import * as styles from "./symbol.css";
-import { SymbolId } from "../lib/types";
+import { SymbolId } from "@docsmill/extract-core/types";
 import Link from "next/link";
 import { useRouter } from "next/router";
 import { getPkgWithVersionPortionOfParms } from "../npm/params";

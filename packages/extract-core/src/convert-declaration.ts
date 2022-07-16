@@ -1,6 +1,6 @@
-import { ts } from "../ts";
+import { ts } from "./ts";
 import { ExtractionHost, getTypeChecker, referenceSymbol } from ".";
-import { ClassMember, SerializedDeclaration, SymbolId } from "../../lib/types";
+import { ClassMember, SerializedDeclaration, SymbolId } from "./types";
 import { convertTypeNode } from "./convert-node";
 import { convertType } from "./convert-type";
 import {
@@ -13,7 +13,7 @@ import {
   getReturnType,
   spreadTupleOrNone,
 } from "./utils";
-import { assert } from "../../lib/assert";
+import { assert } from "emery/assertions";
 
 export function convertDeclaration<Docs>(
   compilerNode: ts.Node,
