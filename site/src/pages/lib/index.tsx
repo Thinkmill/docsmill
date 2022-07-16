@@ -6,7 +6,7 @@ import { getDocsInfo } from "../../extract";
 import { highlighterPromise } from "../../extract/highlight";
 import { ts } from "../../extract/ts";
 import { DocsContext, DocsContextType } from "../../lib/DocsContext";
-
+import { Components } from "@docsmill/print-core";
 import { RenderRootSymbol, RenderSymbolInfo } from "../../components/symbol";
 import { NavigationItem } from "../../components/navigation";
 import {
@@ -17,7 +17,6 @@ import {
 } from "../../components/layout";
 
 import { SymbolReference } from "../../components/symbol-references";
-import { Components } from "../../components/core/type";
 import { Docs } from "../../components/docs";
 
 const components: Components<import("hast").Content[]> = {

@@ -2,14 +2,13 @@
 /** @jsx jsx */
 import { jsx } from "@emotion/react";
 import { Options as ReactMarkdownOptions } from "react-markdown";
-import { codeFont } from "../lib/theme.css";
 import { getExternalSymbolUrl, SymbolReference } from "./symbol-references";
 import { useDocsContext } from "../lib/DocsContext";
 import * as styles from "./markdown.css";
 import Link from "next/link";
 import { nonRootSymbolReference } from "./symbol-references.css";
-import { SymbolId } from "@docsmill/extract-core/types";
-import { Syntax } from "./core/syntax";
+import { SymbolId } from "@docsmill/types";
+import { Syntax, codeFont } from "@docsmill/print-core";
 import { isTokens, Line } from "./highlight";
 
 export const markdownComponents: ReactMarkdownOptions["components"] = {

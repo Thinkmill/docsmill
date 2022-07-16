@@ -10,7 +10,7 @@ import { Contents, NavigationContainer, PageContainer } from "./layout";
 
 import { SymbolReference } from "./symbol-references";
 import { objectEntriesAssumeNoExcessProps } from "../lib/utils";
-import { Components } from "./core/type";
+import { Components } from "@docsmill/print-core";
 import { Docs } from "./docs";
 import { PackageHeader } from "./package-header";
 

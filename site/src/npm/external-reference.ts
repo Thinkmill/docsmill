@@ -1,7 +1,7 @@
 import ts from "typescript";
 import { getDocsInfoForDep, getDocsInfo } from "../extract";
 import { assert } from "../lib/assert";
-import { SymbolId } from "@docsmill/extract-core/types";
+import { SymbolId } from "@docsmill/types";
 import { memoize } from "./utils";
 
 export function getExternalReferenceHandler(

@@ -7,7 +7,7 @@ import { getGroupedExports } from "../lib/utils";
 import { nonRootSymbolReference } from "./symbol-references.css";
 import { assert } from "../lib/assert";
 import { Expandable, Item } from "./expandable";
-import { SymbolId } from "@docsmill/extract-core/types";
+import { SymbolId } from "@docsmill/types";
 
 export function Navigation({ rootSymbolName }: { rootSymbolName: SymbolId }) {
   const docContext = useDocsContext();

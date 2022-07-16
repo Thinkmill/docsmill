@@ -1,6 +1,6 @@
 import { ts } from "./ts";
 import { applyCanonicalExportNames, findCanonicalExportInfo } from "./exports";
-import { SerializedDeclaration, SymbolId } from "@docsmill/extract-core/types";
+import { SerializedDeclaration, SymbolId } from "@docsmill/types";
 import { combinePaths } from "./path";
 import { getSymbolsForInnerBit } from "./symbols-for-inner-bit";
 import {

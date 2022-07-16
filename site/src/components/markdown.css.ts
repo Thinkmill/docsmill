@@ -1,5 +1,6 @@
 import { css as style } from "@emotion/react";
-import { codeFont, tokens } from "../lib/theme.css";
+import { codeFont } from "@docsmill/print-core";
+import { tokens } from "../lib/theme.css";
 
 export const a = style({
   color: tokens.color.blue600,

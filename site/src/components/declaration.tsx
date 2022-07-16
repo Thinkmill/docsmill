@@ -3,24 +3,26 @@
 import { jsx } from "@emotion/react";
 import { Fragment } from "react";
 import { DocsContextType, useDocsContext } from "../lib/DocsContext";
-import { codeFont } from "../lib/theme.css";
-import { SerializedDeclaration, SymbolId } from "@docsmill/extract-core/types";
-import { Indent } from "./core/indent";
+import {
+  codeFont,
+  Indent,
+  Syntax,
+  SimpleDeclaration,
+  Components,
+} from "@docsmill/print-core";
+import { SerializedDeclaration, SymbolId } from "@docsmill/types";
 import {
   getExternalPackageUrl,
   getExternalSymbolUrl,
   SymbolReference,
 } from "./symbol-references";
-import { Syntax } from "./core/syntax";
 import * as styles from "./symbol.css";
 import { assert } from "../lib/assert";
 import { getGroupedExports } from "../lib/utils";
 import { RenderRootSymbol, RenderSymbolInfo } from "./symbol";
 import * as symbolReferenceStyles from "./symbol-references.css";
 import Link from "next/link";
-import { DeclarationName, SimpleDeclaration } from "./core/simple-declaration";
 import { css } from "@emotion/react";
-import { Components } from "./core/type";
 
 const enumMemberName = css(
   symbolReferenceStyles.nonRootSymbolReference,
@@ -49,7 +51,7 @@ export function Declaration<Docs>({
           {isExported ? (
             <Fragment>
               <Syntax kind="keyword">export * as </Syntax>
-              <DeclarationName name={decl.name} />
+              <Syntax kind="symbol">{decl.name}</Syntax>
               <Syntax kind="keyword"> from</Syntax>
             </Fragment>
           ) : (
@@ -77,7 +79,6 @@ export function Declaration<Docs>({
   if (decl.kind === "unknown") {
     return (
       <Fragment>
-        <DeclarationName name={decl.name} />
         <pre css={codeFont}>
           <code>{decl.content}</code>
         </pre>
@@ -94,7 +95,7 @@ export function Declaration<Docs>({
           {decl.const ? "const " : ""}
           enum{" "}
         </Syntax>
-        <DeclarationName name={decl.name} />
+        <Syntax kind="symbol">{decl.name}</Syntax>
         <Syntax kind="bracket">{" { "}</Syntax>
         {decl.members.map((memberId, i) => {
           const members = docInfo.symbols[memberId];
@@ -145,7 +146,7 @@ export function Declaration<Docs>({
           <Syntax kind="keyword">
             {isExported ? "export " : ""}namespace{" "}
           </Syntax>
-          <DeclarationName name={decl.name} />
+          <Syntax kind="symbol">{decl.name}</Syntax>
           <Syntax kind="bracket">{" {"}</Syntax>
         </div>
         <Exports

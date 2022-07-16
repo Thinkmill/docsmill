@@ -1,8 +1,5 @@
-/** @jsxRuntime classic */
-/** @jsx jsx */
-import { jsx } from "@emotion/react";
+import React from "react";
 import { Fragment, ReactElement } from "react";
-import { codeFont } from "../../lib/theme.css";
 import { Syntax } from "./syntax";
 import { Indent } from "./indent";
 import {
@@ -10,16 +7,15 @@ import {
   TypeParam,
   Parameter,
   SymbolId,
-} from "@docsmill/extract-core/types";
-import { css } from "@emotion/react";
-import { codeFontStyleObj } from "../../lib/theme.css";
-import { assertNever } from "../../lib/assert";
-
-const intrinsicStyles = css({ color: "#2c8093", ...codeFontStyleObj });
+} from "@docsmill/types";
+import { assertNever } from "emery/assertions";
 
 export type Components<Docs> = {
   Docs: (props: { docs: Docs }) => ReactElement | null;
-  SymbolReference: (props: { id: SymbolId; name: string }) => ReactElement;
+  SymbolReference: (props: {
+    id: SymbolId;
+    name: string;
+  }) => ReactElement | null;
 };
 
 export function Type<Docs>({
@@ -30,7 +26,7 @@ export function Type<Docs>({
   components: Components<Docs>;
 }): ReactElement {
   if (type.kind === "intrinsic") {
-    return <span css={intrinsicStyles}>{type.value}</span>;
+    return <Syntax kind="intrinsic">{type.value}</Syntax>;
   }
   if (type.kind === "reference") {
     return (
@@ -340,7 +336,11 @@ export function Type<Docs>({
   }
 
   if (type.kind === "raw") {
-    return <span css={[codeFont, { color: "red" }]}>{type.value}</span>;
+    return (
+      <Syntax kind="parameter">
+        <span style={{ color: "red" }}>{type.value}</span>
+      </Syntax>
+    );
   }
   assertNever(type);
 }

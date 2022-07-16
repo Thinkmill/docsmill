@@ -9,10 +9,10 @@ import {
   AnchorHTMLAttributes,
 } from "react";
 import { useDocsContext } from "../lib/DocsContext";
-import { Syntax } from "./core/syntax";
+import { Syntax } from "@docsmill/print-core";
 import * as styles from "./symbol-references.css";
 import Link from "next/link";
-import { SymbolId } from "@docsmill/extract-core/types";
+import { SymbolId } from "@docsmill/types";
 
 const NamesInScopeContext = createContext<Map<string, SymbolId>>(new Map());
 

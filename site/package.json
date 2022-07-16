@@ -11,6 +11,8 @@
   },
   "dependencies": {
     "@docsmill/extract-core": "^0.0.0",
+    "@docsmill/types": "^0.0.0",
+    "@docsmill/print-core": "^0.0.0",
     "@emotion/react": "11.5.0",
     "@preconstruct/next": "^4.0.0",
     "@ts-morph/common": "0.16.0",

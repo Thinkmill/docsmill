@@ -1,25 +1,12 @@
-/** @jsxRuntime classic */
-/** @jsx jsx */
-import { jsx } from "@emotion/react";
-import { css } from "@emotion/react";
 import { Fragment } from "react";
-import { codeFont, syntaxColors } from "../../lib/theme.css";
 import {
   ClassMember,
   ConstructorDeclaration,
   SimpleSerializedDeclaration,
-} from "@docsmill/extract-core/types";
+} from "@docsmill/types";
 import { Indent } from "./indent";
 import { Syntax } from "./syntax";
 import { TypeParams, Params, Type, Components } from "./type";
-
-const declarationNameStyles = css(codeFont, {
-  color: syntaxColors.symbol,
-});
-
-export function DeclarationName({ name }: { name: string }) {
-  return <span css={declarationNameStyles}>{name}</span>;
-}
 
 export function SimpleDeclaration<Docs>({
   decl,
@@ -34,7 +21,7 @@ export function SimpleDeclaration<Docs>({
     return (
       <Fragment>
         <Syntax kind="keyword">{isExported ? "export " : ""}function </Syntax>
-        <DeclarationName name={decl.name} />
+        <Syntax kind="symbol">{decl.name}</Syntax>
         <TypeParams components={components} params={decl.typeParams} />
         <Params components={components} params={decl.parameters} />
         <Syntax kind="colon">: </Syntax>
@@ -49,7 +36,7 @@ export function SimpleDeclaration<Docs>({
           {isExported ? "export " : ""}
           {decl.variableKind}{" "}
         </Syntax>
-        <DeclarationName name={decl.name} />
+        <Syntax kind="symbol">{decl.name}</Syntax>
         <Syntax kind="colon">: </Syntax>
         <Type components={components} type={decl.type} />
         <Syntax kind="bracket">{" = ..."}</Syntax>
@@ -59,12 +46,9 @@ export function SimpleDeclaration<Docs>({
 
   if (decl.kind === "unknown") {
     return (
-      <Fragment>
-        <DeclarationName name={decl.name} />
-        <pre css={codeFont}>
-          <code>{decl.content}</code>
-        </pre>
-      </Fragment>
+      <Syntax kind="error">
+        <code>{decl.content}</code>
+      </Syntax>
     );
   }
 
@@ -76,7 +60,7 @@ export function SimpleDeclaration<Docs>({
           {isExported ? "export " : ""}
           interface{" "}
         </Syntax>
-        <DeclarationName name={decl.name} />
+        <Syntax kind="symbol">{decl.name}</Syntax>
         <TypeParams components={components} params={decl.typeParams} />
         {decl.extends && (
           <Fragment>
@@ -119,7 +103,7 @@ export function SimpleDeclaration<Docs>({
           {isExported ? "export " : ""}
           class{" "}
         </Syntax>
-        <DeclarationName name={decl.name} />
+        <Syntax kind="symbol">{decl.name}</Syntax>
         <TypeParams components={components} params={decl.typeParams} />
         {!!classSymbol.extends && (
           <Fragment>
@@ -158,7 +142,7 @@ export function SimpleDeclaration<Docs>({
         {isExported ? "export " : ""}
         type{" "}
       </Syntax>
-      <DeclarationName name={decl.name} />
+      <Syntax kind="symbol">{decl.name}</Syntax>
       <TypeParams components={components} params={decl.typeParams} />
       <Syntax kind="bracket"> = </Syntax>
       <Type components={components} type={decl.type} />
@@ -226,7 +210,7 @@ function ClassMembers<Docs>({
         if (prop.kind === "unknown") {
           return (
             <Indent key={i}>
-              <Syntax kind="bracket">{prop.content}</Syntax>
+              <Syntax kind="error">{prop.content}</Syntax>
             </Indent>
           );
         }

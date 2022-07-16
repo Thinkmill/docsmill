@@ -16,10 +16,11 @@ import {
   highlighterPromise,
 } from "../../extract/highlight";
 import { Line, Token } from "../../components/highlight";
-import { codeFont, tokens } from "../../lib/theme.css";
+import { tokens } from "../../lib/theme.css";
 import { ReactNode } from "react";
 import { PackageHeader } from "../../components/package-header";
 import { getPackageMetadata } from "../../npm/fetch-package-metadata";
+import { codeFont } from "@docsmill/print-core";
 
 function SrcInner({ content }: { content: string | Token[][] }) {
   const highlightedTokens =

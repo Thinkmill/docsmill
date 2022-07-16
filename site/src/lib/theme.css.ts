@@ -1,15 +1,5 @@
 import { css as style } from "@emotion/react";
 
-export const syntaxColors = {
-  parameter: "#111111",
-  symbol: "#4876d6",
-  keyword: "#994cc3",
-  bracket: "#403f53",
-  colon: "#0c969b",
-  comma: "#5f7e97",
-  string: "#c96765",
-};
-
 export const colors = {
   white: "#ffffff",
   black: "#000000",
@@ -242,16 +232,6 @@ export const tokens = {
 };
 
 /** Our codeFont stack as a style for easy use */
-
-export const codeFont = style({
-  fontFamily: tokens.font.code,
-  fontVariantLigatures: "none",
-});
-
-export const codeFontStyleObj = {
-  fontFamily: tokens.font.code,
-  fontVariantLigatures: "none",
-};
 
 export const globalStyles = style({
   body: {

@@ -10,7 +10,7 @@ import {
   SerializedType,
   Parameter,
   TypeParam,
-} from "@docsmill/extract-core/types";
+} from "@docsmill/types";
 
 function getPrinted(filename: string) {
   const program = ts.createProgram({ options: {}, rootNames: [filename] });

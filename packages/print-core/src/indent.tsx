@@ -1,7 +1,6 @@
 /** @jsxRuntime classic */
 /** @jsx jsx */
-import { jsx } from "@emotion/react";
-import { css } from "@emotion/react";
+import { jsx, css } from "@emotion/react";
 import { ReactNode } from "react";
 
 const indent = css({

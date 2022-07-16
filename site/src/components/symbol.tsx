@@ -5,12 +5,12 @@ import { Fragment } from "react";
 import { DocsContextType } from "../lib/DocsContext";
 import { AddNameToScope, SymbolReference } from "./symbol-references";
 import * as styles from "./symbol.css";
-import { SymbolId } from "@docsmill/extract-core/types";
+import { SymbolId } from "@docsmill/types";
 import Link from "next/link";
 import { useRouter } from "next/router";
 import { getPkgWithVersionPortionOfParms } from "../npm/params";
 import { Declaration } from "./declaration";
-import { Components } from "./core/type";
+import { Components } from "@docsmill/print-core";
 
 export type RenderSymbolInfo = {
   symbolsForInnerBit: Map<SymbolId, SymbolId[]>;

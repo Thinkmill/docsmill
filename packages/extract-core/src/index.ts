@@ -1,5 +1,5 @@
 import { ts } from "./ts";
-import { SerializedDeclaration } from "./types";
+import { SerializedDeclaration } from "@docsmill/types";
 import { convertDeclaration } from "./convert-declaration";
 import { assert } from "emery/assertions";
 import { isNonEmptyArray } from "emery/guards";

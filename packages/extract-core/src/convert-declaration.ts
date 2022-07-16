@@ -1,6 +1,6 @@
 import { ts } from "./ts";
 import { ExtractionHost, getTypeChecker, referenceSymbol } from ".";
-import { ClassMember, SerializedDeclaration, SymbolId } from "./types";
+import { ClassMember, SerializedDeclaration, SymbolId } from "@docsmill/types";
 import { convertTypeNode } from "./convert-node";
 import { convertType } from "./convert-type";
 import {

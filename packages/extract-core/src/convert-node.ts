@@ -9,7 +9,7 @@ import {
 } from "./utils";
 import { ExtractionHost, referenceSymbol } from ".";
 import { assert, assertNever } from "emery/assertions";
-import { SerializedType, SymbolId, TupleElement } from "./types";
+import { SerializedType, SymbolId, TupleElement } from "@docsmill/types";
 
 function getModifierKind(
   modifier:

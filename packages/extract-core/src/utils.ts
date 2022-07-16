@@ -10,7 +10,7 @@ import {
   Parameter,
   SerializedType,
   SymbolId,
-} from "./types";
+} from "@docsmill/types";
 
 export function getTypeParameters<Docs>(
   node: ts.Node & {
