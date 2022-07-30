@@ -7,6 +7,7 @@ import { getExternalPackageUrl } from "./symbol-references";
 import * as layoutStyles from "./layout.css";
 import { useState } from "react";
 import PackageSearch from "./package-search";
+import Link from "next/link";
 
 export function PackageHeader(props: {
   packageName: string;
@@ -15,14 +16,23 @@ export function PackageHeader(props: {
 }) {
   return (
     <header css={layoutStyles.header}>
-      <div css={{ display: "flex", alignItems: "center", gap: 12 }}>
-        <h1 css={layoutStyles.headerHeading}>{props.packageName}</h1>
-        <VersionSelect
-          packageName={props.packageName}
-          version={props.version}
-          versions={props.versions}
-        />
+      <div>
+        <div css={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <h1 css={layoutStyles.headerHeading}>{props.packageName}</h1>
+          <VersionSelect
+            packageName={props.packageName}
+            version={props.version}
+            versions={props.versions}
+          />
+        </div>
+        <div css={{ display: "flex", gap: 4 }}>
+          <Link href={`/npm/${props.packageName}@${props.version}`}>Types</Link>
+          <Link href={`/src/${props.packageName}@${props.version}`}>
+            Source
+          </Link>
+        </div>
       </div>
+
       <div css={layoutStyles.headerSearch}>
         <PackageSearch />
       </div>
