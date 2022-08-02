@@ -43,6 +43,7 @@ function SrcInner({ content }: { content: string | Token[][] }) {
         borderRadius: 4,
         "& tr": {
           scrollMarginTop: 12 * 10,
+          scrollMarginLeft: 8,
           counterIncrement: "line",
           ":target": {
             backgroundColor: "#ffff54ba",
