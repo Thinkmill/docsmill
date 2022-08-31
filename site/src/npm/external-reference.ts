@@ -25,8 +25,11 @@ export function getExternalReferenceHandler(
         const sourceFileSymbol = program
           .getTypeChecker()
           .getSymbolAtLocation(sourceFile);
-        assert(sourceFileSymbol !== undefined);
-        rootSymbols.set(sourceFileSymbol, entrypoint);
+          if (sourceFileSymbol) {
+
+            assert(sourceFileSymbol !== undefined, `expected to get symbol for source file at ${resolved}`);
+            rootSymbols.set(sourceFileSymbol, entrypoint);
+              }
       }
     }
     return {
