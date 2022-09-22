@@ -2,7 +2,6 @@ import { ts } from "../extract/ts";
 import libFiles from "../../lib-files.json";
 
 import isValidSemverVersion from "semver/functions/valid";
-import tar from "tar-stream";
 import { DocInfo, getDocsInfo, getIsNodeWithinPkg } from "../extract";
 import { collectEntrypointsOfPackage, resolveToPackageVersion } from "./utils";
 import { getPackageMetadata } from "./fetch-package-metadata";
@@ -13,81 +12,10 @@ import {
   getDirectoryPath,
   getPathComponents,
 } from "../extract/path";
-import { createGunzip } from "zlib";
 import { getSourceMapHandler } from "./source-map";
 import { getExternalReferenceHandler } from "./external-reference";
 import { collectImports } from "./collect-imports";
-
-// https://github.com/pnpm/get-npm-tarball-url
-function getNpmTarballUrl(pkgName: string, pkgVersion: string): string {
-  const scopelessName = getScopelessName(pkgName);
-  return `https://registry.npmjs.org/${pkgName}/-/${scopelessName}-${removeBuildMetadataFromVersion(
-    pkgVersion
-  )}.tgz`;
-}
-
-function removeBuildMetadataFromVersion(version: string) {
-  const plusPos = version.indexOf("+");
-  if (plusPos === -1) return version;
-  return version.substring(0, plusPos);
-}
-
-function getScopelessName(name: string) {
-  if (name[0] !== "@") {
-    return name;
-  }
-  return name.split("/")[1];
-}
-
-async function handleTarballStream(tarballStream: NodeJS.ReadableStream) {
-  const extract = tarballStream.pipe(createGunzip()).pipe(tar.extract());
-  const entries = new Map<string, string>();
-  extract.on("entry", (headers, stream, next) => {
-    if (
-      headers.type !== "file" ||
-      !/\.(json|ts|tsx|d\.ts\.map)$/.test(headers.name)
-    ) {
-      stream.resume();
-      stream.on("end", next);
-      return;
-    }
-
-    streamToString(stream)
-      .then((content) => {
-        entries.set(headers.name.replace(/^[^/]+\/?/, "/"), content);
-        next();
-      })
-      .catch((err) => (next as any)(err));
-  });
-
-  return new Promise<Map<string, string>>((resolve, reject) => {
-    extract.on("finish", () => {
-      resolve(entries);
-    });
-    extract.on("error", (err) => {
-      reject(err);
-    });
-  });
-}
-
-function streamToString(stream: NodeJS.ReadableStream) {
-  return new Promise<string>((resolve, reject) => {
-    let content = "";
-    stream
-      .on("error", reject)
-      .on("data", (chunk) => {
-        content += chunk.toString("utf8");
-      })
-      .on("end", () => resolve(content));
-  });
-}
-
-async function fetchPackageContent(pkgName: string, pkgVersion: string) {
-  const tarballStream = await fetch(getNpmTarballUrl(pkgName, pkgVersion)).then(
-    (res) => res.body!
-  );
-  return handleTarballStream(tarballStream as unknown as NodeJS.ReadableStream);
-}
+import { fetchPackageContent } from "./package-content";
 
 async function getTarballAndVersions(pkgName: string, pkgSpecifier: string) {
   let pkgPromise = getPackageMetadata(pkgName);

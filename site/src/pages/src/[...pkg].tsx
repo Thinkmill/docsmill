@@ -21,6 +21,8 @@ import { ReactNode } from "react";
 import { PackageHeader } from "../../components/package-header";
 import { getPackageMetadata } from "../../npm/fetch-package-metadata";
 import { codeFont } from "@docsmill/print-core";
+import { fetchSpecificPackageContent } from "../../npm/package-content";
+import { getFileTree, InputFilename } from "../../npm/entries";
 
 function SrcInner({ content }: { content: string | Token[][] }) {
   const highlightedTokens =
@@ -132,6 +134,7 @@ function FileStructure({ entry, path }: { entry: Entry; path: string[] }) {
           .concat(entry)
           .join("/")}`}
         title={entry}
+        prefetch={false}
       >
         {entry}
       </Link>
@@ -243,34 +246,19 @@ export function getStaticPaths(): GetStaticPathsResult {
   return { paths: [], fallback: true };
 }
 
-type InputFile = {
-  name: string;
-  type: "file";
-};
+function startsWithSlash(input: string): input is `/${string}` {
+  return input[0] === "/";
+}
 
-type InputDirectory = {
-  name: string;
-  type: "directory";
-  files: (InputFile | InputDirectory)[];
-};
-
-function transformDirectory(directory: InputDirectory): Entry[] {
-  return directory.files
-    .sort((a, b) => {
-      if (a.type === "directory" && b.type === "file") {
-        return -1;
-      }
-      if (a.type === "file" && b.type === "directory") {
-        return 1;
-      }
-      return a.name.localeCompare(b.name);
-    })
-    .map((element): Entry => {
-      if (element.type === "directory") {
-        return [element.name, transformDirectory(element)];
-      }
-      return element.name;
-    });
+async function highlightFile(filepath: string, content: string | null) {
+  if (content === null) return content;
+  const extension = filepath.match(/\.([^.]+)$/)?.[1];
+  const lang = extensionsToLang.get(extension || "");
+  if (lang !== undefined) {
+    await highlighterPromise;
+    return highlight(content, lang);
+  }
+  return content;
 }
 
 export async function getStaticProps({
@@ -281,37 +269,21 @@ export async function getStaticProps({
     return res.result;
   }
   const filepath = res.restParams.join("/");
-  const [pkgMetadata, entries, content] = await Promise.all([
+  const [pkgMetadata, { entries: rawEntries, content }] = await Promise.all([
     getPackageMetadata(res.pkg),
-    fetch(
-      `https://data.jsdelivr.com/v1/package/npm/${res.pkg}@${res.version}`,
-      { headers: { "User-Agent": "https://github.com/Thinkmill/docsmill" } }
-    )
-      .then((x) => x.json())
-      .then((data) => transformDirectory(data)),
-    res.restParams.length === 0
-      ? null
-      : fetch(
-          `https://cdn.jsdelivr.net/npm/${res.pkg}@${
-            res.version
-          }/${res.restParams.join("/")}`
-        ).then(async (res) => {
-          if (res.status === 404) return null;
-          const text = await res.text();
-          const extension = filepath.match(/\.([^.]+)$/)?.[1];
-          const lang = extensionsToLang.get(extension || "");
-          if (lang !== undefined) {
-            await highlighterPromise;
-            return highlight(text, lang);
-          }
-          return text;
-        }),
+    fetchSpecificPackageContent(res.pkg, res.version, filepath),
   ]);
   if (pkgMetadata === undefined) {
-    return { notFound: true };
+    return { notFound: true, revalidate: 60 };
   }
+  const entries = getFileTree(
+    rawEntries.map(
+      (entry): InputFilename => (startsWithSlash(entry) ? entry : `/${entry}`)
+    )
+  );
+
+  const highlighted = await highlightFile(filepath, content);
   return {
-    props: { entries, content, versions: pkgMetadata?.versions },
-    revalidate: 60 * 60,
+    props: { entries, content: highlighted, versions: pkgMetadata?.versions },
   };
 }
