@@ -1,5 +1,5 @@
 import { css as style } from "@emotion/react";
-import { codeFont, syntaxColors, codeFontStyleObj } from "@docsmill/print-core";
+import { codeFont, syntaxColors, codeFontStyleObj } from "./core";
 
 const baseSymbol = {
   textDecoration: "none",

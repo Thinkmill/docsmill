@@ -8,7 +8,7 @@ import * as styles from "./markdown.css";
 import Link from "next/link";
 import { nonRootSymbolReference } from "./symbol-references.css";
 import { SymbolId } from "@docsmill/types";
-import { Syntax, codeFont } from "@docsmill/print-core";
+import { Syntax, codeFont } from "./core";
 import { isTokens, Line } from "./highlight";
 
 export const markdownComponents: ReactMarkdownOptions["components"] = {

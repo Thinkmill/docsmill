@@ -40,23 +40,12 @@ importers:
       emery: 1.4.1
       typescript: 4.7.4
 
-  packages/print-core:
-    specifiers:
-      '@docsmill/types': ^0.0.0
-      '@emotion/react': 11.5.0
-      emery: ^1.4.1
-    dependencies:
-      '@docsmill/types': link:../types
-      '@emotion/react': 11.5.0
-      emery: 1.4.1
-
   packages/types:
     specifiers: {}
 
   site:
     specifiers:
       '@docsmill/extract-core': ^0.0.0
-      '@docsmill/print-core': ^0.0.0
       '@docsmill/types': ^0.0.0
       '@emotion/react': 11.5.0
       '@preconstruct/next': ^4.0.0
@@ -90,7 +79,6 @@ importers:
       webpack-bundle-analyzer: ^4.4.2
     dependencies:
       '@docsmill/extract-core': link:../packages/extract-core
-      '@docsmill/print-core': link:../packages/print-core
       '@docsmill/types': link:../packages/types
       '@emotion/react': 11.5.0_7cpxmzzodpxnolj5zcc5cr63ji
       '@preconstruct/next': 4.0.0
@@ -836,27 +824,6 @@ packages:
 
   /@emotion/memoize/0.7.5:
     resolution: {integrity: sha512-igX9a37DR2ZPGYtV6suZ6whr8pTFtyHL3K/oLUotxpSVO2ASaprmAe2Dkq7tBo7CRY7MMDrAa9nuQP9/YG8FxQ==}
-    dev: false
-
-  /@emotion/react/11.5.0:
-    resolution: {integrity: sha512-MYq/bzp3rYbee4EMBORCn4duPQfgpiEB5XzrZEBnUZAL80Qdfr7CEv/T80jwaTl/dnZmt9SnTa8NkTrwFNpLlw==}
-    peerDependencies:
-      '@babel/core': ^7.0.0
-      '@types/react': '*'
-      react: '>=16.8.0'
-    peerDependenciesMeta:
-      '@babel/core':
-        optional: true
-      '@types/react':
-        optional: true
-    dependencies:
-      '@babel/runtime': 7.15.4
-      '@emotion/cache': 11.9.3
-      '@emotion/serialize': 1.0.4
-      '@emotion/sheet': 1.1.1
-      '@emotion/utils': 1.1.0
-      '@emotion/weak-memoize': 0.2.5
-      hoist-non-react-statics: 3.3.2
     dev: false
 
   /@emotion/react/11.5.0_7cpxmzzodpxnolj5zcc5cr63ji:

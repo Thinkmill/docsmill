@@ -10,7 +10,7 @@ import Link from "next/link";
 import { useRouter } from "next/router";
 import { getPkgWithVersionPortionOfParms } from "../npm/params";
 import { Declaration } from "./declaration";
-import { Components } from "@docsmill/print-core";
+import { Components } from "../components/core";
 
 export type RenderSymbolInfo = {
   symbolsForInnerBit: Map<SymbolId, SymbolId[]>;

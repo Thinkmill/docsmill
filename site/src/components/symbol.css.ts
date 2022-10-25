@@ -1,6 +1,6 @@
 import { css as style } from "@emotion/react";
 import { tokens } from "../lib/theme.css";
-import { codeFont, codeFontStyleObj, syntaxColors } from "@docsmill/print-core";
+import { codeFont, codeFontStyleObj, syntaxColors } from "./core";
 
 export const moduleHeading = style({
   fontSize: "2rem",

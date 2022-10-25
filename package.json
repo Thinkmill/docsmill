@@ -3,6 +3,7 @@
   "version": "0.0.0",
   "license": "MIT",
   "private": true,
+  "packageManager": "pnpm@7.14.0",
   "scripts": {
     "dev": "cd site && pnpm dev",
     "build": "cd site && pnpm build",

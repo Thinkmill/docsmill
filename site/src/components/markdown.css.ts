@@ -1,5 +1,5 @@
 import { css as style } from "@emotion/react";
-import { codeFont } from "@docsmill/print-core";
+import { codeFont } from "./core";
 import { tokens } from "../lib/theme.css";
 
 export const a = style({

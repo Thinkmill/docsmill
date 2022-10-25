@@ -9,7 +9,7 @@ import {
   AnchorHTMLAttributes,
 } from "react";
 import { useDocsContext } from "../lib/DocsContext";
-import { Syntax } from "@docsmill/print-core";
+import { Syntax } from "./core";
 import * as styles from "./symbol-references.css";
 import Link from "next/link";
 import { SymbolId } from "@docsmill/types";

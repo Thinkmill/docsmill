@@ -6,7 +6,7 @@ import { getDocsInfo } from "../../extract";
 import { highlighterPromise } from "../../extract/highlight";
 import { ts } from "../../extract/ts";
 import { DocsContext, DocsContextType } from "../../lib/DocsContext";
-import { Components } from "@docsmill/print-core";
+import { Components } from "../../components/core";
 import { RenderRootSymbol, RenderSymbolInfo } from "../../components/symbol";
 import { NavigationItem } from "../../components/navigation";
 import {

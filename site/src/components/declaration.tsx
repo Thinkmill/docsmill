@@ -9,7 +9,7 @@ import {
   Syntax,
   SimpleDeclaration,
   Components,
-} from "@docsmill/print-core";
+} from "./core";
 import { SerializedDeclaration, SymbolId } from "@docsmill/types";
 import {
   getExternalPackageUrl,

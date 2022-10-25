@@ -20,7 +20,7 @@ import { tokens } from "../../lib/theme.css";
 import { ReactNode } from "react";
 import { PackageHeader } from "../../components/package-header";
 import { getPackageMetadata } from "../../npm/fetch-package-metadata";
-import { codeFont } from "@docsmill/print-core";
+import { codeFont } from "../../components/core";
 
 function SrcInner({ content }: { content: string | Token[][] }) {
   const highlightedTokens =
