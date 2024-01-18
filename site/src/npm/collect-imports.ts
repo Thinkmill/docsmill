@@ -141,7 +141,11 @@ type LiteralImportTypeNode = ts.ImportTypeNode & {
 };
 
 function getTextOfIdentifierOrLiteral(node: ts.PropertyNameLiteral): string {
-  return ts.isMemberName(node) ? idText(node) : node.text;
+  return ts.isMemberName(node)
+    ? idText(node)
+    : ts.isJsxNamespacedName(node)
+    ? node.namespace.text + "." + node.name.text
+    : node.text;
 }
 
 export function idText(

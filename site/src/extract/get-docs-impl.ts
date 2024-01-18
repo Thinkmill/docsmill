@@ -107,6 +107,8 @@ export function getDocsImpl(
 
       for (const exportDecl of decl.statements) {
         if (
+          "modifiers" in exportDecl &&
+          Array.isArray(exportDecl.modifiers) &&
           exportDecl.modifiers?.some(
             (x) => x.kind === ts.SyntaxKind.ExportKeyword
           )

@@ -1,6 +1,7 @@
 import ts from "typescript";
 import { resolvePath, getDirectoryPath } from "../extract/path";
 import { memoize } from "./utils";
+// @ts-ignore
 import { decode as decodeVlq } from "vlq";
 
 export function getSourceMapHandler(
@@ -43,7 +44,9 @@ export function getSourceMapHandler(
     const vlqs = sourceMapContent.mappings
       .split(";")
       .map((line) => line.split(","));
-    const decoded = vlqs.map((line) => line.map(decodeVlq));
+    const decoded = vlqs.map((line) =>
+      line.map((segment) => decodeVlq(segment) as number[])
+    );
     let sourceFileIndex = 0; // second field
     let sourceCodeLine = 0; // third field
     let sourceCodeColumn = 0; // fourth field
