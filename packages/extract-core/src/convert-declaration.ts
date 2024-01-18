@@ -191,11 +191,13 @@ export function convertDeclaration<Docs>(
         implementsNode?.types?.map((x) => convertTypeNode(x, host))
       ),
       willBeComparedNominally: compilerNode.members.some((member) => {
-        member.modifiers?.some(
-          (x) =>
-            x.kind === ts.SyntaxKind.PrivateKeyword ||
-            x.kind === ts.SyntaxKind.ProtectedKeyword
-        ) ||
+        ("modifiers" in member &&
+          Array.isArray(member.modifiers) &&
+          member.modifiers?.some(
+            (x) =>
+              x.kind === ts.SyntaxKind.PrivateKeyword ||
+              x.kind === ts.SyntaxKind.ProtectedKeyword
+          )) ||
           (member.name && ts.isPrivateIdentifier(member.name));
       }),
       ...spreadTupleOrNone(
@@ -220,21 +222,23 @@ export function convertDeclaration<Docs>(
               !(
                 ts.isConstructorDeclaration(member) ||
                 ts.isClassStaticBlockDeclaration(member) ||
-                member.modifiers?.some(
-                  (x) => x.kind === ts.SyntaxKind.PrivateKeyword
-                ) ||
+                ("modifiers" in member &&
+                  Array.isArray(member.modifiers) &&
+                  member.modifiers?.some(
+                    (x) => x.kind === ts.SyntaxKind.PrivateKeyword
+                  )) ||
                 (member.name && ts.isPrivateIdentifier(member.name)) ||
                 ts.isSemicolonClassElement(member)
               )
           )
           .map((member): ClassMember<Docs> => {
-            const isStatic =
-              member.modifiers?.some(
-                (x) => x.kind === ts.SyntaxKind.StaticKeyword
-              ) || false;
             if (ts.isMethodDeclaration(member)) {
               // TODO: show protected
               // (and have a tooltip explaining what protected does)
+              const isStatic =
+                member.modifiers?.some(
+                  (x) => x.kind === ts.SyntaxKind.StaticKeyword
+                ) || false;
               return {
                 kind: "method",
                 docs: getDocs(member, host),
@@ -250,6 +254,10 @@ export function convertDeclaration<Docs>(
               };
             }
             if (ts.isPropertyDeclaration(member)) {
+              const isStatic =
+                member.modifiers?.some(
+                  (x) => x.kind === ts.SyntaxKind.StaticKeyword
+                ) || false;
               return {
                 kind: "prop",
                 docs: getDocs(member, host),
