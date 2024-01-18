@@ -33,9 +33,6 @@ const config = {
   typescript: {
     tsconfigPath: "../tsconfig.json",
   },
-  experimental: {
-    newNextLinkBehavior: true,
-  },
 };
 
 const withPreconstruct = require("@preconstruct/next");

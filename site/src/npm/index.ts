@@ -2,7 +2,6 @@ import { ts } from "../extract/ts";
 import libFiles from "../../lib-files.json";
 
 import isValidSemverVersion from "semver/functions/valid";
-import tar from "tar-stream";
 import { DocInfo, getDocsInfo, getIsNodeWithinPkg } from "../extract";
 import { collectEntrypointsOfPackage, resolveToPackageVersion } from "./utils";
 import { getPackageMetadata } from "./fetch-package-metadata";
@@ -13,10 +12,10 @@ import {
   getDirectoryPath,
   getPathComponents,
 } from "../extract/path";
-import { createGunzip } from "zlib";
 import { getSourceMapHandler } from "./source-map";
 import { getExternalReferenceHandler } from "./external-reference";
 import { collectImports } from "./collect-imports";
+import { extract } from "it-tar";
 
 // https://github.com/pnpm/get-npm-tarball-url
 function getNpmTarballUrl(pkgName: string, pkgVersion: string): string {
@@ -39,54 +38,52 @@ function getScopelessName(name: string) {
   return name.split("/")[1];
 }
 
-async function handleTarballStream(tarballStream: NodeJS.ReadableStream) {
-  const extract = tarballStream.pipe(createGunzip()).pipe(tar.extract());
-  const entries = new Map<string, string>();
-  extract.on("entry", (headers, stream, next) => {
-    if (
-      headers.type !== "file" ||
-      !/\.(json|ts|tsx|d\.ts\.map)$/.test(headers.name)
-    ) {
-      stream.resume();
-      stream.on("end", next);
-      return;
+async function* streamToIterator(stream: ReadableStream<Uint8Array>) {
+  const reader = stream.getReader();
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      yield value;
     }
-
-    streamToString(stream)
-      .then((content) => {
-        entries.set(headers.name.replace(/^[^/]+\/?/, "/"), content);
-        next();
-      })
-      .catch((err) => (next as any)(err));
-  });
-
-  return new Promise<Map<string, string>>((resolve, reject) => {
-    extract.on("finish", () => {
-      resolve(entries);
-    });
-    extract.on("error", (err) => {
-      reject(err);
-    });
-  });
+  } finally {
+    reader.releaseLock();
+  }
 }
 
-function streamToString(stream: NodeJS.ReadableStream) {
-  return new Promise<string>((resolve, reject) => {
+async function handleTarballStream(tarballStream: ReadableStream<Uint8Array>) {
+  const uncompressed: ReadableStream<Uint8Array> = tarballStream.pipeThrough(
+    new DecompressionStream("gzip")
+  );
+  const iterator = streamToIterator(uncompressed);
+  const entries = new Map<string, string>();
+
+  for await (const { header, body } of extract()(iterator)) {
+    if (
+      header.type !== "file" ||
+      !/\.(json|ts|tsx|d\.ts\.map)$/.test(header.name)
+    ) {
+      for await (const _ of body) {
+      }
+      continue;
+    }
     let content = "";
-    stream
-      .on("error", reject)
-      .on("data", (chunk) => {
-        content += chunk.toString("utf8");
-      })
-      .on("end", () => resolve(content));
-  });
+    const decoder = new TextDecoder();
+    for await (const chunk of body) {
+      content += decoder.decode(chunk, { stream: true });
+    }
+    decoder.decode();
+    entries.set(header.name.replace(/^[^/]+\/?/, "/"), content);
+  }
+
+  return entries;
 }
 
 async function fetchPackageContent(pkgName: string, pkgVersion: string) {
   const tarballStream = await fetch(getNpmTarballUrl(pkgName, pkgVersion)).then(
     (res) => res.body!
   );
-  return handleTarballStream(tarballStream as unknown as NodeJS.ReadableStream);
+  return handleTarballStream(tarballStream);
 }
 
 async function getTarballAndVersions(pkgName: string, pkgSpecifier: string) {
@@ -135,20 +132,6 @@ async function addPackageToNodeModules(
 }
 
 const libFileCache = new Map<string, ts.SourceFile>();
-
-(ts as any).readJson = (
-  path: string,
-  host: { readFile(fileName: string): string | undefined }
-) => {
-  try {
-    const jsonText = host.readFile(path);
-    if (!jsonText) return {};
-    return JSON.parse(jsonText);
-  } catch (e) {
-    // gracefully handle if readFile fails or returns not JSON
-    return {};
-  }
-};
 
 export function getCompilerHost(): ts.CompilerHost & {
   directories: Map<string, Map<string, string>>;
@@ -266,7 +249,7 @@ export async function getPackage(
   const compilerOptions: ts.CompilerOptions = {
     noEmit: true,
     strict: true,
-    moduleResolution: ts.ModuleResolutionKind.NodeJs,
+    moduleResolution: ts.ModuleResolutionKind.Bundler,
     target: ts.ScriptTarget.ESNext,
   };
 

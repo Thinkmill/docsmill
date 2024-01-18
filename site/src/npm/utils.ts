@@ -46,6 +46,26 @@ export function collectEntrypointsOfPackage(
   host: ts.ModuleResolutionHost,
   cache: ts.ModuleResolutionCache
 ) {
+  const mainPkgJson = host.readFile(combinePaths(pkgPath, "package.json"));
+  let parsedPkgJson;
+  try {
+    parsedPkgJson = JSON.parse(mainPkgJson!);
+  } catch (e) {}
+  if (parsedPkgJson.exports) {
+    const entrypoints = new Map<string, string>();
+    for (const entrypoint of Object.keys(parsedPkgJson.exports)) {
+      const resolved = ts.resolveModuleName(
+        pkgName + entrypoint.slice(1),
+        combinePaths(pkgPath, "index.ts"),
+        compilerOptions,
+        host,
+        cache
+      ).resolvedModule?.resolvedFileName;
+      if (!resolved) continue;
+      entrypoints.set(pkgName + entrypoint.slice(1), resolved);
+    }
+    return entrypoints;
+  }
   const packageJsons = new Set<string>();
   findPackageJsons(host, pkgPath, packageJsons);
   const entrypoints = new Map<string, string>();

@@ -54,7 +54,6 @@ export function getObjectMembers<Docs>(
   host: ExtractionHost<Docs>
 ): ObjectMember<Docs>[] {
   return node.members.map((member): ObjectMember<Docs> => {
-    assert(member.decorators === undefined);
     if (ts.isIndexSignatureDeclaration(member)) {
       assert(member.questionToken === undefined);
       assert(member.typeParameters === undefined);
@@ -77,7 +76,6 @@ export function getObjectMembers<Docs>(
     }
 
     if (ts.isPropertySignature(member)) {
-      assert(member.initializer === undefined);
       assert(
         member.modifiers?.find(
           (x) => x.kind !== ts.SyntaxKind.ReadonlyKeyword
@@ -164,7 +162,7 @@ export function getAliasedSymbol(
   symbol: ts.Symbol,
   host: { program: ts.Program }
 ): ts.Symbol {
-  if ((symbol as any).mergeId !== undefined) {
+  if ((symbol as any).mergeId !== undefined && (symbol as any).mergeId !== 0) {
     const mergedSymbol = (getTypeChecker(host) as any).getMergedSymbol(symbol);
     if (mergedSymbol === symbol) {
       return mergedSymbol;

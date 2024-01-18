@@ -27,7 +27,7 @@ export function referenceSymbol(
 ) {
   assert(
     (symbol.flags & ts.SymbolFlags.AliasExcludes) === 0 &&
-      (symbol as any).mergeId === undefined,
+      ((symbol as any).mergeId === undefined || (symbol as any).mergeId === 0),
     "alias symbols cannot be passed to referenceSymbol"
   );
   host.referenceSymbol(symbol);

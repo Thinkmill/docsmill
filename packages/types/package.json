@@ -5,5 +5,5 @@
   "module": "dist/docsmill-types.esm.js",
   "license": "MIT",
   "private": true,
-  "repository": "https://github.com/Thinkmill/docsmill"
+  "repository": "https://github.com/Thinkmill/docsmill/tree/master/packages/types"
 }
