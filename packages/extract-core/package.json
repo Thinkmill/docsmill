@@ -8,7 +8,7 @@
   "dependencies": {
     "@docsmill/types": "^0.0.0",
     "@emotion/hash": "^0.8.0",
-    "emery": "^1.4.1",
+    "emery": "^1.4.3",
     "typescript": "^5.3.3"
   },
   "repository": "https://github.com/Thinkmill/docsmill/tree/master/packages/extract-core"

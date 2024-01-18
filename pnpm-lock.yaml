@@ -32,12 +32,12 @@ importers:
     specifiers:
       '@docsmill/types': ^0.0.0
       '@emotion/hash': ^0.8.0
-      emery: ^1.4.1
+      emery: ^1.4.3
       typescript: ^5.3.3
     dependencies:
       '@docsmill/types': link:../types
       '@emotion/hash': 0.8.0
-      emery: 1.4.1
+      emery: 1.4.3
       typescript: 5.3.3
 
   packages/types:
@@ -2467,8 +2467,8 @@ packages:
     resolution: {integrity: sha512-h+9aVaUHjyunLqtCjJF2jrJ73tYcJqo2cCGKtVAXH9WmnBsb8hiChRQ0P1uXjdxR6Wcfxibephy41c1YlZA/pA==}
     dev: false
 
-  /emery/1.4.1:
-    resolution: {integrity: sha512-i5MU9HbnbFdKLJCT7QIfZHMFtzWmVhK1Ge4zjCmrlHum3GxKakzttC4tZItZYRbJeOGUqRwarThxdqVYnokMeg==}
+  /emery/1.4.3:
+    resolution: {integrity: sha512-DrP24dscOZx5BJpOo32X1CjaWgbFojS4sAXKtlmTQmCJ01Vv2brjeWKIS6cQ4Rblt/hZIN+6pdV2L7Y9Rsh8EA==}
     dev: false
 
   /emittery/0.10.2:
