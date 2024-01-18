@@ -58,6 +58,7 @@ importers:
       '@types/semver': 7.3.8
       '@types/tar-stream': 2.2.1
       '@types/unist': ^2.0.6
+      emery: ^1.4.3
       it-pipe: ^3.0.1
       it-tar: ^6.0.1
       lz-string: 1.4.4
@@ -93,6 +94,7 @@ importers:
       '@types/semver': 7.3.8
       '@types/tar-stream': 2.2.1
       '@types/unist': 2.0.6
+      emery: 1.4.3
       it-pipe: 3.0.1
       it-tar: 6.0.1
       lz-string: 1.4.4
