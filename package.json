@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "license": "MIT",
   "private": true,
-  "packageManager": "pnpm@7.14.0",
+  "packageManager": "pnpm@9.5.0",
   "scripts": {
     "dev": "cd site && pnpm dev",
     "build": "cd site && pnpm build",
@@ -16,11 +16,11 @@
     "@preconstruct/cli": "^2.2.0",
     "@types/jest": "^28.1.1",
     "@types/node": "20.11.5",
-    "@types/react": "^18.0.9",
-    "@types/react-dom": "18.0.5",
+    "@types/react": "^18.3.3",
+    "@types/react-dom": "18.3.0",
     "jest": "^28.1.1",
     "prettier": "^2.7.1",
-    "typescript": "^5.3.3"
+    "typescript": "^5.5.3"
   },
   "preconstruct": {
     "packages": [

@@ -6,10 +6,10 @@
   "license": "MIT",
   "private": true,
   "dependencies": {
-    "@docsmill/types": "^0.0.0",
+    "@docsmill/types": "workspace:^",
     "@emotion/hash": "^0.8.0",
     "emery": "^1.4.3",
-    "typescript": "^5.3.3"
+    "typescript": "^5.5.3"
   },
   "repository": "https://github.com/Thinkmill/docsmill/tree/master/packages/extract-core"
 }
