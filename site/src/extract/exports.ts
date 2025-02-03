@@ -33,7 +33,9 @@ function collectImportableSymbolLocationsFromRootSymbols(
           state.set(symbolId, new Map());
         }
         const exportLocations = state.get(symbolId)!;
-        exportLocations.set(moduleSymbolId, exportName);
+        if (!exportLocations.has(moduleSymbolId)) {
+          exportLocations.set(moduleSymbolId, exportName);
+        }
         queue.add(symbolId);
       }
     }
