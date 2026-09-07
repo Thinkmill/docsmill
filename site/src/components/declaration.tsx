@@ -11,22 +11,18 @@ import {
   Components,
 } from "./core";
 import { SerializedDeclaration, SymbolId } from "@docsmill/types";
-import {
-  getExternalPackageUrl,
-  getExternalSymbolUrl,
-  SymbolReference,
-} from "./symbol-references";
+import { SymbolReference } from "./symbol-references";
 import * as styles from "./symbol.css";
 import { assert } from "../lib/assert";
 import { getGroupedExports } from "../lib/utils";
 import { RenderRootSymbol, RenderSymbolInfo } from "./symbol";
 import * as symbolReferenceStyles from "./symbol-references.css";
-import Link from "next/link";
 import { css } from "@emotion/react";
+import { Link } from "@tanstack/react-router";
 
 const enumMemberName = css(
   symbolReferenceStyles.nonRootSymbolReference,
-  styles.targetBackground
+  styles.targetBackground,
 );
 
 export function Declaration<Docs>({
@@ -102,11 +98,11 @@ export function Declaration<Docs>({
           const member = members[0];
           assert(
             members.length === 1,
-            "expected enum members to only contain a single enum member"
+            "expected enum members to only contain a single enum member",
           );
           assert(
             member.kind === "enum-member",
-            "expected enum to only contain enum members"
+            "expected enum to only contain enum members",
           );
           return (
             <Indent key={i}>
@@ -164,7 +160,7 @@ export function Declaration<Docs>({
 
   assert(
     decl.kind !== "enum-member",
-    "unexpected enum member outside of enum declaration"
+    "unexpected enum member outside of enum declaration",
   );
   return (
     <SimpleDeclaration
@@ -245,11 +241,11 @@ function Exports<Docs>({
                   return (
                     <div key={i}>
                       <Link
-                        href={getExternalSymbolUrl({
-                          id: exportInfo.id,
-                          pkg: exported.from,
-                          version: exported.version,
-                        })}
+                        to="/npm/$"
+                        params={{
+                          _splat: `${exported.from}@${exported.version}`,
+                        }}
+                        hash={exportInfo.id}
                         css={symbolReferenceStyles.nonRootSymbolReference}
                       >
                         {exportInfo.name}
@@ -262,7 +258,8 @@ function Exports<Docs>({
               <Syntax kind="bracket">{" } "}</Syntax>
               <Syntax kind="keyword">from </Syntax>
               <Link
-                href={getExternalPackageUrl(exported.from, exported.version)}
+                to="/npm/$"
+                params={{ _splat: `${exported.from}@${exported.version}` }}
                 css={symbolReferenceStyles.rootSymbolReference}
               >
                 {JSON.stringify(exported.from)}

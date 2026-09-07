@@ -6,8 +6,7 @@ import { DocsContextType } from "../lib/DocsContext";
 import { AddNameToScope, SymbolReference } from "./symbol-references";
 import * as styles from "./symbol.css";
 import { SymbolId } from "@docsmill/types";
-import Link from "next/link";
-import { useRouter } from "next/router";
+import { Link, useRouterState } from "@tanstack/react-router";
 import { getPkgWithVersionPortionOfParms } from "../npm/params";
 import { Declaration } from "./declaration";
 import { Components } from "../components/core";
@@ -38,13 +37,16 @@ export function RenderRootSymbol<Docs>({
   const { goodIdentifiers, symbols } = docInfo;
   let decls = symbols[symbol];
   const relatedSymbols = (references[symbol] || []).filter((thing) =>
-    symbols[thing].some((x) => x.kind !== "module" && x.kind !== "namespace")
+    symbols[thing].some((x) => x.kind !== "module" && x.kind !== "namespace"),
   );
   const innerBits = renderSymbolInfo.symbolsForInnerBit.get(symbol);
   const locationsForSymbol = locations[symbol];
-  const router = useRouter();
-  const pkgRefPortion = router.query.pkg
-    ? getPkgWithVersionPortionOfParms(router.query.pkg)
+  const pathname = useRouterState({
+    select: (state) => state.location.pathname,
+  });
+  const pkgParams = pathname.split("/").slice(2);
+  const pkgRefPortion = pkgParams.length
+    ? getPkgWithVersionPortionOfParms(pkgParams)
     : undefined;
 
   return (
@@ -67,17 +69,17 @@ export function RenderRootSymbol<Docs>({
             {locationsForSymbol.map((location, i) => (
               <Fragment key={i}>
                 <Link
-                  href={`/src/${pkgRefPortion}${location.file}#L${
-                    location.line + 1
-                  }`}
+                  to="/src/$"
+                  params={{ _splat: `${pkgRefPortion}${location.file}` }}
+                  hash={`L${location.line + 1}`}
                 >
                   decl
                 </Link>
                 {location.src && (
                   <Link
-                    href={`/src/${pkgRefPortion}${location.src.file}#L${
-                      location.src.line + 1
-                    }`}
+                    to="/src/$"
+                    params={{ _splat: `${pkgRefPortion}${location.src.file}` }}
+                    hash={`L${location.src.line + 1}`}
                   >
                     source
                   </Link>

@@ -1,15 +1,17 @@
 {
   "name": "@docsmill/extract-core",
   "version": "0.0.0",
-  "main": "dist/docsmill-extract-core.cjs.js",
-  "module": "dist/docsmill-extract-core.esm.js",
+  "exports": {
+    ".": "./src/index.ts"
+  },
   "license": "MIT",
   "private": true,
   "dependencies": {
     "@docsmill/types": "workspace:^",
-    "@emotion/hash": "^0.8.0",
-    "emery": "^1.4.3",
-    "typescript": "^5.5.3"
+    "@emotion/hash": "^0.9.2",
+    "@typescript/typescript6": "^6.0.2",
+    "emery": "^1.4.4",
+    "typescript": "^7.0.2"
   },
   "repository": "https://github.com/Thinkmill/docsmill/tree/master/packages/extract-core"
 }

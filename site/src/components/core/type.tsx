@@ -1,4 +1,3 @@
-import React from "react";
 import { Fragment, ReactElement } from "react";
 import { Syntax } from "./syntax";
 import { Indent } from "./indent";

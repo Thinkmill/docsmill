@@ -1,0 +1,6 @@
+[
+  "lib.esnext.d.ts",
+  "lib.dom.d.ts",
+  "lib.dom.iterable.d.ts",
+  "lib.dom.asynciterable.d.ts"
+]

@@ -3,7 +3,7 @@ import remarkParse from "remark-parse";
 import remarkGfm from "remark-gfm";
 import remarkRehype from "remark-rehype";
 import { visit } from "unist-util-visit";
-import { highlight, languages } from "./highlight";
+import { highlightLoaded, resolveLanguage } from "./highlight";
 
 const processor = unified().use(remarkParse).use(remarkGfm).use(remarkRehype);
 
@@ -13,7 +13,7 @@ export function parseMarkdown(markdown: string): import("hast").Content[] {
   }
 
   const ast = processor.runSync(
-    processor.parse(markdown)
+    processor.parse(markdown),
   ) as import("hast").Root;
   visit(
     ast,
@@ -32,18 +32,18 @@ export function parseMarkdown(markdown: string): import("hast").Content[] {
           ? node.properties?.className?.[0]
           : "language-tsx";
         if (typeof className === "string") {
-          const lang = className.replace("language-", "");
-          if (languages.has(lang)) {
+          const language = resolveLanguage(className.replace("language-", ""));
+          if (language !== undefined) {
             node.data = {
-              tokens: highlight(node.children[0].value, lang),
-            };
+              tokens: highlightLoaded(node.children[0].value, language),
+            } as unknown as import("hast").ElementData;
 
             node.children = [];
           }
         }
       }
       delete node.position;
-    }
+    },
   );
   return ast.children as any;
 }

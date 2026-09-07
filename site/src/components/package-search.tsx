@@ -4,9 +4,8 @@ import { jsx } from "@emotion/react";
 import { memo, useEffect, useId, useState } from "react";
 import { components as defaultComponents, Props } from "react-select";
 import Select from "react-select/base";
+import { useNavigate } from "@tanstack/react-router";
 import * as styles from "./package-search.css";
-import { getExternalPackageUrl } from "./symbol-references";
-import Router from "next/router";
 
 const NPM_SEARCH_ALGOLIA_APP_ID = "OFCNCOG2CU";
 const NPM_SEARCH_ALGOLIA_API_KEY = "0868500922f7d393d8d59fc283a82f2e";
@@ -63,7 +62,7 @@ const components: Props<Item, false>["components"] = {
                       {part}
                     </span>
                   );
-                }
+                },
               )}
             </span>
             <div>
@@ -74,8 +73,8 @@ const components: Props<Item, false>["components"] = {
             {props.data.types.ts === "included"
               ? "Included Types"
               : props.data.types.ts === "definitely-typed"
-              ? "DefinitelyTyped"
-              : "No Types"}
+                ? "DefinitelyTyped"
+                : "No Types"}
           </span>
         </div>
       </defaultComponents.Option>
@@ -95,6 +94,7 @@ const getName = (item: Item) => item.objectID;
 export const PackageSearch = memo(function PackageSearch(props: {
   autoFocus?: boolean;
 }) {
+  const navigate = useNavigate();
   const [options, setOptions] = useState<Item[]>([]);
   const [menuIsOpen, setMenuIsOpen] = useState(false);
   const [inputValue, setInputValue] = useState("");
@@ -117,7 +117,7 @@ export const PackageSearch = memo(function PackageSearch(props: {
       body: JSON.stringify({ params: params.toString() }),
       signal: abortController.signal,
     })
-      .then((x) => x.json())
+      .then((x) => x.json() as Promise<{ hits: Item[] }>)
       .then((x) => {
         if (!abortController.signal.aborted) {
           setOptions(x.hits);
@@ -143,10 +143,9 @@ export const PackageSearch = memo(function PackageSearch(props: {
       onChange={(option) => {
         if (option === null) return;
         setLoadingPage(option.objectID);
-        Router.push(
-          getExternalPackageUrl(option.objectID, option.tags.latest)
-        ).finally(() => {
-          setLoadingPage(null);
+        void navigate({
+          to: "/npm/$",
+          params: { _splat: `${option.objectID}@${option.tags.latest}` },
         });
       }}
       autoFocus={props.autoFocus}

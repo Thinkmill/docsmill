@@ -1,13 +1,10 @@
 import { ts } from "../extract/ts";
-import isRangeValid from "semver/ranges/valid";
-import maxSatisfyingVersion from "semver/ranges/max-satisfying";
-import { PackageMetadata } from "./fetch-package-metadata";
 import { combinePaths } from "../extract/path";
 
 function findPackageJsons(
   host: ts.ModuleResolutionHost,
   dir: string,
-  found: Set<string>
+  found: Set<string>,
 ) {
   const queue = new Set([dir]);
   for (const dir of queue) {
@@ -26,7 +23,7 @@ function findPackageJsons(
 }
 
 export function memoize<Arg, Return>(
-  fn: (arg: Arg) => Return
+  fn: (arg: Arg) => Return,
 ): (arg: Arg) => Return {
   const cache = new Map<Arg, Return>();
   return (arg) => {
@@ -44,7 +41,7 @@ export function collectEntrypointsOfPackage(
   pkgPath: string,
   compilerOptions: ts.CompilerOptions,
   host: ts.ModuleResolutionHost,
-  cache: ts.ModuleResolutionCache
+  cache: ts.ModuleResolutionCache,
 ) {
   const mainPkgJson = host.readFile(combinePaths(pkgPath, "package.json"));
   let parsedPkgJson;
@@ -59,7 +56,7 @@ export function collectEntrypointsOfPackage(
         combinePaths(pkgPath, "index.ts"),
         compilerOptions,
         host,
-        cache
+        cache,
       ).resolvedModule?.resolvedFileName;
       if (!resolved) continue;
       entrypoints.set(pkgName + entrypoint.slice(1), resolved);
@@ -71,7 +68,7 @@ export function collectEntrypointsOfPackage(
   const entrypoints = new Map<string, string>();
   const fileToResolveFrom = combinePaths(
     host.getCurrentDirectory!(),
-    "index.ts"
+    "index.ts",
   );
   for (const x of packageJsons) {
     const resolved = ts.resolveModuleName(
@@ -79,7 +76,7 @@ export function collectEntrypointsOfPackage(
       fileToResolveFrom,
       compilerOptions,
       host,
-      cache
+      cache,
     ).resolvedModule?.resolvedFileName;
     if (!resolved) continue;
     const entrypoint = `${pkgName}${x
@@ -88,22 +85,4 @@ export function collectEntrypointsOfPackage(
     entrypoints.set(entrypoint, resolved);
   }
   return entrypoints;
-}
-
-export function resolveToPackageVersion(
-  pkg: PackageMetadata,
-  specifier: string | undefined
-): string {
-  if (specifier !== undefined) {
-    if (Object.prototype.hasOwnProperty.call(pkg.tags, specifier)) {
-      return pkg.tags[specifier];
-    }
-    if (isRangeValid(specifier)) {
-      const version = maxSatisfyingVersion(pkg.versions, specifier);
-      if (version) {
-        return version;
-      }
-    }
-  }
-  return pkg.tags.latest;
 }

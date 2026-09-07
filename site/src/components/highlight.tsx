@@ -1,11 +1,7 @@
 import { ReactElement } from "react";
-import type { FontStyle } from "shiki";
 
-export type Token = readonly [
-  content: string,
-  color: string | null,
-  fontStyle?: FontStyle.Italic | FontStyle.Bold | FontStyle.Underline
-];
+export type Token =
+  { kind: "html"; value: string } | { kind: "text"; value: string };
 
 export function isTokens(tokens: any): tokens is Token[][] {
   return Array.isArray(tokens);
@@ -13,24 +9,9 @@ export function isTokens(tokens: any): tokens is Token[][] {
 
 export function Line({ tokens }: { tokens: Token[] }): ReactElement {
   return tokens.map((token, i) => {
-    const style: import("react").CSSProperties = {
-      color: token[1] ?? undefined,
-    };
-    if (token[2] !== undefined) {
-      if (token[2] & 1) {
-        style.fontStyle = "italic";
-      }
-      if (token[2] & 2) {
-        style.fontWeight = "bold";
-      }
-      if (token[2] & 4) {
-        style.textDecoration = "underline";
-      }
+    if (token.kind === "html") {
+      return <span key={i} dangerouslySetInnerHTML={{ __html: token.value }} />;
     }
-    return (
-      <span key={i} style={style}>
-        {token[0]}
-      </span>
-    );
+    return <span key={i}>{token.value}</span>;
   }) as any as ReactElement;
 }

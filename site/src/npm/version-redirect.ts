@@ -1,47 +1,42 @@
-import { GetStaticPropsResult } from "next";
 import isValidSemverVersion from "semver/functions/valid";
 import { getPackageMetadata } from "./fetch-package-metadata";
-import { resolveToPackageVersion } from "./utils";
+import { resolveToPackageVersion } from "./resolve-package-version";
 
 export async function redirectToPkgVersion(
   _pkgParam: string[] | undefined | string,
-  root: string
+  root: string,
 ): Promise<
-  | { kind: "handled"; result: GetStaticPropsResult<never> }
+  | { kind: "not-found" }
+  | { kind: "redirect"; destination: string }
   | { kind: "pkg"; pkg: string; version: string; restParams: string[] }
 > {
   if (!_pkgParam || typeof _pkgParam === "string" || !_pkgParam.length) {
-    return {
-      kind: "handled",
-      result: { notFound: true },
-    };
+    return { kind: "not-found" };
   }
   const pkgParam = [..._pkgParam];
   let pkgWithVersion = pkgParam.shift()!;
   if (pkgWithVersion[0] === "@") {
     const nameComponent = pkgParam.shift()!;
     if (!nameComponent) {
-      return { kind: "handled", result: { notFound: true } };
+      return { kind: "not-found" };
     }
     pkgWithVersion = `${pkgWithVersion}/${nameComponent}`;
   }
-  const [, pkgName, specifier] = pkgWithVersion.match(/^(@?[^@]+)(?:@(.+))?/)!;
+  const match = pkgWithVersion.match(/^(@?[^@]+)(?:@(.+))?/);
+  if (!match) return { kind: "not-found" };
+  const [, pkgName, specifier] = match;
 
   if (!specifier || !isValidSemverVersion(specifier)) {
     const pkg = await getPackageMetadata(pkgName);
     if (pkg === undefined) {
-      return { kind: "handled", result: { notFound: true } };
+      return { kind: "not-found" };
     }
     const version = resolveToPackageVersion(pkg, specifier);
     return {
-      kind: "handled",
-      result: {
-        redirect: {
-          statusCode: 302,
-          destination: `${root}/${pkgName}@${version}${pkgParam.join("/")}`,
-        },
-        revalidate: 60 * 20,
-      },
+      kind: "redirect",
+      destination: `${root}/${pkgName}@${version}${
+        pkgParam.length ? `/${pkgParam.join("/")}` : ""
+      }`,
     };
   }
   return {

@@ -3,29 +3,25 @@
   "version": "0.0.0",
   "license": "MIT",
   "private": true,
-  "packageManager": "pnpm@9.5.0",
+  "packageManager": "pnpm@11.11.0",
   "scripts": {
     "dev": "cd site && pnpm dev",
     "build": "cd site && pnpm build",
-    "postinstall": "preconstruct dev"
+    "build:worker": "cd site && pnpm build:worker",
+    "preview": "cd site && pnpm preview",
+    "deploy": "cd site && pnpm deploy",
+    "upload": "cd site && pnpm upload",
+    "test": "vitest run"
   },
   "dependencies": {
-    "@babel/preset-react": "^7.18.6",
-    "@babel/preset-typescript": "^7.18.6",
-    "@manypkg/cli": "^0.19.1",
-    "@preconstruct/cli": "^2.2.0",
-    "@types/jest": "^28.1.1",
-    "@types/node": "20.11.5",
-    "@types/react": "^18.3.3",
-    "@types/react-dom": "18.3.0",
-    "jest": "^28.1.1",
-    "prettier": "^2.7.1",
-    "typescript": "^5.5.3"
+    "@types/node": "26.4.1",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "19.2.7",
+    "prettier": "^3.9.6",
+    "typescript": "^7.0.2"
   },
-  "preconstruct": {
-    "packages": [
-      "packages/*"
-    ]
-  },
-  "repository": "https://github.com/Thinkmill/docsmill"
+  "repository": "https://github.com/Thinkmill/docsmill",
+  "devDependencies": {
+    "vitest": "^5.0.0"
+  }
 }

@@ -1,8 +1,9 @@
 {
   "name": "@docsmill/types",
   "version": "0.0.0",
-  "main": "dist/docsmill-types.cjs.js",
-  "module": "dist/docsmill-types.esm.js",
+  "exports": {
+    ".": "./src/index.ts"
+  },
   "license": "MIT",
   "private": true,
   "repository": "https://github.com/Thinkmill/docsmill/tree/master/packages/types"

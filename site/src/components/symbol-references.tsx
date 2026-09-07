@@ -11,8 +11,8 @@ import {
 import { useDocsContext } from "../lib/DocsContext";
 import { Syntax } from "./core";
 import * as styles from "./symbol-references.css";
-import Link from "next/link";
 import { SymbolId } from "@docsmill/types";
+import { Link } from "@tanstack/react-router";
 
 const NamesInScopeContext = createContext<Map<string, SymbolId>>(new Map());
 
@@ -22,7 +22,7 @@ const externalReferences = new Map(
       "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Iteration_protocols#the_iterable_protocol",
     Promise:
       "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise",
-  })
+  }),
 );
 
 export function AddNameToScope({
@@ -37,7 +37,7 @@ export function AddNameToScope({
   const namesInScope = useContext(NamesInScopeContext);
   const newNamesInScope = useMemo(
     () => new Map([...namesInScope, [name, fullName]]),
-    [namesInScope, name]
+    [namesInScope, name],
   );
   return (
     <NamesInScopeContext.Provider value={newNamesInScope}>
@@ -55,20 +55,6 @@ function getExternalPkgDisplayName(pkg: string) {
     return withoutTypes;
   }
   return pkg;
-}
-
-export function getExternalPackageUrl(pkg: string, version: string) {
-  return `/npm/${pkg}@${version}`;
-}
-
-export function getExternalSymbolUrl(external: {
-  pkg: string;
-  version: string;
-  id: string;
-}) {
-  return `${getExternalPackageUrl(external.pkg, external.version)}#${
-    external.id
-  }`;
 }
 
 export function SymbolReference({ id, name }: { name: string; id: SymbolId }) {
@@ -90,14 +76,17 @@ export function SymbolReference({ id, name }: { name: string; id: SymbolId }) {
       <Syntax kind="bracket">
         <Syntax kind="keyword">import</Syntax>(
         <Link
-          href={getExternalPackageUrl(external.pkg, external.version)}
+          to="/npm/$"
+          params={{ _splat: `${external.pkg}@${external.version}` }}
           css={styles.rootSymbolReference}
         >
           {JSON.stringify(pkgDisplayName)}
         </Link>
         ).
         <Link
-          href={getExternalSymbolUrl(external)}
+          to="/npm/$"
+          params={{ _splat: `${external.pkg}@${external.version}` }}
+          hash={external.id}
           css={styles.nonRootSymbolReference}
         >
           {name}

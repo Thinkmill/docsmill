@@ -2,7 +2,7 @@
   "compilerOptions": {
     "target": "esnext",
     "module": "esnext",
-    "jsx": "preserve",
+    "jsx": "react-jsx",
     "noEmit": true,
     "strict": true,
     "noUnusedLocals": true,
@@ -14,6 +14,7 @@
     "resolveJsonModule": true,
     "isolatedModules": true,
     "allowJs": false,
+    "types": ["node"],
     "skipLibCheck": true,
     "incremental": false
   },

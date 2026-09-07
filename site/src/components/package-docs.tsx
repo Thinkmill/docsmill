@@ -12,7 +12,6 @@ import { SymbolReference } from "./symbol-references";
 import { objectEntriesAssumeNoExcessProps } from "../lib/utils";
 import { Components } from "./core";
 import { Docs } from "./docs";
-import { PackageHeader } from "./package-header";
 
 const components: Components<import("hast").Content[]> = {
   Docs,
@@ -22,7 +21,7 @@ const components: Components<import("hast").Content[]> = {
 export function PackageDocs(props: import("../npm").PackageDocInfo) {
   const renderSymbolInfo: RenderSymbolInfo = {
     symbolsForInnerBit: new Map(
-      objectEntriesAssumeNoExcessProps(props.symbolsForInnerBit)
+      objectEntriesAssumeNoExcessProps(props.symbolsForInnerBit),
     ),
     references: props.symbolReferences,
     locations: props.locations,
@@ -38,11 +37,6 @@ export function PackageDocs(props: import("../npm").PackageDocInfo) {
 
   return (
     <DocsContext.Provider value={docInfo}>
-      <PackageHeader
-        packageName={props.packageName}
-        version={props.version}
-        versions={props.versions}
-      />
       <PageContainer>
         <NavigationContainer>
           <ul css={{ margin: 0, padding: 0 }}>

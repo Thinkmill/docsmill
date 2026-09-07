@@ -1,4 +1,4 @@
-import ts from "typescript";
+import ts from "@typescript/typescript6";
 import { getDocsInfoForDep, getDocsInfo } from "../extract";
 import { assert } from "../lib/assert";
 import { SymbolId } from "@docsmill/types";
@@ -9,7 +9,7 @@ export function getExternalReferenceHandler(
   resolvedDepsWithEntrypoints: Map<
     string,
     { entrypoints: Map<string, string>; pkgPath: string; version: string }
-  >
+  >,
 ) {
   const getFastDocInfo = memoize((pkgName: string) => {
     const { entrypoints, pkgPath, version } =
@@ -20,16 +20,18 @@ export function getExternalReferenceHandler(
       if (sourceFile) {
         assert(
           sourceFile !== undefined,
-          `expected to be able to get source file for ${resolved}`
+          `expected to be able to get source file for ${resolved}`,
         );
         const sourceFileSymbol = program
           .getTypeChecker()
           .getSymbolAtLocation(sourceFile);
-          if (sourceFileSymbol) {
-
-            assert(sourceFileSymbol !== undefined, `expected to get symbol for source file at ${resolved}`);
-            rootSymbols.set(sourceFileSymbol, entrypoint);
-              }
+        if (sourceFileSymbol) {
+          assert(
+            sourceFileSymbol !== undefined,
+            `expected to get symbol for source file at ${resolved}`,
+          );
+          rootSymbols.set(sourceFileSymbol, entrypoint);
+        }
       }
     }
     return {
@@ -48,14 +50,14 @@ export function getExternalReferenceHandler(
       program,
       undefined,
       undefined,
-      false
+      false,
     );
   });
   return (symbol: ts.Symbol, symbolId: SymbolId) => {
     const decl = symbol.declarations![0];
     const sourceFile = decl.getSourceFile();
     const match = sourceFile.fileName.match(
-      /\/node_modules\/(@[^/]+\/[^/]+|[^/]+)/
+      /\/node_modules\/(@[^/]+\/[^/]+|[^/]+)/,
     );
     if (match) {
       const pkgName = match[1];
@@ -73,7 +75,7 @@ export function getExternalReferenceHandler(
         const identifierFromComplete = docInfo.goodIdentifiers[symbolId];
         if (identifierFromComplete !== undefined) {
           console.log(
-            `deopted to get complete doc info for dep: ${pkgName} and found location: ${identifierFromComplete}`
+            `deopted to get complete doc info for dep: ${pkgName} and found location: ${identifierFromComplete}`,
           );
           return {
             id: identifierFromComplete,
@@ -84,7 +86,7 @@ export function getExternalReferenceHandler(
           console.log(
             `deopted to get complete doc info for dep: ${pkgName} but could not find location for symbol: ${symbol.getName()}\n${
               sourceFile.fileName
-            }`
+            }`,
           );
         }
       }

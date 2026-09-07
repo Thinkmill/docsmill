@@ -4,21 +4,23 @@ import { jsx } from "@emotion/react";
 import { markdownComponents } from "./markdown";
 import { ChevronDoubleDown } from "./icons/chevron-double-down";
 import { ChevronDoubleUp } from "./icons/chevron-double-up";
-import { html } from "property-information";
-
 import * as styles from "./docs.css";
-import { childrenToReact } from "react-markdown/lib/ast-to-react";
-import { Fragment } from "react";
+import { toJsxRuntime } from "hast-util-to-jsx-runtime";
+import { Fragment, ReactNode } from "react";
+import { jsx as runtimeJsx, jsxs as runtimeJsxs } from "react/jsx-runtime";
 
 const hastToReact = (children: import("hast").Content[]) =>
-  childrenToReact(
+  toJsxRuntime(
+    { type: "root", children },
     {
-      listDepth: 0,
-      schema: html,
-      options: { components: markdownComponents },
+      Fragment,
+      components: markdownComponents,
+      jsx: runtimeJsx,
+      jsxs: runtimeJsxs,
+      passKeys: true,
+      passNode: true,
     },
-    { type: "root", children }
-  );
+  ) as ReactNode;
 
 export function Docs({ docs }: { docs: import("hast").Content[] }) {
   if (!docs) return null;

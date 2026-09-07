@@ -2,6 +2,8 @@ import { assert, assertNever } from "../lib/assert";
 import { getCoreDocsInfo, getSymbolIdentifier } from "@docsmill/extract-core";
 import { ts } from "./ts";
 import path from "path";
+import { fileURLToPath } from "url";
+import { expect, test } from "vitest";
 import { memoize } from "../npm/utils";
 import { objectEntriesAssumeNoExcessProps } from "../lib/utils";
 import {
@@ -30,7 +32,7 @@ function getPrinted(filename: string) {
       const sourceFile = node.getSourceFile();
       return sourceFile.fileName === filename;
     },
-    () => null
+    () => null,
   );
   const accessibleSymbolIds = new Set<string>();
   for (const symbol of info.accessibleSymbols.keys()) {
@@ -66,8 +68,8 @@ ${objectEntriesAssumeNoExcessProps(decl.exports)
       } else if (decl.kind === "module") {
         result += `\nmodule ${JSON.stringify(
           decl.name.startsWith("/")
-            ? decl.name.replace(path.resolve(__dirname, "../.."), "")
-            : decl.name
+            ? decl.name.replace(path.resolve(import.meta.dirname, "../.."), "")
+            : decl.name,
         )} {
   export {
 ${objectEntriesAssumeNoExcessProps(decl.exports)
@@ -91,7 +93,7 @@ function printBasicDeclaration(
     SerializedDeclaration<unknown>,
     { kind: "module" | "namespace" | "enum" | "enum-member" }
   >,
-  printReference: (symbolId: SymbolId, name: string) => string
+  printReference: (symbolId: SymbolId, name: string) => string,
 ): string {
   if (decl.kind === "class") {
     return (
@@ -110,7 +112,7 @@ function printBasicDeclaration(
       (decl.constructors || [])
         .map(
           (x) =>
-            `  constructor${printParameters(x.parameters, printReference)}\n`
+            `  constructor${printParameters(x.parameters, printReference)}\n`,
         )
         .join("\n") +
       (decl.members || [])
@@ -120,7 +122,7 @@ function printBasicDeclaration(
               member.static ? "static " : ""
             }[key: ${printSerializedType(
               member.key,
-              printReference
+              printReference,
             )}]: ${printSerializedType(member.value, printReference)};`;
           }
           if (member.kind === "method") {
@@ -128,10 +130,10 @@ function printBasicDeclaration(
               member.optional ? "?" : ""
             }${printTypeParams(
               member.typeParams,
-              printReference
+              printReference,
             )}${printParameters(
               member.parameters,
-              printReference
+              printReference,
             )}: ${printSerializedType(member.returnType, printReference)};`;
           }
           if (member.kind === "prop") {
@@ -151,28 +153,28 @@ function printBasicDeclaration(
   if (decl.kind === "function") {
     return `function ${decl.name}${printTypeParams(
       decl.typeParams,
-      printReference
+      printReference,
     )}${printParameters(
       decl.parameters,
-      printReference
+      printReference,
     )}: ${printSerializedType(decl.returnType, printReference)}`;
   }
   if (decl.kind === "variable") {
     return `${decl.variableKind} ${decl.name}: ${printSerializedType(
       decl.type,
-      printReference
+      printReference,
     )} = ...`;
   }
   if (decl.kind === "type-alias") {
     return `type ${decl.name}${printTypeParams(
       decl.typeParams,
-      printReference
+      printReference,
     )} = ${printSerializedType(decl.type, printReference)}`;
   }
   if (decl.kind === "interface") {
     return `interface ${decl.name}${printTypeParams(
       decl.typeParams,
-      printReference
+      printReference,
     )}${
       decl.extends
         ? ` extends ${decl.extends
@@ -181,7 +183,7 @@ function printBasicDeclaration(
         : ""
     } { ${printSerializedType(
       { kind: "object", members: decl.members },
-      printReference
+      printReference,
     )}`;
   }
   if (decl.kind === "unknown") {
@@ -192,7 +194,7 @@ function printBasicDeclaration(
 
 function printSerializedType(
   type: SerializedType<unknown>,
-  printReference: (symbolId: SymbolId, name: string) => string
+  printReference: (symbolId: SymbolId, name: string) => string,
 ): string {
   if (type.kind === "intrinsic") {
     return type.value;
@@ -206,7 +208,7 @@ function printSerializedType(
   if (type.kind === "array") {
     return `${type.readonly ? "readonly " : ""}${printSerializedType(
       type,
-      printReference
+      printReference,
     )}[]`;
   }
   if (type.kind === "raw") {
@@ -241,7 +243,7 @@ function printSerializedType(
   if (type.kind === "indexed-access") {
     return `${printSerializedType(
       type.object,
-      printReference
+      printReference,
     )}[${printSerializedType(type.index, printReference)}]`;
   }
   if (type.kind === "tuple") {
@@ -276,7 +278,7 @@ function printSerializedType(
         : " as " + printSerializedType(type.as, printReference)
     }]${{ [-1]: "-?", 0: "", 1: "?" }[type.optional]}: ${printSerializedType(
       type.type,
-      printReference
+      printReference,
     )}\n}`;
   }
   if (type.kind === "type-parameter") {
@@ -290,19 +292,19 @@ function printSerializedType(
   if (type.kind === "conditional") {
     return `${printSerializedType(
       type.checkType,
-      printReference
+      printReference,
     )} extends ${printSerializedType(
       type.extendsType,
-      printReference
+      printReference,
     )} ? ${printSerializedType(
       type.trueType,
-      printReference
+      printReference,
     )} : ${printSerializedType(type.falseType, printReference)}`;
   }
   if (type.kind === "signature" || type.kind === "constructor") {
     return `${type.kind === "constructor" ? "new " : ""}${printTypeParams(
       type.typeParams,
-      printReference
+      printReference,
     )}${printParameters(type.parameters, printReference)} => ${
       type.returnType
     }`;
@@ -317,8 +319,8 @@ function printSerializedType(
             (x) =>
               `\${${printSerializedType(
                 x.type,
-                printReference
-              )}}${JSON.stringify(x.text).slice(1, -1)}`
+                printReference,
+              )}}${JSON.stringify(x.text).slice(1, -1)}`,
           )) +
       "`"
     );
@@ -333,10 +335,10 @@ function printSerializedType(
         if (value.kind === "call") {
           return `${printTypeParams(
             value.typeParams,
-            printReference
+            printReference,
           )}${printParameters(
             value.parameters,
-            printReference
+            printReference,
           )}: ${printSerializedType(value.returnType, printReference)}`;
         }
         if (value.kind === "index") {
@@ -350,7 +352,7 @@ function printSerializedType(
     return `${printReference(type.id, type.name)}${
       type.typeArguments
         ? `<${type.typeArguments.map((x) =>
-            printSerializedType(x, printReference)
+            printSerializedType(x, printReference),
           )}>`
         : ""
     }`;
@@ -369,19 +371,19 @@ function printSerializedType(
 
 function printParameters(
   params: Parameter<unknown>[] = [],
-  printReference: (symbolId: SymbolId, name: string) => string
+  printReference: (symbolId: SymbolId, name: string) => string,
 ) {
   return `(${params.map((param) => {
     if (param.modifier === "optional") {
       return `${param.name}?: ${printSerializedType(
         param.type,
-        printReference
+        printReference,
       )}`;
     }
     if (param.modifier === "rest") {
       return `...${param.name}: ${printSerializedType(
         param.type,
-        printReference
+        printReference,
       )}`;
     }
     return `${param.name}: ${printSerializedType(param.type, printReference)}`;
@@ -390,7 +392,7 @@ function printParameters(
 
 function printTypeParams(
   typeParams: [TypeParam<unknown>, ...TypeParam<unknown>[]] | undefined,
-  printReference: (symbolId: SymbolId, name: string) => string
+  printReference: (symbolId: SymbolId, name: string) => string,
 ) {
   if (typeParams === undefined) {
     return "";
@@ -402,7 +404,7 @@ function printTypeParams(
           ? ""
           : ` extends ${printSerializedType(
               typeParam.constraint,
-              printReference
+              printReference,
             )}`
       }${
         typeParam.default === undefined
@@ -414,63 +416,69 @@ function printTypeParams(
 }
 
 test("basic", () => {
-  expect(getPrinted(require.resolve("./fixtures/basic.ts")))
-    .toMatchInlineSnapshot(`
-    "0
-    module \\"test\\" {
-      export {
-        1 as something
-      }
-    }
+  expect(
+    getPrinted(fileURLToPath(new URL("./fixtures/basic.ts", import.meta.url))),
+  ).toMatchInlineSnapshot(`
+   "0
+   module "test" {
+     export {
+       1 as something
+     }
+   }
 
-    1: something
-    const something: true = ...
-    type something = string"
+   1: something
+   const something: true = ...
+   type something = string"
   `);
 });
 
 test("class and namespace", () => {
-  expect(getPrinted(require.resolve("./fixtures/class-and-namespace.ts")))
-    .toMatchInlineSnapshot(`
-    "0
-    module \\"test\\" {
-      export {
-        1 as Blah
-      }
-    }
+  expect(
+    getPrinted(
+      fileURLToPath(
+        new URL("./fixtures/class-and-namespace.ts", import.meta.url),
+      ),
+    ),
+  ).toMatchInlineSnapshot(`
+   "0
+   module "test" {
+     export {
+       1 as Blah
+     }
+   }
 
-    1: Blah
-    class Blah {
-      blah(): void;
-      static staticBlah(): void;
-    }
-    namespace Blah {
-      export {
-        2 as X
-      }
-    }
-    namespace Blah {
-      export {
-        3 as Y,
-        4 as a,
-        5 as b,
-        6 as c
-      }
-    }
+   1: Blah
+   class Blah {
+     blah(): void;
+     static staticBlah(): void;
+   }
+   namespace Blah {
+     export {
+       2 as X
+     }
+   }
+   namespace Blah {
+     export {
+       3 as Y,
+       4 as a,
+       5 as b,
+       6 as c
+     }
+   }
 
-    2: X
-    type X = true
+   2: X
+   type X = true
 
-    3: Y
-    type Y = true
+   3: Y
+   type Y = true
 
-    4: a
-    const a: \\"something\\" = ...
+   4: a
+   const a: "something" = ...
 
-    5: b
-    const b: boolean = ...
+   5: b
+   const b: boolean = ...
 
-    6: c
-    const c: boolean = ..."
+   6: c
+   const c: boolean = ..."
   `);
 });

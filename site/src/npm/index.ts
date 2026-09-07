@@ -1,9 +1,11 @@
 import { ts } from "../extract/ts";
 import libFiles from "../../lib-files.json";
+import compilerLibFileNames from "../../compiler-lib-files.json";
 
 import isValidSemverVersion from "semver/functions/valid";
 import { DocInfo, getDocsInfo, getIsNodeWithinPkg } from "../extract";
-import { collectEntrypointsOfPackage, resolveToPackageVersion } from "./utils";
+import { collectEntrypointsOfPackage } from "./utils";
+import { resolveToPackageVersion } from "./resolve-package-version";
 import { getPackageMetadata } from "./fetch-package-metadata";
 import { assert } from "../lib/assert";
 import {
@@ -16,27 +18,9 @@ import { getSourceMapHandler } from "./source-map";
 import { getExternalReferenceHandler } from "./external-reference";
 import { collectImports } from "./collect-imports";
 import { extract } from "it-tar";
-
-// https://github.com/pnpm/get-npm-tarball-url
-function getNpmTarballUrl(pkgName: string, pkgVersion: string): string {
-  const scopelessName = getScopelessName(pkgName);
-  return `https://registry.npmjs.org/${pkgName}/-/${scopelessName}-${removeBuildMetadataFromVersion(
-    pkgVersion
-  )}.tgz`;
-}
-
-function removeBuildMetadataFromVersion(version: string) {
-  const plusPos = version.indexOf("+");
-  if (plusPos === -1) return version;
-  return version.substring(0, plusPos);
-}
-
-function getScopelessName(name: string) {
-  if (name[0] !== "@") {
-    return name;
-  }
-  return name.split("/")[1];
-}
+import { languagesInMarkdown, loadLanguages } from "../extract/highlight";
+import { cachePackageTarball, getNpmTarballUrl } from "./tarball-cache";
+import { isPackageCompilerFile } from "./package-files";
 
 async function* streamToIterator(stream: ReadableStream<Uint8Array>) {
   const reader = stream.getReader();
@@ -53,16 +37,16 @@ async function* streamToIterator(stream: ReadableStream<Uint8Array>) {
 
 async function handleTarballStream(tarballStream: ReadableStream<Uint8Array>) {
   const uncompressed: ReadableStream<Uint8Array> = tarballStream.pipeThrough(
-    new DecompressionStream("gzip")
+    new DecompressionStream("gzip") as unknown as TransformStream<
+      Uint8Array,
+      Uint8Array
+    >,
   );
   const iterator = streamToIterator(uncompressed);
   const entries = new Map<string, string>();
 
   for await (const { header, body } of extract()(iterator)) {
-    if (
-      header.type !== "file" ||
-      !/\.(json|ts|tsx|d\.ts\.map)$/.test(header.name)
-    ) {
+    if (header.type !== "file" || !isPackageCompilerFile(header.name)) {
       for await (const _ of body) {
       }
       continue;
@@ -79,17 +63,37 @@ async function handleTarballStream(tarballStream: ReadableStream<Uint8Array>) {
   return entries;
 }
 
-async function fetchPackageContent(pkgName: string, pkgVersion: string) {
-  const tarballStream = await fetch(getNpmTarballUrl(pkgName, pkgVersion)).then(
-    (res) => res.body!
-  );
-  return handleTarballStream(tarballStream);
+async function fetchPackageContent(
+  pkgName: string,
+  pkgVersion: string,
+  cacheForSource: boolean,
+) {
+  const response = await fetch(getNpmTarballUrl(pkgName, pkgVersion));
+  if (!response.ok || response.body === null) {
+    throw new Error(`Could not download ${pkgName}@${pkgVersion}`);
+  }
+
+  const responseForCache = cacheForSource ? response.clone() : undefined;
+  const contentPromise = handleTarballStream(response.body);
+  const cachePromise = cacheForSource
+    ? cachePackageTarball(pkgName, pkgVersion, responseForCache!)
+    : Promise.resolve();
+  const [content] = await Promise.all([contentPromise, cachePromise]);
+  return content;
 }
 
-async function getTarballAndVersions(pkgName: string, pkgSpecifier: string) {
+async function getTarballAndVersions(
+  pkgName: string,
+  pkgSpecifier: string,
+  cacheForSource: boolean,
+) {
   let pkgPromise = getPackageMetadata(pkgName);
   if (isValidSemverVersion(pkgSpecifier)) {
-    const packageContentPromise = fetchPackageContent(pkgName, pkgSpecifier);
+    const packageContentPromise = fetchPackageContent(
+      pkgName,
+      pkgSpecifier,
+      cacheForSource,
+    );
     const results = await Promise.allSettled([
       pkgPromise,
       packageContentPromise,
@@ -109,18 +113,20 @@ async function getTarballAndVersions(pkgName: string, pkgSpecifier: string) {
   const pkg = await pkgPromise;
   assert(pkg !== undefined);
   const version = resolveToPackageVersion(pkg, pkgSpecifier);
-  const content = await fetchPackageContent(pkgName, version);
+  const content = await fetchPackageContent(pkgName, version, cacheForSource);
   return { content, version, versions: pkg.versions };
 }
 
 async function addPackageToNodeModules(
   host: ts.CompilerHost,
   pkgName: string,
-  pkgSpecifier: string
+  pkgSpecifier: string,
+  cacheForSource = false,
 ) {
   const { version, versions, content } = await getTarballAndVersions(
     pkgName,
-    pkgSpecifier
+    pkgSpecifier,
+    cacheForSource,
   );
 
   const pkgPath = `/node_modules/${pkgName}`;
@@ -186,7 +192,7 @@ export function getCompilerHost(): ts.CompilerHost & {
         const end = components.pop()!;
         const joined = combinePaths(
           ...(components as [string, ...string[]]),
-          end
+          end,
         );
         if (directories.has(joined)) {
           break;
@@ -215,7 +221,7 @@ export function getCompilerHost(): ts.CompilerHost & {
       const sourceFile = ts.createSourceFile(
         filename,
         content,
-        languageVersion
+        languageVersion,
       );
       if (filename.startsWith("/node_modules/typescript/lib/")) {
         libFileCache.set(filename, sourceFile);
@@ -242,13 +248,14 @@ export type PackageDocInfo = DocInfo & {
 
 export async function getPackage(
   pkgName: string,
-  pkgSpecifier: string
+  pkgSpecifier: string,
 ): Promise<PackageDocInfo> {
   // const fileSystem = new InMemoryFileSystemHost();
 
   const compilerOptions: ts.CompilerOptions = {
     noEmit: true,
     strict: true,
+    lib: compilerLibFileNames,
     moduleResolution: ts.ModuleResolutionKind.Bundler,
     target: ts.ScriptTarget.ESNext,
   };
@@ -258,7 +265,8 @@ export async function getPackage(
   const { versions, version, pkgPath } = await addPackageToNodeModules(
     compilerHost,
     pkgName,
-    pkgSpecifier
+    pkgSpecifier,
+    true,
   );
 
   const moduleResolutionHost: ts.ModuleResolutionHost = compilerHost;
@@ -266,7 +274,7 @@ export async function getPackage(
   const earlyModuleResolutionCache = ts.createModuleResolutionCache(
     moduleResolutionHost.getCurrentDirectory!(),
     (x) => x,
-    compilerOptions
+    compilerOptions,
   );
 
   const entrypoints = collectEntrypointsOfPackage(
@@ -274,18 +282,18 @@ export async function getPackage(
     pkgPath,
     compilerOptions,
     moduleResolutionHost,
-    earlyModuleResolutionCache
+    earlyModuleResolutionCache,
   );
 
   const collectedPackages = collectUnresolvedPackages(
     entrypoints,
     compilerOptions,
     compilerHost,
-    earlyModuleResolutionCache
+    earlyModuleResolutionCache,
   );
 
   const pkgJson = JSON.parse(
-    moduleResolutionHost.readFile(`${pkgPath}/package.json`)!
+    moduleResolutionHost.readFile(`${pkgPath}/package.json`)!,
   );
 
   const resolvedDepsWithEntrypoints = new Map<
@@ -324,24 +332,35 @@ export async function getPackage(
       const { version, pkgPath } = await addPackageToNodeModules(
         compilerHost,
         dep,
-        specifier
+        specifier,
       );
 
       const moduleResolutionCache = ts.createModuleResolutionCache(
         compilerHost.getCurrentDirectory(),
         (x) => x,
-        compilerOptions
+        compilerOptions,
       );
       const entrypoints = collectEntrypointsOfPackage(
         dep,
         pkgPath,
         compilerOptions,
         moduleResolutionHost,
-        moduleResolutionCache
+        moduleResolutionCache,
       );
       resolvedDepsWithEntrypoints.set(dep, { entrypoints, pkgPath, version });
-    })
+    }),
   );
+
+  const markdownLanguages = new Set<string>();
+  for (const [directory, files] of compilerHost.directories) {
+    if (directory.startsWith("/node_modules/typescript/lib")) continue;
+    for (const content of files.values()) {
+      for (const language of languagesInMarkdown(content)) {
+        markdownLanguages.add(language);
+      }
+    }
+  }
+  await loadLanguages(markdownLanguages);
 
   const program = ts.createProgram({
     rootNames: [
@@ -364,11 +383,11 @@ export async function getPackage(
     const decl = module.declarations?.[0];
     assert(
       decl !== undefined && ts.isModuleDeclaration(decl),
-      "expected module declaration on ambient module symbol"
+      "expected module declaration on ambient module symbol",
     );
     assert(
       ts.isStringLiteral(decl.name),
-      "expected module declaration from ambient module symbol to have string literal name node"
+      "expected module declaration from ambient module symbol to have string literal name node",
     );
     if (isWithinPkg(decl)) {
       rootSymbols.set(module, decl.name.text);
@@ -393,7 +412,7 @@ export async function getPackage(
       pkgName,
       program,
       getExternalReferenceHandler(program, resolvedDepsWithEntrypoints),
-      getSourceMapHandler(compilerHost, pkgName)
+      getSourceMapHandler(compilerHost, pkgName),
     ),
   };
 }
@@ -402,7 +421,7 @@ export function collectUnresolvedPackages(
   entrypoints: Map<string, string>,
   compilerOptions: ts.CompilerOptions,
   host: ts.CompilerHost,
-  moduleResolutionCache: ts.ModuleResolutionCache
+  moduleResolutionCache: ts.ModuleResolutionCache,
 ) {
   const collectedPackages = new Set<string>();
   const queue = new Set(entrypoints.values());
@@ -410,7 +429,7 @@ export function collectUnresolvedPackages(
     const sourceFile = host.getSourceFile(filepath, ts.ScriptTarget.ESNext);
     assert(
       sourceFile !== undefined,
-      `expected to be able to read file at ${filepath}`
+      `expected to be able to read file at ${filepath}`,
     );
 
     const references = [];
@@ -436,7 +455,7 @@ export function collectUnresolvedPackages(
         filepath,
         compilerOptions,
         host,
-        moduleResolutionCache
+        moduleResolutionCache,
       ).resolvedModule?.resolvedFileName;
       if (resolved) {
         queue.add(resolved);

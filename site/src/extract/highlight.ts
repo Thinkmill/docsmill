@@ -1,67 +1,93 @@
-import { Highlighter, getHighlighter, Lang, FontStyle } from "shiki";
+import { createBrowserTreelight } from "@treelight/browser";
+import githubLight from "@treelight/theme-github-light";
+import type { Token } from "../components/highlight";
+import { resolveLanguage, type Language } from "./highlight-languages";
 
-export let highlighter: Highlighter | undefined;
+export {
+  languages,
+  languagesInMarkdown,
+  resolveLanguage,
+} from "./highlight-languages";
+export type { Language } from "./highlight-languages";
 
-// https://nextjs.org/docs/advanced-features/output-file-tracing
-export function includeThingsInDeployment() {
-  require.resolve("shiki/themes/github-light.json");
-  require.resolve("shiki/languages/typescript.tmLanguage.json");
-  require.resolve("shiki/languages/tsx.tmLanguage.json");
-  require.resolve("shiki/languages/html.tmLanguage.json");
-  require.resolve("shiki/languages/css.tmLanguage.json");
-  require.resolve("shiki/languages/javascript.tmLanguage.json");
-  require.resolve("shiki/languages/jsx.tmLanguage.json");
-  require.resolve("shiki/languages/markdown.tmLanguage.json");
-  require.resolve("shiki/languages/json.tmLanguage.json");
-}
+const languageLoaders = {
+  css: () => import("@treelight/css/browser"),
+  html: () => import("@treelight/html/browser"),
+  javascript: () => import("@treelight/javascript/browser"),
+  json: () => import("@treelight/json/browser"),
+  markdown: () => import("@treelight/markdown/browser"),
+  tsx: () => import("@treelight/tsx/browser"),
+  typescript: () => import("@treelight/typescript/browser"),
+} satisfies Record<Language, () => Promise<unknown>>;
 
-const langs: Lang[] = [
-  "ts",
-  "typescript",
-  "tsx",
-  "html",
-  "css",
-  "jsx",
-  "javascript",
-  "js",
-  "ts",
-  "md",
-  "markdown",
-  "json",
-];
-
-export const extensionsToLang = new Map<string, Lang>([
-  ...(
-    ["ts", "tsx", "html", "css", "jsx", "js", "ts", "md", "json"] as const
-  ).map((x) => [x, x] as const),
-  ["mjs", "js"],
-  ["cjs", "js"],
-  ["cts", "ts"],
-  ["mts", "ts"],
+export const extensionsToLang = new Map<string, Language>([
+  ["css", "css"],
+  ["html", "html"],
+  ["js", "javascript"],
+  ["jsx", "javascript"],
+  ["json", "json"],
+  ["md", "markdown"],
+  ["ts", "typescript"],
+  ["tsx", "tsx"],
+  ["mjs", "javascript"],
+  ["cjs", "javascript"],
+  ["cts", "typescript"],
+  ["mts", "typescript"],
 ]);
 
-export const languages = new Set<string>(langs);
-
-export const highlighterPromise = getHighlighter({
-  theme: "github-light",
-  langs,
-}).then((x) => {
-  highlighter = x;
-  return x;
+const highlighter = createBrowserTreelight({
+  languages: Object.entries(languageLoaders),
+  themes: [githubLight],
 });
 
-export function highlight(content: string, lang: string) {
-  const tokens = highlighter!.codeToThemedTokens(content, lang);
-  return tokens.map((x) =>
-    x.map((x) => {
+const loadedLanguages = new Set<Language>();
+
+export async function loadLanguages(
+  requestedLanguages: Iterable<string>,
+): Promise<void> {
+  await Promise.all(
+    [...requestedLanguages].flatMap((language) => {
+      const supportedLanguage = resolveLanguage(language);
       if (
-        x.fontStyle === FontStyle.NotSet ||
-        x.fontStyle === FontStyle.None ||
-        x.fontStyle === undefined
+        supportedLanguage === undefined ||
+        loadedLanguages.has(supportedLanguage)
       ) {
-        return [x.content, x.color || null] as const;
+        return [];
       }
-      return [x.content, x.color || null, x.fontStyle] as const;
-    })
+      loadedLanguages.add(supportedLanguage);
+      return highlighter
+        .loadLanguage(supportedLanguage)
+        .catch((error: unknown) => {
+          loadedLanguages.delete(supportedLanguage);
+          throw error;
+        });
+    }),
+  );
+}
+
+function toTokens(lines: string[]): Token[][] {
+  return lines.map((html) => [{ kind: "html", value: html }]);
+}
+
+export async function highlight(
+  content: string,
+  language: Language,
+): Promise<Token[][]> {
+  await loadLanguages([language]);
+  return toTokens(
+    highlighter.highlightLinesSync(content, language, {
+      theme: "github-light",
+    }),
+  );
+}
+
+export function highlightLoaded(
+  content: string,
+  language: Language,
+): Token[][] {
+  return toTokens(
+    highlighter.highlightLinesSync(content, language, {
+      theme: "github-light",
+    }),
   );
 }

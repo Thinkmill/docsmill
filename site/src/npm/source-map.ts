@@ -1,4 +1,4 @@
-import ts from "typescript";
+import ts from "@typescript/typescript6";
 import { resolvePath, getDirectoryPath } from "../extract/path";
 import { memoize } from "./utils";
 // @ts-ignore
@@ -6,7 +6,7 @@ import { decode as decodeVlq } from "vlq";
 
 export function getSourceMapHandler(
   compilerHost: ts.CompilerHost,
-  pkgName: string
+  pkgName: string,
 ) {
   const getSourceMap = memoize((distFilename: string) => {
     let content = compilerHost.readFile(distFilename + ".map");
@@ -26,14 +26,14 @@ export function getSourceMapHandler(
     } catch (err) {
       console.log(
         "could not parse source file content for ",
-        distFilename + ".map"
+        distFilename + ".map",
       );
       return undefined;
     }
     sourceMapContent = sourceMapContent!;
     const sourceRoot = resolvePath(
       getDirectoryPath(distFilename),
-      sourceMapContent.sourceRoot
+      sourceMapContent.sourceRoot,
     );
     const srcFilename = resolvePath(sourceRoot, sourceMapContent.sources[0]);
 
@@ -45,7 +45,7 @@ export function getSourceMapHandler(
       .split(";")
       .map((line) => line.split(","));
     const decoded = vlqs.map((line) =>
-      line.map((segment) => decodeVlq(segment) as number[])
+      line.map((segment) => decodeVlq(segment) as number[]),
     );
     let sourceFileIndex = 0; // second field
     let sourceCodeLine = 0; // third field
@@ -70,7 +70,7 @@ export function getSourceMapHandler(
           file: number,
           index: number,
           line: number,
-          column: number
+          column: number,
         ] = [
           generatedCodeColumn,
           sourceFileIndex,
