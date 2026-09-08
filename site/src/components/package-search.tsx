@@ -146,6 +146,11 @@ export const PackageSearch = memo(function PackageSearch(props: {
         void navigate({
           to: "/npm/$",
           params: { _splat: `${option.objectID}@${option.tags.latest}` },
+        }).finally(() => {
+          setLoadingPage(null);
+          setInputValue("");
+          setOptions([]);
+          setMenuIsOpen(false);
         });
       }}
       autoFocus={props.autoFocus}
