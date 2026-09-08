@@ -13,7 +13,6 @@ async function fetchPackageMetadata(
 ): Promise<PackageMetadata | undefined> {
   const res = await fetch(
     `https://data.jsdelivr.com/v1/package/npm/${packageName}`,
-    { headers: { "User-Agent": "https://github.com/Thinkmill/docsmill" } },
   );
   if (res.status === 404) {
     return undefined;
