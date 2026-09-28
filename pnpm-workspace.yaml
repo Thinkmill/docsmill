@@ -7,3 +7,6 @@ allowBuilds:
   iso-constants: true
   unrs-resolver: true
   workerd: true
+minimumReleaseAgeExclude:
+  - miniflare@5.20260926.0-alpha
+  - wrangler@4.142.0
